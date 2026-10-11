@@ -3698,6 +3698,14 @@ function syncStatus() {
 }
 window.addEventListener('online', () => { SYNC.err = ''; flushOutbox(); });
 window.addEventListener('offline', () => syncStatus());
+// Safety net every 10 seconds: changes normally go out and come in at once, but if a send failed or the
+// live connection dropped (bad network, phone asleep), retry here so nothing stays behind.
+const SYNC_EVERY = 10000;
+setInterval(() => {
+  if (!SYNC.user || !SYNC.db || !navigator.onLine) return;
+  if (SYNC.err && !/rules block/.test(SYNC.err)) { SYNC.err = ''; if (SYNC.unsub) { SYNC.unsub(); SYNC.unsub = null; } syncListen(); return; }
+  if (SYNC.outbox.size) flushOutbox();
+}, SYNC_EVERY);
 // Called once when sync is first switched on for this device.
 async function syncFirstRun(mode) {
   if (mode === 'upload') {
@@ -6021,7 +6029,7 @@ onChange(() => { if ($('#view') && !$('#view').dataset.ready && firm()) { $('#vi
    Updates: every copy of the app checks one fixed address for a newer build.
    Online (PC / iPhone): reload picks it up. Android app: downloads it in the background.
    ========================================================= */
-const APP_BUILD = +'6' || 0, APP_VERSION = '2.9';
+const APP_BUILD = +'7' || 0, APP_VERSION = '2.10';
 const SITE_URL = 'https://patidar-app.github.io/Patidar-app/';
 const HOSTED = (location.protocol === 'https:' || location.hostname === 'localhost') && !IN_FRAME;
 const UPDATE_BASE = HOSTED ? new URL('./', location.href).href : SITE_URL;
