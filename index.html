@@ -484,6 +484,24 @@ input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer
 }
 @media print { .tabbar { display: none !important; } }
 
+/* access */
+html.no-cost .cost { display: none !important; }
+input.ro { background: var(--sunken); color: var(--muted); }
+.perm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.perm-grp { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: grid; gap: 4px; align-content: start; }
+.perm-grp h4 { margin: 0 0 2px; font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.perm-grp label { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; cursor: pointer; padding: 2px 0; }
+.perm-grp input { margin-top: 3px; accent-color: var(--maroon); width: 16px; height: 16px; flex: none; }
+.perm-grp label.off { color: var(--muted); }
+.role-pick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.role-pick button { border: 2px solid var(--line); background: var(--surface); border-radius: 10px; padding: 9px 10px; text-align: left; cursor: pointer; display: grid; gap: 1px; }
+.role-pick button b { font-size: 15px; } .role-pick button small { color: var(--muted); font-size: 12px; line-height: 1.3; }
+.role-pick button[aria-pressed="true"] { border-color: var(--gold); background: var(--gold-soft); }
+.firm-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.acc-matrix td.yes { color: var(--ok); font-weight: 700; text-align: center; } .acc-matrix td.no { color: var(--muted); text-align: center; }
+.acc-matrix th.u { text-align: center; }
+@media (max-width: 640px) { .role-pick { grid-template-columns: minmax(0, 1fr); } .perm-grid { grid-template-columns: minmax(0, 1fr); } }
+
 </style>
 </head>
 <body>
@@ -538,6 +556,7 @@ input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer
     <div class="grp">More</div>
     <button data-go="reports">Reports &amp; GST</button>
     <button data-go="settings">Settings</button>
+    <button data-go="settings" data-arg="users">Users &amp; access</button>
     <div class="grp">This device</div>
     <label class="rail-firm"><span>Firm</span><select id="firm-pick2" aria-label="Firm"></select></label>
     <button data-go="settings" data-arg="sync">Sync <span class="muted small" id="rail-sync"></span></button>
@@ -3790,12 +3809,12 @@ function lockMin() {
   const x = new Date(); x.setDate(x.getDate() - (+d || 0)); return dayKey(x);
 }
 const lockDesc = () => { const d = lockOf().days; return d === 'off' ? 'any date' : +d === 0 ? 'today only' : `today and the last ${d} day${+d === 1 ? '' : 's'}`; };
-const lockFree = () => (users().length && me()?.role === 'owner') || Date.now() < LOCK_OPEN;
+const lockFree = () => (users().length && can('backdate')) || Date.now() < LOCK_OPEN;
 let LOCK_OPEN = 0; // set for 10 minutes when the owner approves with their PIN on a staff login
 async function lockCheck(date, what) {
   const min = lockMin();
   if (!min || !date || date >= min || lockFree()) return true;
-  const msg = `${what} is dated ${fmtDate(date)}. Staff can only use ${lockDesc()}.`;
+  const msg = `${what} is dated ${fmtDate(date)}. ${esc(me()?.name || 'Staff')} can only use ${lockDesc()}.`;
   if (!users().length) { toast(`${what} is dated ${fmtDate(date)}. Only the owner can make back-dated entries: set up users in Settings › Users.`, 'bad'); return false; }
   return ownerPin(msg + ' The owner can approve with their PIN.');
 }
@@ -3832,7 +3851,9 @@ function go(name, arg = null, opts = {}) {
 }
 function render() {
   if (!S.ready) return;
+  if (!needLogin() && !firmOK(S.firmId)) { const f = firms().find(x => firmOK(x.id)); if (f) { S.firmId = f.id; LS.set('firm', f.id); DERIVED = null; resetCounter(); } }
   renderTop();
+  if (!needLogin() && !routeOK(ROUTE.name, ROUTE.arg)) return noAccess();
   const fn = VIEWS[ROUTE.name] || VIEWS.home;
   fn(ROUTE.arg);
 }
@@ -3851,7 +3872,7 @@ function renderTop() {
   $('#tb-tag').textContent = f.tagline || '';
   $('#tb-logo').src = f.logo || LOGO_ICON;
   const sel = $('#firm-pick');
-  sel.innerHTML = firms().map(x => `<option value="${x.id}" ${x.id === S.firmId ? 'selected' : ''}>${esc(x.name)}</option>`).join('') + '<option value="__new">+ Add another firm</option>';
+  sel.innerHTML = firms().filter(x => firmOK(x.id)).map(x => `<option value="${x.id}" ${x.id === S.firmId ? 'selected' : ''}>${esc(x.name)}</option>`).join('') + (isOwner() ? '<option value="__new">+ Add another firm</option>' : '');
   $('#firm-pick2').innerHTML = sel.innerHTML; $('#firm-pick2').value = S.firmId || '';
   const t = today();
   $('#tb-today').textContent = inr0(col('vouchers').filter(v => v.type === 'sale' && v.status !== 'cancelled' && v.date === t).reduce((a, v) => a + (+v.total || 0), 0));
@@ -4234,6 +4255,8 @@ function statusPill(v) {
 
 /* ---------------- editor ---------------- */
 function openEditor(type, id, preset) {
+  if (!canType(type)) return denyToast(`make ${VT[type].plural.toLowerCase()}`);
+  if (id && !can('edit')) return denyToast('edit saved entries');
   const f = firm();
   let v;
   if (id) v = JSON.parse(JSON.stringify(get('vouchers', id)));
@@ -4525,12 +4548,12 @@ function showVoucher(v, { justSaved } = {}) {
   const m = openModal(`${mHead(`${justSaved ? 'Saved · ' : ''}${t.label} ${esc(v.no)} ${canc ? '<span class="pill bad">Cancelled</span>' : ''}`)}
     <div class="body"><div class="paper-wrap" id="vw-paper">${docHTML(v, v.source === 'counter' && firm().counter.paper !== 'A4' ? 'counter' : '')}</div></div>
     <footer>
-      ${!canc ? `<button class="btn" data-y="edit">Edit</button>` : ''}
-      ${v.type === 'quotation' && !canc ? `<button class="btn" data-y="convert">${v.convertedTo ? 'Converted · open invoice' : 'Convert to invoice'}</button>` : ''}
-      ${(v.type === 'sale' || v.type === 'purchase') && !canc ? `<button class="btn" data-y="return">Make return</button>` : ''}
-      ${v.type === 'purchase' && !canc ? `<button class="btn" data-y="labels">Print labels</button>` : ''}
-      ${t.trade ? `<button class="btn" data-y="dup">Duplicate</button>` : ''}
-      ${canc ? `<button class="btn" data-y="restore">Restore</button>${isOwner() ? '<button class="btn danger" data-y="delete">Delete</button>' : ''}` : `<button class="btn danger" data-y="cancel">Cancel ${t.trade ? 'bill' : 'entry'}</button>`}
+      ${!canc && can('edit') && canType(v.type) ? `<button class="btn" data-y="edit">Edit</button>` : ''}
+      ${v.type === 'quotation' && !canc && can('sale') ? `<button class="btn" data-y="convert">${v.convertedTo ? 'Converted · open invoice' : 'Convert to invoice'}</button>` : ''}
+      ${(v.type === 'sale' || v.type === 'purchase') && !canc && canType(v.type) ? `<button class="btn" data-y="return">Make return</button>` : ''}
+      ${v.type === 'purchase' && !canc && can('labels') ? `<button class="btn" data-y="labels">Print labels</button>` : ''}
+      ${t.trade && canType(v.type) ? `<button class="btn" data-y="dup">Duplicate</button>` : ''}
+      ${canc ? `${can('cancel') ? '<button class="btn" data-y="restore">Restore</button>' : ''}${can('delete') ? '<button class="btn danger" data-y="delete">Delete</button>' : ''}` : can('cancel') ? `<button class="btn danger" data-y="cancel">Cancel ${t.trade ? 'bill' : 'entry'}</button>` : ''}
       <button class="btn" data-y="pdf">PDF</button>
       <button class="btn" data-y="print">Print</button>
       <button class="btn wa" data-y="share">WhatsApp</button>
@@ -4590,6 +4613,7 @@ function partiesBody() {
     : emptyRow(all.length ? 'No parties match' : 'No parties yet', all.length ? '' : 'Customers are added automatically from counter bills. Add suppliers here.', 6);
 }
 function editParty(id, preset = {}, after) {
+  if (!can('parties') && (id || ROUTE.name !== 'edit')) return denyToast(id ? 'edit parties' : 'add parties');
   const p = id ? get('parties', id) : Object.assign({ name: '', kind: 'customer', phone: '', gstin: '', state: firm().state, addr: '', email: '', opening: 0 }, preset);
   const m = openModal(`${mHead(id ? 'Edit party' : 'Add party')}<form class="body" id="ptf">
     <label class="f"><span>Name *</span><input type="text" name="name" value="${esc(p.name)}" autofocus></label>
@@ -4686,16 +4710,17 @@ function itemsBody() {
   list = list.filter(i => (!IF.cat || i.category === IF.cat) && (!IF.stock || (IF.stock === 'out' ? stockOf(i.id, gd) <= 0 : stockOf(i.id, gd) <= (+i.min || 0)))).sort((a, b) => a.name.localeCompare(b.name));
   const all = col('items');
   const value = all.reduce((a, i) => a + Math.max(0, stockOf(i.id, gd)) * (+i.purchase || 0), 0);
-  $('#if-kpis').innerHTML = kpiHTML([['Items', all.length], ['Stock value', inr0(value), 'at purchase price'], ['Low stock', all.filter(i => stockOf(i.id) <= (+i.min || 0) && stockOf(i.id) > 0).length, '', 'neg'], ['Out of stock', all.filter(i => stockOf(i.id) <= 0).length]]);
-  $('#if-tbl').innerHTML = list.length ? `<thead><tr><th>Item</th><th>Barcode</th><th class="num">Sale price</th><th class="num">Purchase</th><th class="num">GST</th>${!gd && gds.length > 1 ? gds.map(g => `<th class="num">${esc(g.name)}</th>`).join('') : ''}<th>Stock</th><th></th></tr></thead><tbody>` +
+  $('#if-kpis').innerHTML = kpiHTML([['Items', all.length], ...(can('cost') ? [['Stock value', inr0(value), 'at purchase price']] : []), ['Low stock', all.filter(i => stockOf(i.id) <= (+i.min || 0) && stockOf(i.id) > 0).length, '', 'neg'], ['Out of stock', all.filter(i => stockOf(i.id) <= 0).length]]);
+  $('#if-tbl').innerHTML = list.length ? `<thead><tr><th>Item</th><th>Barcode</th><th class="num">Sale price</th><th class="num cost">Purchase</th><th class="num">GST</th>${!gd && gds.length > 1 ? gds.map(g => `<th class="num">${esc(g.name)}</th>`).join('') : ''}<th>Stock</th><th></th></tr></thead><tbody>` +
     list.map(i => `<tr class="click" data-act="i-edit" data-id="${i.id}"><td><b>${esc(i.name)}</b><div class="muted small">${esc([i.category, i.brand, i.hsn ? 'HSN ' + i.hsn : '', i.warranty ? i.warranty + ' mo warranty' : ''].filter(Boolean).join(' · '))}</div></td>
-      <td class="mono small">${esc(i.code)}</td><td class="num"><b>${inr0(i.sale)}</b>${i.mrp > i.sale ? `<div class="muted small">MRP ${inr0(i.mrp)}</div>` : ''}</td><td class="num muted">${inr0(i.purchase)}</td><td class="num">${i.gst}%</td>
+      <td class="mono small">${esc(i.code)}</td><td class="num"><b>${inr0(i.sale)}</b>${i.mrp > i.sale ? `<div class="muted small">MRP ${inr0(i.mrp)}</div>` : ''}</td><td class="num muted cost">${inr0(i.purchase)}</td><td class="num">${i.gst}%</td>
       ${!gd && gds.length > 1 ? gds.map(g => `<td class="num">${qtyFmt(stockOf(i.id, g.id))}</td>`).join('') : ''}
       <td>${stockPill(i, gd)}</td><td style="white-space:nowrap"><button class="btn sm" data-act="i-label" data-id="${i.id}">Label</button></td></tr>`).join('') + '</tbody>'
     : emptyRow(all.length ? 'No items match' : 'No items yet', all.length ? 'Try another search.' : 'Add your first item, or import a CSV list.', 8);
 }
 function stockPill(i, gd) { const s = stockOf(i.id, gd); const u = esc(i.unit || 'pcs'); if (s <= 0) return `<span class="pill bad">${qtyFmt(s)} ${u}</span>`; if (s <= (+i.min || 0)) return `<span class="pill warn">${qtyFmt(s)} · low</span>`; return `<span class="pill ok">${qtyFmt(s)} ${u}</span>`; }
 function editItem(id, preset = {}) {
+  if (!can('items')) return denyToast(id ? 'edit items' : 'add items');
   const it = id ? get('items', id) : Object.assign({ name: '', code: '', category: 'Electronics', brand: '', hsn: '', unit: 'pcs', mrp: '', sale: '', purchase: '', gst: 18, min: 2, warranty: 0, opening: {} }, preset);
   const gds = godowns();
   const m = openModal(`${mHead(id ? 'Edit item' : 'Add item')}<form class="body" id="itf" novalidate>
@@ -5131,8 +5156,9 @@ const RF = { tab: 'summary', range: 'month' };
 const REPORT_TABS = [['summary', 'Sales & purchase'], ['gst', 'GST returns'], ['pl', 'Profit & loss'], ['stock', 'Stock summary'], ['outstanding', 'Outstanding'], ['daybook', 'Day book']];
 VIEWS.reports = tab => {
   if (tab) RF.tab = tab;
+  if (RF.tab === 'pl' && !can('cost')) RF.tab = 'summary';
   view().innerHTML = `<div class="view-head"><h1>Reports</h1><select id="rf-range" style="width:auto">${rangeOptions(RF.range)}</select><button class="btn" data-act="r-csv">Export CSV</button></div>
-    <div class="tabs" role="tablist">${REPORT_TABS.map(([k, l]) => `<button role="tab" aria-selected="${RF.tab === k}" data-act="r-tab" data-k="${k}">${l}</button>`).join('')}</div><div id="rf-body"></div>`;
+    <div class="tabs" role="tablist">${REPORT_TABS.filter(([k]) => k !== 'pl' || can('cost')).map(([k, l]) => `<button role="tab" aria-selected="${RF.tab === k}" data-act="r-tab" data-k="${k}">${l}</button>`).join('')}</div><div id="rf-body"></div>`;
   $('#rf-range').addEventListener('input', e => { RF.range = e.target.value; reportBody(); });
   reportBody();
 };
@@ -5193,9 +5219,9 @@ function reportBody() {
   if (RF.tab === 'stock') {
     const gds = godowns(); const items = col('items').sort((a, b) => a.name.localeCompare(b.name));
     const sold = {}; for (const v of live('sale', r)) for (const l of v.lines) if (l.itemId) sold[l.itemId] = (sold[l.itemId] || 0) + l.qty;
-    el.innerHTML = `<div class="card"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Item</th>${gds.map(g => `<th class="num">${esc(g.name)}</th>`).join('')}<th class="num">Total</th><th class="num">Value</th><th class="num">Sold in range</th></tr></thead><tbody>
-      ${items.map(i => `<tr><td>${esc(i.name)}</td>${gds.map(g => `<td class="num">${qtyFmt(stockOf(i.id, g.id))}</td>`).join('')}<td class="num"><b>${qtyFmt(stockOf(i.id))}</b></td><td class="num">${inr0(Math.max(0, stockOf(i.id)) * (+i.purchase || 0))}</td><td class="num">${qtyFmt(sold[i.id] || 0)}</td></tr>`).join('')}</tbody>
-      <tfoot><tr><td>Total</td>${gds.map(() => '<td></td>').join('')}<td></td><td class="num">${inr0(items.reduce((a, i) => a + Math.max(0, stockOf(i.id)) * (+i.purchase || 0), 0))}</td><td></td></tr></tfoot></table></div></div>`;
+    el.innerHTML = `<div class="card"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Item</th>${gds.map(g => `<th class="num">${esc(g.name)}</th>`).join('')}<th class="num">Total</th><th class="num cost">Value</th><th class="num">Sold in range</th></tr></thead><tbody>
+      ${items.map(i => `<tr><td>${esc(i.name)}</td>${gds.map(g => `<td class="num">${qtyFmt(stockOf(i.id, g.id))}</td>`).join('')}<td class="num"><b>${qtyFmt(stockOf(i.id))}</b></td><td class="num cost">${inr0(Math.max(0, stockOf(i.id)) * (+i.purchase || 0))}</td><td class="num">${qtyFmt(sold[i.id] || 0)}</td></tr>`).join('')}</tbody>
+      <tfoot><tr><td>Total</td>${gds.map(() => '<td></td>').join('')}<td></td><td class="num cost">${inr0(items.reduce((a, i) => a + Math.max(0, stockOf(i.id)) * (+i.purchase || 0), 0))}</td><td></td></tr></tfoot></table></div></div>`;
     REPORT_CSV = ['stock', [['item', 'code', ...gds.map(g => g.name), 'total', 'value', 'sold'], ...items.map(i => [i.name, i.code, ...gds.map(g => stockOf(i.id, g.id)), stockOf(i.id), r2(Math.max(0, stockOf(i.id)) * (+i.purchase || 0)), sold[i.id] || 0])]];
   }
   if (RF.tab === 'outstanding') {
@@ -5472,19 +5498,50 @@ const me = () => { const u = S.users[LS.get('user', '')]; return u && !u.deleted
 const isOwner = () => !users().length || me()?.role === 'owner';
 const needLogin = () => users().length > 0 && !me();
 
+/* ---- access: what each user may do. Owner can do everything; Manager and Staff start from a preset the owner can change per user ---- */
+const PERMS = [
+  ['Billing', [['counter', 'Counter billing'], ['sale', 'Sales invoices and sales returns'], ['quotation', 'Quotations'], ['discount', 'Change rate or give discount']]],
+  ['Purchase', [['purchase', 'Purchase bills and purchase returns']]],
+  ['Money', [['payin', 'Payments in from customers'], ['payout', 'Payments out and expenses'], ['journal', 'Journal entries'], ['cash', 'See cash and bank balances']]],
+  ['Stock and parties', [['items', 'Add or edit items, adjust and move stock, godowns'], ['labels', 'Print barcode labels'], ['parties', 'Add or edit parties']]],
+  ['Reports', [['reports', 'Dashboard and reports (sales, GST, outstanding)'], ['cost', 'See purchase price, stock value and profit']]],
+  ['Control', [['edit', 'Edit saved entries'], ['cancel', 'Cancel or restore entries'], ['delete', 'Delete entries for ever'], ['backdate', 'Make back-dated entries'], ['export', 'Export CSV and download backup']]]];
+const PERM_KEYS = PERMS.flatMap(([, l]) => l.map(([k]) => k));
+const ROLE_LABEL = { owner: 'Owner', manager: 'Manager', staff: 'Staff' };
+const ROLE_PRESET = {
+  manager: Object.fromEntries(PERM_KEYS.map(k => [k, k !== 'delete'])),
+  staff: Object.fromEntries(PERM_KEYS.map(k => [k, ['counter', 'sale', 'quotation', 'discount', 'payin', 'parties', 'labels', 'edit'].includes(k)]))
+};
+const permsOf = u => u.role === 'owner' ? Object.fromEntries(PERM_KEYS.map(k => [k, true])) : Object.assign({}, ROLE_PRESET[u.role] || ROLE_PRESET.staff, u.perms || {});
+const can = k => { if (!users().length) return true; const u = me(); return !!u && (u.role === 'owner' || !!permsOf(u)[k]); };
+const firmOK = fid => { if (!users().length) return true; const u = me(); return !!u && (u.role === 'owner' || !(u.firms || []).length || u.firms.includes(fid)); };
+const TYPE_PERM = { sale: 'sale', saleReturn: 'sale', quotation: 'quotation', purchase: 'purchase', purchaseReturn: 'purchase', receipt: 'payin', payment: 'payout', journal: 'journal', transfer: 'items', adjust: 'items' };
+const canType = t => can(TYPE_PERM[t] || 'reports');
+function routeOK(name, arg) {
+  if (name === 'home' || name === 'reports') return can('reports');
+  if (name === 'counter') return can('counter');
+  if (name === 'list') return canType(arg);
+  if (name === 'cashbook') return can('cash');
+  if (name === 'labels') return can('labels');
+  if (name === 'settings') return isOwner();
+  return true;
+}
+const firstRoute = () => can('reports') ? 'home' : can('counter') ? 'counter' : 'items';
+function denyToast(what) { toast(`${me()?.name || 'You'} can't ${what}. Ask the owner to allow it in Settings › Users.`, 'bad'); }
+
 function loginScreen() {
   document.documentElement.classList.add('locked');
   let pick = null;
   const paint = () => {
     $('#view').innerHTML = `<div class="card pad login" style="max-width:440px;margin:40px auto"><h1 style="margin-top:0">Who is billing?</h1>
-      <div class="login-users">${users().map(u => `<button class="btn ${pick === u.id ? 'primary' : ''}" data-u="${u.id}"><b>${esc(u.name)}</b><small>${u.role === 'owner' ? 'Owner' : 'Staff'}</small></button>`).join('')}</div>
+      <div class="login-users">${users().map(u => `<button class="btn ${pick === u.id ? 'primary' : ''}" data-u="${u.id}"><b>${esc(u.name)}</b><small>${ROLE_LABEL[u.role] || 'Staff'}</small></button>`).join('')}</div>
       ${pick ? `<form id="lg-f" class="stack" style="margin-top:14px"><label class="f"><span>PIN for ${esc(S.users[pick].name)}</span><input type="password" inputmode="numeric" id="lg-pin" autocomplete="off"></label><div class="neg small" id="lg-err"></div><button class="btn primary">Sign in</button></form>` : ''}</div>`;
     $$('[data-u]').forEach(b => b.onclick = () => { pick = b.dataset.u; paint(); setTimeout(() => $('#lg-pin')?.focus(), 30); });
     const f = $('#lg-f'); if (f) f.onsubmit = e => {
       e.preventDefault();
       if (S.users[pick].pin !== pinHash($('#lg-pin').value)) { $('#lg-err').textContent = 'Wrong PIN'; $('#lg-pin').select(); return; }
       LS.set('user', pick); document.documentElement.classList.remove('locked'); LOCK_OPEN = 0; DERIVED = null;
-      go(isOwner() ? 'home' : 'counter', null, { force: true }); toast('Signed in as ' + S.users[pick].name, 'ok');
+      go(firstRoute(), null, { force: true }); toast('Signed in as ' + S.users[pick].name, 'ok');
     };
   };
   paint();
@@ -5499,36 +5556,68 @@ ACT['u-switch'] = async () => {
   CURRENT_EDIT = null; LS.set('user', ''); LOCK_OPEN = 0; if (modalStack.length) closeModal(); resetCounter(); render();
 };
 
-/* ---- Settings › Users ---- */
+/* ---- Settings › Users: the user panel ---- */
+const accessCount = u => u.role === 'owner' ? 'Everything' : `${PERM_KEYS.filter(k => permsOf(u)[k]).length} of ${PERM_KEYS.length}`;
+const firmsLabel = u => u.role === 'owner' || !(u.firms || []).length ? 'All firms' : u.firms.map(id => S.firms[id]?.name).filter(Boolean).join(', ');
 function stUsers() {
   const list = users();
-  $('#st-body').innerHTML = `<div class="cols"><div class="card pad stack"><h2>Users</h2>
-      <p class="muted small" style="margin:0">Everyone signs in with their own PIN, and every bill records who made it. <b>Owner</b> can do everything. <b>Staff</b> can bill, take payments and manage stock, but can't open Settings, delete entries, or make back-dated entries without the owner's PIN. Users are shared by all firms and all synced devices.</p>
-      ${list.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Name</th><th>Role</th><th>Mobile</th><th></th></tr></thead><tbody>${list.map(u => `<tr><td><b>${esc(u.name)}</b>${u.id === me()?.id ? ' <span class="pill">you</span>' : ''}</td><td>${u.role === 'owner' ? '<span class="pill gold">Owner</span>' : 'Staff'}</td><td>${esc(u.phone || '')}</td><td><button class="btn sm" data-act="u-edit" data-id="${u.id}">Edit</button></td></tr>`).join('')}</tbody></table></div>`
-        : '<div class="note">No users yet. The app opens without a login and anyone can do anything. Add yourself first as the owner.</div>'}
-      <button class="btn primary" data-act="u-edit" style="justify-self:start">${list.length ? 'Add a user' : 'Add yourself as owner'}</button></div></div>`;
+  $('#st-body').innerHTML = `<div class="stack">
+    <div class="card pad stack"><div class="row"><h2 style="margin:0;margin-right:auto">Users</h2><button class="btn primary" data-act="u-edit">${list.length ? '+ Add user' : 'Add yourself as owner'}</button></div>
+      <p class="muted small" style="margin:0">Everyone signs in with their own PIN and every bill records who made it. <b>Owner</b> can do everything, including Settings. <b>Manager</b> and <b>Staff</b> start with a ready set of rights; tick or untick any right for each person. Users are shared by all firms and all synced devices.</p>
+      ${list.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Name</th><th>Role</th><th>Access</th><th>Firms</th><th>Mobile</th><th></th></tr></thead><tbody>${list.map(u => `<tr class="click" data-act="u-edit" data-id="${u.id}"><td><b>${esc(u.name)}</b>${u.id === me()?.id ? ' <span class="pill">you</span>' : ''}</td><td><span class="pill ${u.role === 'owner' ? 'gold' : u.role === 'manager' ? 'ok' : ''}">${ROLE_LABEL[u.role] || 'Staff'}</span></td><td>${accessCount(u)}</td><td>${esc(firmsLabel(u))}</td><td class="mono">${esc(u.phone || '')}</td><td><button class="btn sm" data-act="u-edit" data-id="${u.id}">Edit</button></td></tr>`).join('')}</tbody></table></div>`
+        : '<div class="note">No users yet. The app opens without a login and anyone can do anything. Add yourself first as the owner, then add your staff.</div>'}</div>
+    ${list.length ? `<div class="card"><div class="pad" style="padding-bottom:0"><h2>Who can do what</h2></div><div class="tbl-wrap"><table class="tbl acc-matrix"><thead><tr><th>Right</th>${list.map(u => `<th class="u">${esc(u.name)}</th>`).join('')}</tr></thead><tbody>
+      ${PERMS.flatMap(([, l]) => l).map(([k, l]) => `<tr><td>${l}</td>${list.map(u => permsOf(u)[k] ? '<td class="yes" data-l="' + esc(u.name) + '">✓</td>' : '<td class="no" data-l="' + esc(u.name) + '">–</td>').join('')}</tr>`).join('')}
+      <tr><td>Settings and users</td>${list.map(u => u.role === 'owner' ? `<td class="yes" data-l="${esc(u.name)}">✓</td>` : `<td class="no" data-l="${esc(u.name)}">–</td>`).join('')}</tr></tbody></table></div></div>` : ''}
+  </div>`;
 }
 function editUser(id) {
   const first = !users().length;
-  const u = id ? S.users[id] : { name: '', role: first ? 'owner' : 'staff', phone: '' };
-  const m = openModal(`${mHead(id ? 'Edit user' : first ? 'Add yourself as owner' : 'Add a user')}<form class="body stack">
-    <label class="f"><span>Name</span><input type="text" name="name" value="${esc(u.name)}" required autofocus></label>
-    <div class="grid2"><label class="f"><span>Role</span><select name="role" ${first ? 'disabled' : ''}><option value="owner" ${u.role === 'owner' ? 'selected' : ''}>Owner</option><option value="staff" ${u.role === 'staff' ? 'selected' : ''}>Staff</option></select></label>
+  const u = id ? S.users[id] : { name: '', role: first ? 'owner' : 'staff', phone: '', firms: [] };
+  let role = u.role || 'staff', perms = permsOf(u), fsel = new Set(u.firms || []);
+  const allFirms = firms();
+  const m = openModal(`${mHead(id ? 'Edit user · ' + esc(u.name) : first ? 'Add yourself as owner' : 'Add a user')}<form class="body stack" autocomplete="off">
+    <div class="grid2"><label class="f"><span>Name</span><input type="text" name="name" value="${esc(u.name)}" required autofocus></label>
       <label class="f"><span>Mobile</span><input type="tel" name="phone" value="${esc(u.phone || '')}"></label></div>
     <div class="grid2"><label class="f"><span>${id ? 'New PIN (leave empty to keep)' : 'PIN (4 to 8 digits)'}</span><input type="password" inputmode="numeric" name="pin" autocomplete="new-password"></label>
       <label class="f"><span>PIN again</span><input type="password" inputmode="numeric" name="pin2" autocomplete="new-password"></label></div>
+    <div class="f"><span class="muted small">Role</span><div class="role-pick" data-roles></div></div>
+    <div data-firms></div>
+    <div data-perms></div>
     <div class="neg small" data-err></div></form>
-    <footer>${id && id !== me()?.id ? '<button class="btn danger" data-del>Remove user</button>' : ''}<span class="spacer"></span><button class="btn" data-close>Cancel</button><button class="btn primary" data-ok>Save</button></footer>`);
+    <footer>${id && id !== me()?.id ? '<button class="btn danger" data-del>Remove user</button>' : ''}<span class="spacer"></span><button class="btn" data-close>Cancel</button><button class="btn primary" data-ok>Save</button></footer>`, { wide: true });
+  const paint = () => {
+    m.querySelector('[data-roles]').innerHTML = [['owner', 'Owner', 'Everything, including Settings and users'], ['manager', 'Manager', 'Everything except deleting; you can change it'], ['staff', 'Staff', 'Billing and payments in; you can change it']]
+      .map(([k, l, d]) => `<button type="button" data-role="${k}" aria-pressed="${role === k}" ${first && k !== 'owner' ? 'disabled' : ''}><b>${l}</b><small>${d}</small></button>`).join('');
+    m.querySelector('[data-firms]').innerHTML = role === 'owner' || allFirms.length < 2 ? '' : `<div class="f"><span class="muted small">Firms this user can open (none ticked = all firms)</span><div class="firm-chips">${allFirms.map(f => `<label class="chip"><input type="checkbox" data-firm="${f.id}" ${fsel.has(f.id) ? 'checked' : ''}> ${esc(f.name)}</label>`).join('')}</div></div>`;
+    m.querySelector('[data-perms]').innerHTML = role === 'owner' ? '<div class="note">The owner can do everything: all firms, all entries, reports, Settings and users.</div>' :
+      `<div class="row" style="margin-bottom:6px"><span class="muted small" style="margin-right:auto">What ${esc(m.querySelector('[name=name]').value.trim() || 'this user')} can do</span><button type="button" class="btn sm" data-all>Tick all</button><button type="button" class="btn sm" data-none>Clear</button><button type="button" class="btn sm" data-reset>Reset to ${ROLE_LABEL[role]}</button></div>
+      <div class="perm-grid">${PERMS.map(([g, l]) => `<div class="perm-grp"><h4>${g}</h4>${l.map(([k, t]) => `<label class="${perms[k] ? '' : 'off'}"><input type="checkbox" data-perm="${k}" ${perms[k] ? 'checked' : ''}> ${t}</label>`).join('')}</div>`).join('')}</div>`;
+  };
+  paint();
+  m.addEventListener('click', e => {
+    const r = e.target.closest('[data-role]'); if (r && !r.disabled) { role = r.dataset.role; if (role !== 'owner') perms = Object.assign({}, ROLE_PRESET[role]); paint(); return; }
+    if (e.target.closest('[data-all]')) { PERM_KEYS.forEach(k => perms[k] = true); paint(); }
+    if (e.target.closest('[data-none]')) { PERM_KEYS.forEach(k => perms[k] = false); paint(); }
+    if (e.target.closest('[data-reset]')) { perms = Object.assign({}, ROLE_PRESET[role]); paint(); }
+  });
+  m.addEventListener('change', e => {
+    const p = e.target.dataset.perm; if (p) { perms[p] = e.target.checked; e.target.parentElement.classList.toggle('off', !e.target.checked); }
+    const fi = e.target.dataset.firm; if (fi) e.target.checked ? fsel.add(fi) : fsel.delete(fi);
+  });
   const err = t => m.querySelector('[data-err]').textContent = t;
   const save = () => {
     const g = n => m.querySelector(`[name=${n}]`).value.trim();
-    const name = g('name'), role = first ? 'owner' : g('role'), pin = g('pin');
+    const name = g('name'), pin = g('pin');
+    if (first) role = 'owner';
     if (!name) return err('Enter a name');
     if (users().some(x => x.id !== id && x.name.toLowerCase() === name.toLowerCase())) return err('Another user has this name');
     if ((!id || pin) && !/^\d{4,8}$/.test(pin)) return err('PIN should be 4 to 8 digits');
     if (pin !== g('pin2')) return err('The two PINs are different');
     if (id && u.role === 'owner' && role !== 'owner' && users().filter(x => x.role === 'owner').length < 2) return err('Keep at least one owner');
+    if (id && id === me()?.id && u.role === 'owner' && role !== 'owner') return err('You can\'t take away your own owner role. Sign in as another owner to do it.');
     const doc = Object.assign(id ? u : {}, { name, role, phone: g('phone') });
+    if (role === 'owner') { delete doc.perms; doc.firms = []; } else { doc.perms = Object.fromEntries(PERM_KEYS.map(k => [k, !!perms[k]])); doc.firms = [...fsel].filter(x => S.firms[x]); }
     if (pin) doc.pin = pinHash(pin);
     put('users', doc);
     if (first) LS.set('user', doc.id);
@@ -5841,7 +5930,7 @@ onChange(() => { if ($('#view') && !$('#view').dataset.ready && firm()) { $('#vi
    Updates: every copy of the app checks one fixed address for a newer build.
    Online (PC / iPhone): reload picks it up. Android app: downloads it in the background.
    ========================================================= */
-const APP_BUILD = +'4' || 0, APP_VERSION = '2.7';
+const APP_BUILD = +'5' || 0, APP_VERSION = '2.8';
 const SITE_URL = 'https://patidar-app.github.io/Patidar-app/';
 const HOSTED = (location.protocol === 'https:' || location.hostname === 'localhost') && !IN_FRAME;
 const UPDATE_BASE = HOSTED ? new URL('./', location.href).href : SITE_URL;
@@ -5929,6 +6018,44 @@ window.addEventListener('resize', kbCheck);
 window.addEventListener('orientationchange', () => { fullH = 0; setTimeout(kbCheck, 300); });
 document.addEventListener('focusin', kbCheck);
 document.addEventListener('focusout', () => setTimeout(kbCheck, 60));
+
+/* =========================================================
+   Access on screen: hide what the signed-in user may not open or do.
+   The real checks sit in go/render, openEditor, editItem, editParty and the voucher buttons;
+   this only keeps menus and buttons tidy so nobody taps something that would be refused.
+   ========================================================= */
+const ACT_PERM = { 'q-item': 'items', 'i-new': 'items', 'i-import': 'items', 'p-new': 'parties', 'entry-party': 'parties', 'i-label': 'labels', 'p-receive': 'payin', 'p-pay': 'payout', 'p-edit': 'parties',
+  'v-export': 'export', 'p-export': 'export', 'i-export': 'export', 'r-csv': 'export', 'bk-save': 'export' };
+function noAccess() {
+  const to = firstRoute();
+  view().innerHTML = `<div class="card pad" style="max-width:520px;margin:30px auto"><h2>No access</h2>
+    <p style="margin:0 0 12px">${esc(me()?.name || 'This user')} can't open this page. The owner can change this in Settings › Users.</p>
+    <button class="btn primary" data-go="${to}">Go to ${to === 'home' ? 'dashboard' : to === 'counter' ? 'counter billing' : 'items'}</button></div>`;
+}
+function applyAccess() {
+  accessQueued = false;
+  const open = !users().length || needLogin();
+  const root = document.documentElement;
+  root.classList.toggle('no-cost', !open && !can('cost'));
+  $$('#rail [data-go], #tabbar [data-go], .view-head [data-go]').forEach(b => { b.hidden = !open && !routeOK(b.dataset.go, b.dataset.arg || null); });
+  $$('[data-act="v-new"][data-type]').forEach(b => { b.hidden = !open && !canType(b.dataset.type); });
+  $$('[data-act]').forEach(b => { const p = ACT_PERM[b.dataset.act]; if (p) b.hidden = !open && !can(p); });
+  $$('#tabbar [data-act="entry"]').forEach(b => { b.hidden = false; });
+  const ts = $('.top-stat'); if (ts) ts.hidden = !open && !can('reports');
+  // rail group titles with nothing left under them
+  $$('#rail .grp').forEach(g => {
+    let n = g.nextElementSibling, any = false;
+    for (; n && !n.classList.contains('grp'); n = n.nextElementSibling) if (!n.hidden && (!n.classList.contains('quick') || [...n.children].some(c => !c.hidden && !c.classList.contains('android-only')))) any = true;
+    g.hidden = !any;
+  });
+  // rate and discount are fixed for users without the discount right (sales side only)
+  const sell = ROUTE.name === 'counter' || (ROUTE.name === 'edit' && CURRENT_EDIT && ['sale', 'saleReturn', 'quotation'].includes(CURRENT_EDIT.v.type));
+  const lockRate = !open && sell && !can('discount');
+  $$('#view [data-f="rate"], #view [data-f="disc"], #bill-disc, #e-billdisc').forEach(i => { i.readOnly = lockRate; i.classList.toggle('ro', lockRate); });
+}
+let accessQueued = false;
+new MutationObserver(() => { if (!accessQueued) { accessQueued = true; requestAnimationFrame(applyAccess); } })
+  .observe(document.body, { childList: true, subtree: true });
 
 </script>
 
