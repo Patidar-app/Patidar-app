@@ -347,31 +347,76 @@ html.android kbd { display: none; }
 .user-pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 99px; padding: 3px 11px 3px 3px; font-size: 12.5px; font-weight: 600; border: 0; cursor: pointer; background: rgba(255,255,255,.14); color: var(--on-maroon); }
 .user-pill i { width: 22px; height: 22px; border-radius: 50%; background: var(--gold-soft); color: var(--gold-ink); display: grid; place-items: center; font-style: normal; font-size: 12px; }
 .locked .rail, .locked #firm-pick, .locked .top-stat, .locked #sample-flag { visibility: hidden; }
-/* login page */
-.login-page { min-height: 100%; display: grid; place-items: start center; padding: 4vh 0 24px; }
-.login-card { width: min(460px, 100%); background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--gold); border-radius: 16px; box-shadow: var(--shadow); padding: 22px 22px 16px; display: grid; gap: 14px; }
-.login-brand { display: flex; gap: 12px; align-items: center; }
-.login-brand img { width: 52px; height: 52px; border-radius: 50%; object-fit: cover; background: #fff; border: 1px solid var(--line); }
-.login-brand b { display: block; font: 700 18px/1.15 var(--f-brand); color: var(--maroon); letter-spacing: .02em; }
-.login-brand small { color: var(--muted); }
-.login-card h1 { margin: 2px 0 0; font-size: 21px; }
+/* login page: full screen, brand side + sign-in card, gentle motion */
+.login-page { position: fixed; inset: 0; z-index: 80; overflow-y: auto; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); align-items: center; gap: 4vw; padding: 32px max(24px, 5vw); background: radial-gradient(120% 90% at 0% 0%, #8c1d36 0%, #6e1428 45%, #3d0a17 100%); color: var(--on-maroon); isolation: isolate; }
+.lg-bg { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+.lg-bg i { position: absolute; border-radius: 50%; filter: blur(60px); opacity: .45; animation: lg-float 18s ease-in-out infinite alternate; }
+.lg-bg i:nth-child(1) { width: 46vmax; height: 46vmax; left: -12vmax; top: -14vmax; background: #c79a3a; opacity: .28; }
+.lg-bg i:nth-child(2) { width: 38vmax; height: 38vmax; right: -10vmax; bottom: -12vmax; background: #b83c58; animation-duration: 22s; animation-delay: -6s; }
+.lg-bg i:nth-child(3) { width: 22vmax; height: 22vmax; left: 38%; top: 55%; background: #e2bf62; opacity: .18; animation-duration: 26s; animation-delay: -12s; }
+.lg-grid { position: absolute; inset: 0; background-image: radial-gradient(rgba(255,247,234,.11) 1px, transparent 1.4px); background-size: 26px 26px; mask-image: linear-gradient(180deg, #000, transparent 85%); -webkit-mask-image: linear-gradient(180deg, #000, transparent 85%); }
+@keyframes lg-float { from { transform: translate(0, 0) scale(1); } to { transform: translate(6vmax, 4vmax) scale(1.12); } }
+.lg-hero { display: grid; justify-items: start; gap: 14px; max-width: 520px; justify-self: end; }
+.lg-logo { width: 104px; height: 104px; border-radius: 50%; padding: 4px; background: conic-gradient(from 0deg, #e2bf62, #fff2c9, #a87f22, #e2bf62); box-shadow: 0 10px 40px rgba(0,0,0,.35); animation: lg-glow 4s ease-in-out infinite; }
+.lg-logo img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; background: #fff; display: block; }
+@keyframes lg-glow { 50% { box-shadow: 0 10px 50px rgba(226,191,98,.45); } }
+.lg-hero h2 { margin: 6px 0 0; font: 700 clamp(26px, 2.6vw + 10px, 42px)/1.1 var(--f-brand); letter-spacing: .02em; text-wrap: balance; }
+.lg-tag { margin: 0; font-size: 13px; letter-spacing: .22em; text-transform: uppercase; opacity: .78; }
+.lg-clock { display: grid; gap: 2px; margin-top: 10px; padding-top: 14px; border-top: 1px solid rgba(255,247,234,.22); }
+.lg-clock b { font-size: clamp(30px, 2vw + 16px, 44px); font-weight: 600; letter-spacing: .02em; font-variant-numeric: tabular-nums; }
+.lg-clock span { opacity: .78; font-size: 14px; }
+.login-card { width: min(440px, 100%); justify-self: start; background: var(--surface); color: var(--ink); border-radius: 22px; box-shadow: 0 30px 80px rgba(20,4,10,.45), 0 0 0 1px rgba(255,255,255,.06); padding: 26px 24px 18px; display: grid; gap: 16px; position: relative; overflow: hidden; }
+.login-card::before { content: ""; position: absolute; inset: 0 0 auto; height: 4px; background: linear-gradient(90deg, #a87f22, #e2bf62, #a87f22); background-size: 200% 100%; animation: lg-sheen 3s linear infinite; }
+@keyframes lg-sheen { to { background-position: -200% 0; } }
+.lg-head small { color: var(--gold-ink); font-weight: 700; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; }
+.login-card h1 { margin: 2px 0 0; font-size: 22px; }
 .login-users { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
-.login-users .lu { display: grid; justify-items: center; gap: 2px; padding: 12px 6px 10px; border: 2px solid var(--line); border-radius: 12px; background: var(--surface); cursor: pointer; }
-.login-users .lu i { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-weight: 700; font-size: 18px; background: var(--sunken); color: var(--ink); margin-bottom: 2px; }
+.login-users .lu { display: grid; justify-items: center; gap: 2px; padding: 12px 6px 10px; border: 2px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--ink); cursor: pointer; transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease; }
+.login-users .lu:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,.12); }
+.login-users .lu i { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-weight: 700; font-size: 18px; background: var(--sunken); color: var(--ink); margin-bottom: 2px; transition: background .2s ease, color .2s ease; }
 .login-users .lu.on { border-color: var(--gold); background: var(--gold-soft); }
 .login-users .lu.on i { background: var(--maroon); color: var(--on-maroon); }
 .login-users .lu b { font-size: 14px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .login-users .lu small { color: var(--muted); font-size: 12px; }
-.login-pin { display: grid; gap: 8px; justify-items: center; }
+.login-pin { display: grid; gap: 8px; justify-items: center; animation: lg-up .35s ease both; }
 .login-pin #lg-pin { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
 .pin-dots { display: flex; gap: 12px; min-height: 18px; }
-.pin-dots i { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--muted); }
-.pin-dots i.on { background: var(--maroon); border-color: var(--maroon); }
+.pin-dots i { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--muted); transition: background .15s ease, border-color .15s ease; }
+.pin-dots i.on { background: var(--maroon); border-color: var(--maroon); animation: lg-pop .22s ease; }
+@keyframes lg-pop { 50% { transform: scale(1.35); } }
 .pin-pad { display: grid; grid-template-columns: repeat(3, 72px); gap: 8px; }
-.pin-pad button { height: 54px; border-radius: 12px; border: 1px solid var(--line); background: var(--sunken); font-size: 22px; font-weight: 600; cursor: pointer; }
-.pin-pad button:active { background: var(--gold-soft); }
-.login-pin .btn.big { width: 100%; max-width: 232px; }
-.login-foot { margin: 0; text-align: center; }
+.pin-pad button { height: 54px; border-radius: 14px; border: 1px solid var(--line); background: var(--sunken); color: var(--ink); font-size: 22px; font-weight: 600; cursor: pointer; transition: transform .08s ease, background .15s ease; }
+.pin-pad button:hover { background: var(--gold-soft); }
+.pin-pad button:active { transform: scale(.94); background: var(--gold-soft); }
+.login-pin .btn.big { width: 100%; max-width: 232px; min-height: 46px; border-radius: 12px; }
+.lg-hint { margin: 2px 0 0; text-align: center; }
+.login-foot { margin: 0; display: flex; gap: 6px; align-items: center; justify-content: center; text-align: center; }
+/* entrance */
+.login-page.enter .lg-hero > * { animation: lg-up .6s cubic-bezier(.2,.8,.2,1) both; }
+.login-page.enter .lg-hero > :nth-child(2) { animation-delay: .08s; } .login-page.enter .lg-hero > :nth-child(3) { animation-delay: .16s; } .login-page.enter .lg-hero > :nth-child(4) { animation-delay: .24s; }
+.login-page.enter .login-card { animation: lg-card .7s cubic-bezier(.2,.8,.2,1) .12s both; }
+.login-page.enter .login-users .lu { animation: lg-up .45s ease both; animation-delay: calc(.35s + var(--i, 0) * .06s); }
+@keyframes lg-up { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes lg-card { from { opacity: 0; transform: translateY(26px) scale(.97); } to { opacity: 1; transform: none; } }
+/* signed in: card lifts away, screen fades */
+.login-page.ok .login-card { animation: lg-away .55s cubic-bezier(.4,0,.2,1) forwards; }
+.login-page.ok .lg-hero { transition: opacity .5s ease; opacity: 0; }
+.login-page.ok { transition: opacity .35s ease .3s; opacity: 0; }
+.login-page.ok .pin-dots i { background: #1f8f4e; border-color: #1f8f4e; }
+@keyframes lg-away { to { opacity: 0; transform: translateY(-18px) scale(.96); } }
+@media (max-width: 860px) {
+  .login-page { grid-template-columns: minmax(0, 1fr); grid-auto-rows: max-content; align-items: start; align-content: start; justify-items: center; gap: 18px; padding: 22px 16px 28px; }
+  .lg-hero { justify-self: center; justify-items: center; text-align: center; gap: 8px; }
+  .lg-logo { width: 72px; height: 72px; }
+  .lg-clock { border-top: 0; padding-top: 0; margin-top: 0; }
+  .lg-clock b { font-size: 26px; }
+  .login-card { justify-self: center; padding: 20px 16px 14px; }
+}
+.locked .topbar { visibility: hidden; }
+.logout-btn { display: inline-flex; align-items: center; gap: 6px; border-radius: 99px; padding: 4px 12px 4px 9px; font-size: 12.5px; font-weight: 600; border: 1px solid rgba(255,255,255,.28); background: transparent; color: var(--on-maroon); cursor: pointer; }
+.logout-btn:hover { background: rgba(255,255,255,.14); }
+@media (max-width: 640px) { .logout-btn span { display: none; } .logout-btn { padding: 6px; } }
+.rail .rail-logout { color: #ffb4a8; }
 .shake { animation: shake .3s; }
 @keyframes shake { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
 .made-by { display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: center; }
@@ -565,6 +610,7 @@ input.ro { background: var(--sunken); color: var(--muted); }
     <div class="spacer"></div>
     <button class="sync" id="sync-pill" data-go="settings" data-arg="sync"><i></i><span>Sync off</span></button>
     <button class="user-pill" id="user-pill" data-act="u-switch" title="Switch user" hidden></button>
+    <button class="logout-btn" id="logout-btn" data-act="u-logout" title="Log out" aria-label="Log out" hidden><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Log out</span></button>
     <div class="top-stat"><span>Today's sales</span><strong id="tb-today">₹0</strong></div>
   </header>
 
@@ -609,6 +655,7 @@ input.ro { background: var(--sunken); color: var(--muted); }
     <label class="rail-firm"><span>Firm</span><select id="firm-pick2" aria-label="Firm"></select></label>
     <button data-go="settings" data-arg="sync">Sync <span class="muted small" id="rail-sync"></span></button>
     <button data-act="u-switch" id="rail-user" hidden>Switch user</button>
+    <button data-act="u-logout" id="rail-logout" class="rail-logout" hidden>Log out</button>
     <button data-act="bk-save">Download backup</button>
     <button data-act="dt-theme">Light / dark screen</button>
   </nav>
@@ -5627,41 +5674,61 @@ function routeOK(name, arg) {
 const firstRoute = () => can('reports') ? 'home' : can('counter') ? 'counter' : 'items';
 function denyToast(what) { toast(`${me()?.name || 'You'} can't ${what}. Ask the owner to allow it in Settings › Users.`, 'bad'); }
 
+let LOGIN_CLOCK = 0;
 function loginScreen() {
   document.documentElement.classList.add('locked');
   const list = users(); let pick = list.length === 1 ? list[0].id : LS.get('last-user', null); if (!S.users[pick] || S.users[pick].deleted) pick = null;
-  let pin = '';
+  let pin = '', first = true;
   const f = firm() || {};
+  const dateTxt = () => new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const timeTxt = () => new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+  const greet = () => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'; };
+  const dotsHtml = () => Array.from({ length: Math.max(4, pin.length) }, (_, i) => `<i class="${i < pin.length ? 'on' : ''}"></i>`).join('');
+  clearInterval(LOGIN_CLOCK);
+  LOGIN_CLOCK = setInterval(() => { const t = $('#lg-time'); if (!t) return clearInterval(LOGIN_CLOCK); t.textContent = timeTxt(); }, 15000);
   const paint = () => {
     const u = pick && S.users[pick];
-    $('#view').innerHTML = `<div class="login-page"><div class="login-card">
-      <div class="login-brand"><img src="${f.logo || LOGO_ICON}" alt=""><div><b>${esc(f.name || 'Patidar')}</b><small>${new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</small></div></div>
-      <h1>${u ? `Hello, ${esc(u.name)}` : 'Who is using the app?'}</h1>
-      <div class="login-users">${list.map(x => `<button class="lu ${pick === x.id ? 'on' : ''}" data-u="${x.id}" aria-pressed="${pick === x.id}"><i>${esc(x.name.slice(0, 1).toUpperCase())}</i><b>${esc(x.name)}</b><small>${ROLE_LABEL[x.role] || 'Staff'}</small></button>`).join('')}</div>
-      ${u ? `<form id="lg-f" class="login-pin">
-        <label class="muted small" for="lg-pin">Enter your PIN</label>
-        <input type="password" inputmode="numeric" id="lg-pin" autocomplete="off" maxlength="8" value="${pin}" aria-label="PIN for ${esc(u.name)}">
-        <div class="pin-dots" aria-hidden="true">${Array.from({ length: Math.max(4, pin.length) }, (_, i) => `<i class="${i < pin.length ? 'on' : ''}"></i>`).join('')}</div>
-        <div class="neg small" id="lg-err" role="alert"></div>
-        <div class="pin-pad">${['1', '2', '3', '4', '5', '6', '7', '8', '9', 'clear', '0', 'back'].map(k => `<button type="button" data-k="${k}" aria-label="${k}">${k === 'back' ? '⌫' : k === 'clear' ? 'C' : k}</button>`).join('')}</div>
-        <button class="btn primary big">Sign in</button></form>` : '<p class="muted" style="margin:6px 0 0">Tap your name to sign in.</p>'}
-      <p class="muted small login-foot">Every bill and entry you make is saved with your name, date and time.</p>
-    </div></div>`;
+    $('#view').innerHTML = `<div class="login-page ${first ? 'enter' : ''}" role="dialog" aria-label="Sign in">
+      <div class="lg-bg" aria-hidden="true"><i></i><i></i><i></i><span class="lg-grid"></span></div>
+      <section class="lg-hero">
+        <div class="lg-logo"><img src="${f.logo || LOGO_ICON}" alt=""></div>
+        <h2>${esc(f.name || 'Patidar Electronics & Furniture')}</h2>
+        ${f.tagline && !(f.name || '').toLowerCase().includes(f.tagline.toLowerCase()) ? `<p class="lg-tag">${esc(f.tagline)}</p>` : ''}
+        <div class="lg-clock"><b id="lg-time">${timeTxt()}</b><span>${dateTxt()}</span></div>
+      </section>
+      <div class="login-card">
+        <div class="lg-head"><small>${greet()}</small><h1>${u ? `Welcome back, ${esc(u.name)}` : 'Who is using the app?'}</h1></div>
+        <div class="login-users">${list.map((x, i) => `<button class="lu ${pick === x.id ? 'on' : ''}" style="--i:${i}" data-u="${x.id}" aria-pressed="${pick === x.id}"><i>${esc(x.name.slice(0, 1).toUpperCase())}</i><b>${esc(x.name)}</b><small>${ROLE_LABEL[x.role] || 'Staff'}</small></button>`).join('')}</div>
+        ${u ? `<form id="lg-f" class="login-pin">
+          <label class="muted small" for="lg-pin">Enter your PIN</label>
+          <input type="password" inputmode="numeric" id="lg-pin" autocomplete="off" maxlength="8" value="${pin}" aria-label="PIN for ${esc(u.name)}">
+          <div class="pin-dots" aria-hidden="true">${dotsHtml()}</div>
+          <div class="neg small" id="lg-err" role="alert"></div>
+          <div class="pin-pad">${['1', '2', '3', '4', '5', '6', '7', '8', '9', 'clear', '0', 'back'].map(k => `<button type="button" data-k="${k}" aria-label="${k}">${k === 'back' ? '⌫' : k === 'clear' ? 'C' : k}</button>`).join('')}</div>
+          <button class="btn primary big lg-go">Sign in</button></form>` : '<p class="muted lg-hint">Tap your name to sign in.</p>'}
+        <p class="muted small login-foot"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg> Every bill and entry is saved with your name, date and time.</p>
+      </div></div>`;
+    first = false;
     $$('[data-u]').forEach(b => b.onclick = () => { pick = b.dataset.u; pin = ''; paint(); setTimeout(() => !IS_ANDROID && $('#lg-pin')?.focus(), 30); });
     const fm = $('#lg-f'); if (!fm) return;
     const inp = $('#lg-pin');
-    const dots = () => { $('.pin-dots').innerHTML = Array.from({ length: Math.max(4, pin.length) }, (_, i) => `<i class="${i < pin.length ? 'on' : ''}"></i>`).join(''); };
-    inp.addEventListener('input', () => { pin = inp.value.replace(/\D/g, '').slice(0, 8); inp.value = pin; dots(); $('#lg-err').textContent = ''; });
+    const dots = () => { $('.pin-dots').innerHTML = dotsHtml(); };
+    inp.addEventListener('input', () => { pin = inp.value.replace(/\D/g, '').slice(0, 8); inp.value = pin; dots(); $('#lg-err').textContent = ''; if (pin.length >= 4 && S.users[pick].pin === pinHash(pin)) fm.requestSubmit(); });
     $$('.pin-pad [data-k]').forEach(b => b.onclick = () => {
       const k = b.dataset.k; if (k === 'back') pin = pin.slice(0, -1); else if (k === 'clear') pin = ''; else if (pin.length < 8) pin += k;
       inp.value = pin; dots(); $('#lg-err').textContent = '';
       if (pin.length >= 4 && S.users[pick].pin === pinHash(pin)) fm.requestSubmit();
     });
+    let done = false;
     fm.onsubmit = e => {
-      e.preventDefault();
-      if (S.users[pick].pin !== pinHash(inp.value)) { $('#lg-err').textContent = 'Wrong PIN'; pin = ''; inp.value = ''; dots(); fm.classList.remove('shake'); void fm.offsetWidth; fm.classList.add('shake'); return; }
-      LS.set('user', pick); LS.set('last-user', pick); document.documentElement.classList.remove('locked'); LOCK_OPEN = 0; DERIVED = null;
-      go(firstRoute(), null, { force: true }); toast(`Signed in as ${S.users[pick].name} · ${fmtTime(Date.now())}`, 'ok');
+      e.preventDefault(); if (done) return;
+      if (S.users[pick].pin !== pinHash(inp.value)) { $('#lg-err').textContent = 'Wrong PIN, try again'; pin = ''; inp.value = ''; dots(); fm.classList.remove('shake'); void fm.offsetWidth; fm.classList.add('shake'); return; }
+      done = true; const who = S.users[pick];
+      LS.set('user', pick); LS.set('last-user', pick);
+      const pg = $('.login-page'); pg.classList.add('ok');
+      const finish = () => { clearInterval(LOGIN_CLOCK); document.documentElement.classList.remove('locked'); LOCK_OPEN = 0; DERIVED = null;
+        go(firstRoute(), null, { force: true }); toast(`Signed in as ${who.name} · ${fmtTime(Date.now())}`, 'ok'); };
+      matchMedia('(prefers-reduced-motion: reduce)').matches ? finish() : setTimeout(finish, 650);
     };
   };
   paint();
@@ -5669,10 +5736,15 @@ function loginScreen() {
 function renderUserPill() {
   const p = $('#user-pill'); if (!p) return;
   p.hidden = !users().length || !me();
+  for (const id of ['#logout-btn', '#rail-logout']) { const b = $(id); if (b) b.hidden = p.hidden; }
   if (me()) p.innerHTML = `<i aria-hidden="true">${esc(me().name.slice(0, 1).toUpperCase())}</i><span>${esc(me().name)}</span>`;
 }
-ACT['u-switch'] = async () => {
-  if (CURRENT_EDIT && CURRENT_EDIT.dirty && !(await ask('Leave without saving?', 'Changes on this screen will be lost.', 'Leave', true))) return;
+ACT['u-logout'] = async () => {
+  if (!(await ask(`Log out ${me()?.name || ''}?`, 'The app will lock and show the sign-in screen. Bills already saved stay safe.', 'Log out'))) return;
+  CURRENT_EDIT = null; await ACT['u-switch'](true); toast('Logged out', 'ok');
+};
+ACT['u-switch'] = async (sure) => {
+  if (sure !== true && CURRENT_EDIT && CURRENT_EDIT.dirty && !(await ask('Leave without saving?', 'Changes on this screen will be lost.', 'Leave', true))) return;
   CURRENT_EDIT = null; LS.set('user', ''); LOCK_OPEN = 0; if (modalStack.length) closeModal(); resetCounter(); render();
 };
 
@@ -6050,7 +6122,7 @@ onChange(() => { if ($('#view') && !$('#view').dataset.ready && firm()) { $('#vi
    Updates: every copy of the app checks one fixed address for a newer build.
    Online (PC / iPhone): reload picks it up. Android app: downloads it in the background.
    ========================================================= */
-const APP_BUILD = +'8' || 0, APP_VERSION = '2.11';
+const APP_BUILD = +'9' || 0, APP_VERSION = '2.12';
 const SITE_URL = 'https://patidar-app.github.io/Patidar-app/';
 const HOSTED = (location.protocol === 'https:' || location.hostname === 'localhost') && !IN_FRAME;
 const UPDATE_BASE = HOSTED ? new URL('./', location.href).href : SITE_URL;
