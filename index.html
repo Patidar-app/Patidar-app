@@ -15,7 +15,7 @@
    one working view. Phones: rail becomes a scrolling tab strip, forms stack, invoice lines become cards. */
 :root {
   --bg: #f4f0f1; --surface: #ffffff; --sunken: #ece5e7; --ink: #26151b; --muted: #6d5a61; --line: #e0d4d8;
-  --maroon: #6e1428; --maroon-2: #8c1d36; --on-maroon: #fff7ea; --gold: #a87f22; --gold-soft: #f4e8c8; --gold-ink: #6b4f0c;
+  --maroon: #6e1428; --maroon-2: #8c1d36; --on-maroon: #fff7ea; --chrome: #6e1428; --gold: #a87f22; --gold-soft: #f4e8c8; --gold-ink: #6b4f0c;
   --ok: #1c7a4b; --ok-soft: #dcf0e5; --warn: #9a5b00; --warn-soft: #fbecd2; --bad: #b3261e; --bad-soft: #f9dedb;
   --paper: #ffffff; --paper-ink: #000000;
   --shadow: 0 1px 2px rgba(60, 20, 30, .06), 0 6px 20px rgba(60, 20, 30, .06);
@@ -27,14 +27,14 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #150b0f; --surface: #20131a; --sunken: #1a0f14; --ink: #f4e9ec; --muted: #b9a5ac; --line: #3a2630;
-    --maroon: #a3304b; --maroon-2: #b83c58; --on-maroon: #fff7ea; --gold: #e2bf62; --gold-soft: #3a2d12; --gold-ink: #f0d48a;
+    --maroon: #a3304b; --maroon-2: #b83c58; --on-maroon: #fff7ea; --chrome: #4e1324; --gold: #e2bf62; --gold-soft: #3a2d12; --gold-ink: #f0d48a;
     --ok: #5fd39a; --ok-soft: #123425; --warn: #f0b45a; --warn-soft: #3a2810; --bad: #ff8a80; --bad-soft: #3f1715;
     --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.3); color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #150b0f; --surface: #20131a; --sunken: #1a0f14; --ink: #f4e9ec; --muted: #b9a5ac; --line: #3a2630;
-  --maroon: #a3304b; --maroon-2: #b83c58; --on-maroon: #fff7ea; --gold: #e2bf62; --gold-soft: #3a2d12; --gold-ink: #f0d48a;
+  --maroon: #a3304b; --maroon-2: #b83c58; --on-maroon: #fff7ea; --chrome: #4e1324; --gold: #e2bf62; --gold-soft: #3a2d12; --gold-ink: #f0d48a;
   --ok: #5fd39a; --ok-soft: #123425; --warn: #f0b45a; --warn-soft: #3a2810; --bad: #ff8a80; --bad-soft: #3f1715;
   --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.3); color-scheme: dark;
 }
@@ -51,7 +51,7 @@ a.btn { text-decoration: none; }
 
 /* ---------- shell ---------- */
 .app { display: grid; grid-template-columns: 210px minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); height: 100%; }
-.topbar { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 8px 16px; background: var(--maroon); color: var(--on-maroon); border-bottom: 3px solid var(--gold); }
+.topbar { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 8px 16px; background: var(--chrome); color: var(--on-maroon); border-bottom: 3px solid var(--gold); }
 .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .brand img { width: 38px; height: 38px; display: block; border-radius: 50%; object-fit: cover; background: #fff; }
 .brand b { font-family: var(--f-brand); font-weight: 700; letter-spacing: .05em; font-size: 17px; display: block; line-height: 1.1; }
@@ -528,6 +528,27 @@ input.ro { background: var(--sunken); color: var(--muted); }
 .acc-matrix td.yes { color: var(--ok); font-weight: 700; text-align: center; } .acc-matrix td.no { color: var(--muted); text-align: center; }
 .acc-matrix th.u { text-align: center; }
 @media (max-width: 640px) { .role-pick { grid-template-columns: minmax(0, 1fr); } .perm-grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---------- side menu merged with the header: one maroon frame, gold line only along the work area ---------- */
+.rail { background: var(--chrome); color: var(--on-maroon); border-right: 0; scrollbar-color: rgba(255,255,255,.25) transparent; }
+.rail .grp { color: rgba(255,247,234,.58); }
+.rail button { color: var(--on-maroon); }
+.rail button:hover { background: rgba(255,255,255,.1); }
+.rail button[aria-current="page"] { background: var(--gold-soft); color: var(--gold-ink); }
+.rail button[aria-current="page"] kbd { color: var(--gold-ink); }
+.rail kbd { color: rgba(255,247,234,.55); }
+.rail .quick button { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.22); color: var(--on-maroon); }
+.rail .quick button:hover { background: rgba(255,255,255,.16); border-color: var(--gold); }
+.rail-firm { color: rgba(255,247,234,.7); }
+.rail-firm select { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.3); color: var(--on-maroon); }
+.rail-firm select option { color: #26151b; background: #fff; }
+@media (min-width: 1101px) {
+  .topbar { border-bottom: 0; padding-bottom: 11px; }
+  .app { background: var(--chrome); }
+  main { background: var(--bg); border-top: 3px solid var(--gold); border-top-left-radius: 14px; border-left: 3px solid var(--gold); }
+  html.rail-closed main { border-left: 0; border-top-left-radius: 0; }
+  .rail { padding-top: 4px; }
+}
 
 </style>
 </head>
@@ -6029,7 +6050,7 @@ onChange(() => { if ($('#view') && !$('#view').dataset.ready && firm()) { $('#vi
    Updates: every copy of the app checks one fixed address for a newer build.
    Online (PC / iPhone): reload picks it up. Android app: downloads it in the background.
    ========================================================= */
-const APP_BUILD = +'7' || 0, APP_VERSION = '2.10';
+const APP_BUILD = +'8' || 0, APP_VERSION = '2.11';
 const SITE_URL = 'https://patidar-app.github.io/Patidar-app/';
 const HOSTED = (location.protocol === 'https:' || location.hostname === 'localhost') && !IN_FRAME;
 const UPDATE_BASE = HOSTED ? new URL('./', location.href).href : SITE_URL;
