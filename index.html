@@ -456,6 +456,34 @@ input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer
   .lines .it-sub input { width: 100% !important; flex: 1 1 100%; }
 }
 
+/* bottom shortcut bar: phones and tablets only (PC keeps the left rail) */
+.tabbar { display: none; }
+.entry-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.entry-grid .btn { padding: 12px 10px; white-space: normal; text-align: center; }
+@media (max-width: 1100px) {
+  .tabbar { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); position: fixed; left: 0; right: 0; bottom: 0; z-index: 35;
+    background: var(--surface); border-top: 1px solid var(--line); box-shadow: 0 -4px 18px rgba(60, 20, 30, .08); padding: 4px 4px calc(4px + env(safe-area-inset-bottom, 0px)); }
+  .tabbar button { display: grid; justify-items: center; align-content: center; gap: 1px; border: 0; background: none; color: var(--muted); cursor: pointer; padding: 5px 2px; border-radius: var(--r); font-size: 11.5px; font-weight: 600; min-height: 52px; }
+  .tabbar button[aria-current="page"] { color: var(--maroon); }
+  :root[data-theme="dark"] .tabbar button[aria-current="page"] { color: var(--gold); }
+  .tabbar button:active { background: var(--sunken); }
+  .tabbar .tab-main b { display: grid; place-items: center; width: 44px; height: 44px; margin-top: -20px; border-radius: 50%; background: var(--maroon); color: var(--on-maroon); box-shadow: 0 4px 12px rgba(110, 20, 40, .35); border: 3px solid var(--surface); }
+  .tabbar .tab-main { color: var(--ink); }
+  main { padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
+  .toasts { bottom: calc(78px + env(safe-area-inset-bottom, 0px)); }
+  .upd-banner { bottom: calc(78px + env(safe-area-inset-bottom, 0px)); }
+  html.typing .tabbar, .locked .tabbar { display: none; }
+  html.typing main { padding-bottom: 16px; }
+  html.typing .toasts, html.typing .upd-banner { bottom: 16px; }
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tabbar button[aria-current="page"] { color: var(--gold); } }
+@media (max-width: 640px) {
+  .sheet-wrap { align-items: flex-end; padding: 0; }
+  .sheet-wrap .modal { width: 100%; border-radius: 16px 16px 0 0; padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .entry-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media print { .tabbar { display: none !important; } }
+
 </style>
 </head>
 <body>
@@ -520,6 +548,13 @@ input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer
 
   <main id="main"><div id="view"></div></main>
 </div>
+<nav class="tabbar" id="tabbar" aria-label="Shortcuts">
+  <button data-go="home" data-tab="home"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M3 11l9-7 9 7v8.5a1.5 1.5 0 0 1-1.5 1.5H15v-6H9v6H4.5A1.5 1.5 0 0 1 3 19.5z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Home</span></button>
+  <button data-go="counter" data-tab="counter"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9.5 8h5M9.5 12h5M9.5 16h3" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Bill</span></button>
+  <button data-act="entry" class="tab-main" aria-label="New entry"><b><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></b><span>Entry</span></button>
+  <button data-go="reports" data-tab="reports"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M5 20v-8M12 20V5M19 20v-5M3 20h18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Report</span></button>
+  <button data-act="menu" data-tab="more"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg><span>More</span></button>
+</nav>
 <div id="modal-root"></div>
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <div id="print-root"></div>
@@ -3790,6 +3825,7 @@ function go(name, arg = null, opts = {}) {
   if (name !== 'edit') CURRENT_EDIT = null;
   ROUTE = { name, arg };
   $$('#rail [data-go]').forEach(b => { const on = b.dataset.go === name && (b.dataset.arg || null) === (name === 'list' ? arg : (b.dataset.arg || null)); if (on || (name === 'edit' && b.dataset.go === 'list' && b.dataset.arg === arg?.type)) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
+  $$('#tabbar [data-tab]').forEach(b => b.dataset.tab === name ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current'));
   if (name !== 'edit') LS.set('route', { name, arg });
   render();
   $('#main').scrollTop = 0;
@@ -5805,7 +5841,7 @@ onChange(() => { if ($('#view') && !$('#view').dataset.ready && firm()) { $('#vi
    Updates: every copy of the app checks one fixed address for a newer build.
    Online (PC / iPhone): reload picks it up. Android app: downloads it in the background.
    ========================================================= */
-const APP_BUILD = +'3' || 0, APP_VERSION = '2.6';
+const APP_BUILD = +'4' || 0, APP_VERSION = '2.7';
 const SITE_URL = 'https://patidar-app.github.io/Patidar-app/';
 const HOSTED = (location.protocol === 'https:' || location.hostname === 'localhost') && !IN_FRAME;
 const UPDATE_BASE = HOSTED ? new URL('./', location.href).href : SITE_URL;
@@ -5859,6 +5895,40 @@ let tagQueued = false;
 function tagTables() { tagQueued = false; document.querySelectorAll('table.tbl').forEach(tagTable); }
 new MutationObserver(() => { if (!tagQueued) { tagQueued = true; requestAnimationFrame(tagTables); } })
   .observe(document.body, { childList: true, subtree: true });
+
+/* =========================================================
+   Bottom shortcut bar (phones and tablets): Home, Bill, + Entry, Report, More.
+   Entry opens a sheet with every kind of new entry. The bar hides while typing so the keyboard has room.
+   ========================================================= */
+const ENTRY_KINDS = [
+  ['sale', 'Sales invoice'], ['purchase', 'Purchase bill'], ['quotation', 'Quotation'],
+  ['receipt', 'Payment in'], ['payment', 'Payment out'], ['saleReturn', 'Sales return'],
+  ['purchaseReturn', 'Purchase return'], ['journal', 'Journal'], ['adjust', 'Stock adjust']];
+ACT.entry = () => {
+  if (needLogin()) return;
+  const m = openModal(`${mHead('New entry')}<div class="body"><div class="entry-grid">
+    <button class="btn primary" data-close data-go="counter">Counter bill</button>
+    ${ENTRY_KINDS.filter(([t]) => VT[t]).map(([t, l]) => `<button class="btn" data-close data-act="v-new" data-type="${t}">${l}</button>`).join('')}
+    <button class="btn" data-close data-act="q-item">Add item</button>
+    <button class="btn" data-close data-act="entry-party">Add party</button>
+    ${IS_ANDROID ? '<button class="btn" data-close data-act="cam">Camera scan</button>' : ''}
+  </div></div>`);
+  m.classList.add('sheet-wrap');
+};
+ACT['entry-party'] = () => { go('parties'); setTimeout(() => editParty(null), 0); };
+const TYPING_SEL = 'input:not([type=checkbox]):not([type=radio]):not([type=color]):not([type=file]), textarea';
+// Hide the bar only when the on-screen keyboard is really up: an input has focus and the visible height dropped.
+let fullH = 0;
+function kbCheck() {
+  const h = (window.visualViewport || window).height || window.innerHeight; fullH = Math.max(fullH, h);
+  const a = document.activeElement, typing = !!a && a.matches(TYPING_SEL) && h < fullH - 140;
+  document.documentElement.classList.toggle('typing', typing);
+}
+(window.visualViewport || window).addEventListener('resize', kbCheck);
+window.addEventListener('resize', kbCheck);
+window.addEventListener('orientationchange', () => { fullH = 0; setTimeout(kbCheck, 300); });
+document.addEventListener('focusin', kbCheck);
+document.addEventListener('focusout', () => setTimeout(kbCheck, 60));
 
 </script>
 
