@@ -56,7 +56,7 @@ a.btn { text-decoration: none; }
 .brand img { width: 38px; height: 38px; display: block; border-radius: 50%; object-fit: cover; background: #fff; }
 .brand b { font-family: var(--f-brand); font-weight: 700; letter-spacing: .05em; font-size: 17px; display: block; line-height: 1.1; }
 .brand small { display: block; font-size: 10.5px; letter-spacing: .2em; text-transform: uppercase; opacity: .85; }
-.firm-pick { background: rgba(255,255,255,.12); color: var(--on-maroon); border: 1px solid rgba(255,255,255,.3); border-radius: var(--r); padding: 4px 8px; max-width: 220px; }
+.firm-pick { background: rgba(255,255,255,.12); color: var(--on-maroon); border: 1px solid rgba(255,255,255,.3); border-radius: var(--r); padding: 4px 8px; max-width: 320px; }
 .firm-pick option { color: #26151b; background: #fff; }
 .topbar .spacer { flex: 1; }
 .top-stat { font-size: 12.5px; opacity: .92; text-align: right; line-height: 1.2; }
@@ -129,7 +129,7 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 .empty { text-align: center; padding: 34px 16px; color: var(--muted); }
 .empty b { display: block; color: var(--ink); font-size: 16px; margin-bottom: 4px; }
 
-.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 14px; }
+.kpis { display: grid; grid-template-columns: repeat(var(--k, 4), minmax(0, 1fr)); gap: 12px; margin-bottom: 14px; }
 .kpi { padding: 12px 14px; }
 .kpi small { display: block; font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
 .kpi strong { display: block; font-size: 23px; font-variant-numeric: tabular-nums; margin-top: 2px; }
@@ -316,7 +316,7 @@ input.in-num { text-align: right; padding: 4px 6px; }
 html.android kbd { display: none; }
 
 /* ---------- responsive ---------- */
-@media (max-width: 1100px) { .bill, .ved { grid-template-columns: minmax(0, 1fr) 310px; } .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ved-head { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 1100px) { .bill, .ved { grid-template-columns: minmax(0, 1fr) 310px; } .kpis { grid-template-columns: repeat(min(var(--k, 4), 2), minmax(0, 1fr)); } .ved-head { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 900px) {
   .bill, .ved, .cols { grid-template-columns: minmax(0, 1fr); }
   .side { position: static; }
@@ -327,13 +327,6 @@ html.android kbd { display: none; }
   .brand b { font-size: 14px; } .brand small { display: none; }
   .firm-pick { max-width: 150px; }
   main { padding: 12px; }
-  /* invoice lines become cards */
-  .lines table, .lines tbody, .lines tr, .lines td { display: block; width: 100%; }
-  .lines thead { display: none; }
-  .lines tr { border-bottom: 1px solid var(--line); padding: 8px 4px; position: relative; }
-  .lines td { border: 0; padding: 3px 0; }
-  .lines td[data-l]::before { content: attr(data-l); display: inline-block; width: 70px; font-size: 12px; color: var(--muted); }
-  .lines td.l-x { position: absolute; right: 0; top: 4px; width: auto; }
   .ved-head .wide { grid-column: 1 / -1; }
 }
 
@@ -384,6 +377,84 @@ footer .spacer { flex: 1; }
 @media (max-width: 640px) { .topbar .firm-pick { display: none; } }
 .locked .menu-btn { visibility: hidden; }
 .upd-banner { position: fixed; z-index: 60; left: 50%; bottom: 16px; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; max-width: calc(100vw - 32px); background: var(--surface); color: var(--ink); border: 1px solid var(--gold); border-radius: 12px; padding: 8px 8px 8px 14px; box-shadow: 0 6px 24px rgba(0,0,0,.25); font-size: 14px; }
+
+/* ---------- alignment polish: every number lines up ---------- */
+body { font-variant-numeric: tabular-nums; }
+input[type=number] { text-align: right; -moz-appearance: textfield; appearance: textfield; }
+input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.qty input { text-align: center; }
+.tbl td.num, .tbl th.num, .tbl td.nw, .tbl td.mono { white-space: nowrap; }
+.tbl td { line-height: 1.35; }
+.tbl tbody tr:last-child td { border-bottom: 0; }
+.kpi strong { font-size: clamp(19px, 1.2vw + 8px, 23px); white-space: nowrap; }
+#pay-modes { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+#pay-modes .chip { justify-content: center; padding: 6px 4px; }
+.rail .quick button:last-child:nth-child(odd) { grid-column: 1 / -1; }
+.sum-row span:last-child, .sum-total strong { text-align: right; }
+.view-head .btn { min-height: 38px; }
+.it-sub .mono { letter-spacing: .02em; }
+
+@media (max-width: 640px) {
+  .kpis { gap: 8px; }
+  .kpi { padding: 10px 12px; }
+  .view-head h1 { font-size: 19px; width: 100%; }
+  .view-head { gap: 6px; }
+  .tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tabs button { white-space: nowrap; flex: none; }
+  #pay-modes .chip { font-size: 13.5px; }
+
+  /* data tables become cards: name on top, text on the left, numbers on the right */
+  .tbl.cardify, .tbl.cardify tbody, .tbl.cardify tfoot { display: block; }
+  .tbl.cardify thead { display: none; }
+  .tbl.cardify tr { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-auto-flow: row dense; gap: 6px 14px; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+  .tbl.cardify tbody tr:last-child { border-bottom: 0; }
+  .tbl.cardify tfoot tr { border-top: 2px solid var(--line); border-bottom: 0; }
+  .tbl.cardify td { display: block; border: 0; padding: 0; min-width: 0 !important; grid-column: 1; text-align: left; }
+  .tbl.cardify td.num { grid-column: 2; text-align: right; }
+  .tbl.cardify td[data-l]::before { content: attr(data-l); display: block; font-size: 10.5px; line-height: 1.5; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  .tbl.cardify td:first-child { grid-column: 1 / -1; text-align: left; font-weight: 600; }
+  .tbl.cardify td:first-child::before { display: none; }
+  .tbl.cardify td.span { grid-column: 1 / -1; }
+  .tbl.cardify td.blank { display: none; }
+  .tbl.cardify td.act { grid-column: 1 / -1; justify-self: end; }
+  .tbl.cardify.numeric tr { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .tbl.cardify.numeric td.num { grid-column: auto; }
+  .tbl.cardify.numeric td:first-child { grid-column: 1 / -1; }
+  .tbl.cardify td .btn { white-space: nowrap; }
+  .tbl.cardify.few tr { display: flex; align-items: baseline; gap: 12px; }
+  .tbl.cardify.few td:first-child { flex: 1 1 0; font-weight: 500; }
+  .tbl.cardify.few td { flex: none; }
+
+  /* counter bill lines: name, then qty / rate / discount / amount in one row */
+  #cart-tbl, #cart-tbl tbody { display: block; }
+  #cart-tbl thead { display: none; }
+  #cart-tbl tr[data-item] { display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr) auto; grid-template-areas: "it it it x" "q r d a"; gap: 8px 8px; padding: 10px 12px; border-bottom: 1px solid var(--line); align-items: end; }
+  #cart-tbl tr[data-item] td { display: block; border: 0; padding: 0; min-width: 0 !important; }
+  #cart-tbl td[data-l]::before { content: attr(data-l); display: block; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; margin-bottom: 2px; text-align: left; }
+  #cart-tbl .c-no { display: none !important; }
+  #cart-tbl .c-it { grid-area: it; } #cart-tbl .c-q { grid-area: q; } #cart-tbl .c-r { grid-area: r; } #cart-tbl .c-d { grid-area: d; }
+  #cart-tbl .c-a { grid-area: a; text-align: right; min-width: 72px !important; padding-bottom: 6px !important; }
+  #cart-tbl .c-a::before { text-align: right !important; }
+  #cart-tbl .c-x { grid-area: x; align-self: start; }
+  #cart-tbl .c-r input, #cart-tbl .c-d input { width: 100% !important; height: 32px; }
+  #cart-tbl .it-sub input { width: 100%; }
+
+  /* invoice editor lines (also journal and stock moves): labelled fields in a three-column grid */
+  .lines table, .lines tbody { display: block; width: 100%; }
+  .lines thead { display: none; }
+  .lines tr { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 10px; padding: 12px; border-bottom: 1px solid var(--line); position: relative; align-items: end; }
+  .lines td { display: block; border: 0; padding: 0 !important; min-width: 0 !important; text-align: left; }
+  .lines td:first-child { grid-column: 1 / -1; padding-right: 34px !important; }
+  .lines td[colspan] { grid-column: 1 / -1; padding-right: 0 !important; }
+  .lines td[data-l]::before { content: attr(data-l); display: block; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; margin-bottom: 2px; }
+  .lines td input, .lines td select { width: 100% !important; }
+  .lines td[data-l="Qty"] { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 4px; }
+  .lines td[data-l="Qty"]::before { grid-column: 1 / -1; }
+  .lines td[data-l="Amount"] { text-align: right; font-size: 16px; padding-bottom: 6px !important; }
+  .lines td.l-x, .lines td:last-child:not([data-l]):not(:first-child) { position: absolute; right: 8px; top: 10px; }
+  .lines .it-sub input { width: 100% !important; flex: 1 1 100%; }
+}
 
 </style>
 </head>
@@ -3960,14 +4031,14 @@ function counterRefresh() {
   const c = calcVoucher(counterVoucher());
   tb.innerHTML = !BILL.lines.length ? emptyRow('Bill is empty', `Scan a barcode or type an item name above. Type <span class="mono">3*code</span> to add 3 at once.`) :
     `<thead><tr><th>#</th><th>Item</th><th>Qty</th><th class="num">Rate</th><th class="num">Disc ₹</th><th class="num">Amount</th><th></th></tr></thead><tbody>` +
-    c.lines.map((l, i) => `<tr data-item="${l.itemId || ''}"><td class="muted num">${i + 1}</td>
-      <td style="min-width:190px"><div class="it-name">${esc(l.name)}</div><div class="it-sub"><span class="mono">${esc(l.code || '')}</span>${l.mrp > l.rate ? `<span>MRP <s>${inr0(l.mrp)}</s></span>` : ''}<span>GST ${l.gst}%</span>
+    c.lines.map((l, i) => `<tr data-item="${l.itemId || ''}"><td class="muted num c-no">${i + 1}</td>
+      <td class="c-it" style="min-width:190px"><div class="it-name">${esc(l.name)}</div><div class="it-sub"><span class="mono">${esc(l.code || '')}</span>${l.mrp > l.rate ? `<span>MRP <s>${inr0(l.mrp)}</s></span>` : ''}<span>GST ${l.gst}%</span>
         ${l.category === 'Electronics' || l.serial || l.warranty ? `<input type="text" data-f="serial" data-i="${i}" value="${esc(l.serial)}" placeholder="Serial / IMEI no." aria-label="Serial number">` : ''}
         ${l.warranty ? `<span class="pill gold">${l.warranty} mo warranty</span>` : ''}</div></td>
-      <td><span class="qty"><button data-act="c-qty" data-i="${i}" data-d="-1" aria-label="Less">−</button><input type="number" data-f="qty" data-i="${i}" value="${l.qty}" min="1" aria-label="Quantity"><button data-act="c-qty" data-i="${i}" data-d="1" aria-label="More">+</button></span></td>
-      <td class="num"><input class="in-num" style="width:92px" type="number" data-f="rate" data-i="${i}" value="${l.rate}" aria-label="Rate"></td>
-      <td class="num"><input class="in-num" style="width:80px" type="number" data-f="disc" data-i="${i}" value="${l.discAmt ? r2(l.discAmt) : ''}" placeholder="0" aria-label="Discount"></td>
-      <td class="num"><b>${num(l.net)}</b></td><td><button class="x" data-act="c-rm" data-i="${i}" aria-label="Remove">×</button></td></tr>`).join('') + '</tbody>';
+      <td class="c-q" data-l="Qty"><span class="qty"><button data-act="c-qty" data-i="${i}" data-d="-1" aria-label="Less">−</button><input type="number" data-f="qty" data-i="${i}" value="${l.qty}" min="1" aria-label="Quantity"><button data-act="c-qty" data-i="${i}" data-d="1" aria-label="More">+</button></span></td>
+      <td class="num c-r" data-l="Rate"><input class="in-num" style="width:92px" type="number" data-f="rate" data-i="${i}" value="${l.rate}" aria-label="Rate"></td>
+      <td class="num c-d" data-l="Disc ₹"><input class="in-num" style="width:80px" type="number" data-f="disc" data-i="${i}" value="${l.discAmt ? r2(l.discAmt) : ''}" placeholder="0" aria-label="Discount"></td>
+      <td class="num c-a" data-l="Amount"><b>${num(l.net)}</b></td><td class="c-x"><button class="x" data-act="c-rm" data-i="${i}" aria-label="Remove">×</button></td></tr>`).join('') + '</tbody>';
   counterTotals(c);
   $('#held').innerHTML = (LS.get('held-' + S.firmId, [])).map((h, i) => `<button class="chip" data-act="c-resume" data-i="${i}">${esc(h.label)} · ${inr0(h.total)}</button>`).join('');
 }
@@ -4107,7 +4178,7 @@ function listBody(type) {
   const k = [[t.plural, inr0(total), `${ok.length} entr${ok.length === 1 ? 'y' : 'ies'}`]];
   if (t.trade && t.party) { const due = ok.reduce((a, v) => a + Math.max(0, voucherDue(v)), 0); k.push([type.startsWith('sale') ? 'Received' : 'Paid', inr0(ok.reduce((a, v) => a + paidTotal(v), 0))], ['Unpaid', inr0(due), '', due > 0 ? 'neg' : ''], ['GST', inr0(ok.reduce((a, v) => a + (+v.tax || 0), 0))]); }
   $('#lf-kpis').innerHTML = kpiHTML(k);
-  $('#lf-kpis').style.gridTemplateColumns = `repeat(${Math.min(4, k.length)}, minmax(0, 1fr))`;
+  $('#lf-kpis').style.setProperty('--k', Math.min(4, k.length));
   const cols = t.trade ? 6 : 5;
   $('#lf-tbl').innerHTML = rows.length ? `<thead><tr><th>Number</th><th>Date</th><th>${type === 'transfer' ? 'From → to' : type === 'adjust' ? 'Godown' : type === 'journal' ? 'Narration' : 'Party'}</th>${t.trade ? '<th class="num">Items</th>' : '<th>Mode</th>'}<th class="num">Amount</th>${t.trade ? '<th>Status</th>' : ''}</tr></thead><tbody>` +
     rows.map(v => `<tr class="click ${v.status === 'cancelled' ? 'void' : ''}" data-act="v-show" data-id="${v.id}"><td class="mono"><b>${esc(v.no)}</b>${v.billNo ? `<div class="muted small">Bill ${esc(v.billNo)}</div>` : ''}</td><td>${fmtDate(v.date)}</td>
@@ -4462,7 +4533,7 @@ VIEWS.parties = () => {
     <div class="grid3" style="margin-bottom:12px"><input type="search" id="pf-q" placeholder="Name, mobile, GSTIN" value="${esc(PF.q)}">
       <select id="pf-kind"><option value="">Customers and suppliers</option><option value="customer">Customers</option><option value="supplier">Suppliers</option></select>
       <select id="pf-due"><option value="">Any balance</option><option value="rec">To receive</option><option value="pay">To pay</option></select></div>
-    <div class="kpis" id="pf-kpis" style="grid-template-columns:repeat(3,minmax(0,1fr))"></div>
+    <div class="kpis" id="pf-kpis" style="--k:3"></div>
     <div class="card"><div class="tbl-wrap"><table class="tbl" id="pf-tbl"></table></div></div>`;
   $('#pf-kind').value = PF.kind; $('#pf-due').value = PF.due;
   const upd = () => { PF.q = $('#pf-q').value; PF.kind = $('#pf-kind').value; PF.due = $('#pf-due').value; partiesBody(); };
@@ -4531,7 +4602,7 @@ function showLedger(id) {
   const phone = (p.phone || '').replace(/\D/g, '');
   const text = `*${firm().name}*\nStatement for ${p.name} (${fmtDate(today())})\n\n` + rows.slice(-15).map(r => `${r.date ? fmtDate(r.date) : ''} ${r.text}: ${r.dr ? '+' + num(r.dr) : '−' + num(r.cr)}`).join('\n') + `\n\n*${b > 0 ? 'Amount due' : b < 0 ? 'Advance with us' : 'Balance'}: ₹${num(Math.abs(b))}*` + (firm().upi && b > 0 ? `\nPay by UPI: ${firm().upi}` : '');
   const m = openModal(`${mHead(esc(p.name) + ` <span class="muted small">${esc(p.phone || '')}</span>`)}<div class="body">
-    <div class="kpis" style="grid-template-columns:repeat(2,minmax(0,1fr));margin:0">${kpiHTML([['Balance', inr0(Math.abs(b)), b > 0 ? 'to receive' : b < 0 ? 'to pay' : 'settled', b > 0 ? 'neg' : ''], ['Entries', rows.length - 1]])}</div>
+    <div class="kpis" style="--k:2;margin:0">${kpiHTML([['Balance', inr0(Math.abs(b)), b > 0 ? 'to receive' : b < 0 ? 'to pay' : 'settled', b > 0 ? 'neg' : ''], ['Entries', rows.length - 1]])}</div>
     <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Date</th><th>Particulars</th><th class="num">Debit</th><th class="num">Credit</th><th class="num">Balance</th></tr></thead><tbody>
     ${rows.map(r => `<tr class="${r.v ? 'click' : ''}" ${r.v ? `data-act="v-show" data-id="${r.v.id}"` : ''}><td>${r.date ? fmtDate(r.date) : ''}</td><td>${esc(r.text)}</td><td class="num">${r.dr ? num(r.dr) : ''}</td><td class="num">${r.cr ? num(r.cr) : ''}</td><td class="num">${num(Math.abs(r.bal))} ${r.bal > 0.5 ? 'Dr' : r.bal < -0.5 ? 'Cr' : ''}</td></tr>`).join('')}
     </tbody></table></div></div>
@@ -4650,7 +4721,7 @@ Object.assign(ACT, {
 VIEWS.godowns = () => {
   const gds = godowns(); const items = col('items');
   view().innerHTML = `<div class="view-head"><h1>Godowns</h1><button class="btn" data-act="v-new" data-type="transfer" ${gds.length < 2 ? 'disabled' : ''}>Transfer stock</button><button class="btn" data-go="list" data-arg="transfer">Transfer history</button><button class="btn primary" data-act="g-new">+ Add godown</button></div>
-    <div class="kpis" style="grid-template-columns:repeat(${Math.min(4, gds.length)},minmax(0,1fr))">${gds.map(g => { const q = items.reduce((a, i) => a + Math.max(0, stockOf(i.id, g.id)), 0), val = items.reduce((a, i) => a + Math.max(0, stockOf(i.id, g.id)) * (+i.purchase || 0), 0); return `<div class="card kpi"><small>${esc(g.name)}</small><strong>${inr0(val)}</strong><span>${qtyFmt(q)} units${g.addr ? ' · ' + esc(g.addr) : ''}</span><div style="margin-top:6px"><button class="btn sm" data-act="g-edit" data-id="${g.id}">Edit</button></div></div>`; }).join('')}</div>
+    <div class="kpis" style="--k:${Math.min(4, gds.length)}">${gds.map(g => { const q = items.reduce((a, i) => a + Math.max(0, stockOf(i.id, g.id)), 0), val = items.reduce((a, i) => a + Math.max(0, stockOf(i.id, g.id)) * (+i.purchase || 0), 0); return `<div class="card kpi"><small>${esc(g.name)}</small><strong>${inr0(val)}</strong><span>${qtyFmt(q)} units${g.addr ? ' · ' + esc(g.addr) : ''}</span><div style="margin-top:6px"><button class="btn sm" data-act="g-edit" data-id="${g.id}">Edit</button></div></div>`; }).join('')}</div>
     ${gds.length < 2 ? '<div class="note">Add a second godown (for example your warehouse) to keep stock in more than one place and move it between them.</div>' : ''}
     <div class="card" style="margin-top:12px"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Item</th>${gds.map(g => `<th class="num">${esc(g.name)}</th>`).join('')}<th class="num">Total</th></tr></thead><tbody>
       ${items.sort((a, b) => a.name.localeCompare(b.name)).map(i => `<tr><td>${esc(i.name)}</td>${gds.map(g => `<td class="num">${qtyFmt(stockOf(i.id, g.id))}</td>`).join('')}<td class="num"><b>${qtyFmt(stockOf(i.id))}</b></td></tr>`).join('') || `<tr><td class="muted">No items yet</td></tr>`}</tbody></table></div></div>`;
@@ -5734,7 +5805,7 @@ onChange(() => { if ($('#view') && !$('#view').dataset.ready && firm()) { $('#vi
    Updates: every copy of the app checks one fixed address for a newer build.
    Online (PC / iPhone): reload picks it up. Android app: downloads it in the background.
    ========================================================= */
-const APP_BUILD = +'2' || 0, APP_VERSION = '2.5';
+const APP_BUILD = +'3' || 0, APP_VERSION = '2.6';
 const SITE_URL = 'https://patidar-app.github.io/Patidar-app/';
 const HOSTED = (location.protocol === 'https:' || location.hostname === 'localhost') && !IN_FRAME;
 const UPDATE_BASE = HOSTED ? new URL('./', location.href).href : SITE_URL;
@@ -5758,6 +5829,36 @@ window.onAppUpdate = version => updateBanner(`Update ${version} downloaded.`, 'R
 if (HOSTED && 'serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => { });
 setTimeout(checkUpdate, 8000); setInterval(checkUpdate, 30 * 60000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) checkUpdate(); });
+
+/* =========================================================
+   Tables on phones: every data table is tagged once after it renders so CSS can show each row
+   as a small card (column name above each value, numbers on the right). Dates never wrap.
+   ========================================================= */
+const DATE_RE = /^\d{2}-\d{2}-\d{4}$/;
+function tagTable(t) {
+  if (t.closest('.lines') || t.id === 'cart-tbl') return;
+  const heads = t.tHead ? [...t.tHead.rows[0].cells].map(th => ({ l: th.textContent.trim(), num: th.classList.contains('num') })) : [];
+  const nNum = heads.slice(1).filter(h => h.num).length, nTxt = heads.slice(1).filter(h => !h.num && h.l).length;
+  t.classList.add('cardify'); t.classList.toggle('numeric', nNum >= 3 && nNum > nTxt + 1);
+  t.classList.toggle('few', !heads.length && [...t.rows].every(r => r.cells.length <= 3));
+  for (const sec of [...t.tBodies, t.tFoot].filter(Boolean)) for (const tr of sec.rows) {
+    let c = 0;
+    for (const td of tr.cells) {
+      const h = heads[c] || {}; c += td.colSpan || 1;
+      if (td.colSpan > 1) { td.classList.add('span'); continue; }
+      if (h.l && !td.hasAttribute('data-l')) td.dataset.l = h.l;
+      if (h.num || td.classList.contains('num')) td.classList.add('num');
+      const txt = td.textContent.trim();
+      if (DATE_RE.test(txt)) td.classList.add('nw');
+      if (!txt && !td.querySelector('input,select,button,svg,img')) td.classList.add('blank');
+      else if (!h.l && td.querySelector('button') && td !== tr.cells[0]) td.classList.add('act');
+    }
+  }
+}
+let tagQueued = false;
+function tagTables() { tagQueued = false; document.querySelectorAll('table.tbl').forEach(tagTable); }
+new MutationObserver(() => { if (!tagQueued) { tagQueued = true; requestAnimationFrame(tagTables); } })
+  .observe(document.body, { childList: true, subtree: true });
 
 </script>
 
