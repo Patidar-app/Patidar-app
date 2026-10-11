@@ -347,9 +347,36 @@ html.android kbd { display: none; }
 .user-pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 99px; padding: 3px 11px 3px 3px; font-size: 12.5px; font-weight: 600; border: 0; cursor: pointer; background: rgba(255,255,255,.14); color: var(--on-maroon); }
 .user-pill i { width: 22px; height: 22px; border-radius: 50%; background: var(--gold-soft); color: var(--gold-ink); display: grid; place-items: center; font-style: normal; font-size: 12px; }
 .locked .rail, .locked #firm-pick, .locked .top-stat, .locked #sample-flag { visibility: hidden; }
-.login-users { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
-.login-users .btn { display: grid; gap: 2px; padding: 12px; text-align: left; }
-.login-users small { font-weight: 500; opacity: .75; }
+/* login page */
+.login-page { min-height: 100%; display: grid; place-items: start center; padding: 4vh 0 24px; }
+.login-card { width: min(460px, 100%); background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--gold); border-radius: 16px; box-shadow: var(--shadow); padding: 22px 22px 16px; display: grid; gap: 14px; }
+.login-brand { display: flex; gap: 12px; align-items: center; }
+.login-brand img { width: 52px; height: 52px; border-radius: 50%; object-fit: cover; background: #fff; border: 1px solid var(--line); }
+.login-brand b { display: block; font: 700 18px/1.15 var(--f-brand); color: var(--maroon); letter-spacing: .02em; }
+.login-brand small { color: var(--muted); }
+.login-card h1 { margin: 2px 0 0; font-size: 21px; }
+.login-users { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+.login-users .lu { display: grid; justify-items: center; gap: 2px; padding: 12px 6px 10px; border: 2px solid var(--line); border-radius: 12px; background: var(--surface); cursor: pointer; }
+.login-users .lu i { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-weight: 700; font-size: 18px; background: var(--sunken); color: var(--ink); margin-bottom: 2px; }
+.login-users .lu.on { border-color: var(--gold); background: var(--gold-soft); }
+.login-users .lu.on i { background: var(--maroon); color: var(--on-maroon); }
+.login-users .lu b { font-size: 14px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.login-users .lu small { color: var(--muted); font-size: 12px; }
+.login-pin { display: grid; gap: 8px; justify-items: center; }
+.login-pin #lg-pin { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
+.pin-dots { display: flex; gap: 12px; min-height: 18px; }
+.pin-dots i { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--muted); }
+.pin-dots i.on { background: var(--maroon); border-color: var(--maroon); }
+.pin-pad { display: grid; grid-template-columns: repeat(3, 72px); gap: 8px; }
+.pin-pad button { height: 54px; border-radius: 12px; border: 1px solid var(--line); background: var(--sunken); font-size: 22px; font-weight: 600; cursor: pointer; }
+.pin-pad button:active { background: var(--gold-soft); }
+.login-pin .btn.big { width: 100%; max-width: 232px; }
+.login-foot { margin: 0; text-align: center; }
+.shake { animation: shake .3s; }
+@keyframes shake { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+.made-by { display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: center; }
+.made-by b { color: var(--ink); font-weight: 600; }
+.tbl tr.void-soft td { color: var(--muted); }
 .rp-prev { white-space: pre-wrap; font: 13px/1.5 var(--f-mono); background: var(--sunken); border-radius: var(--r); padding: 12px; margin: 0; max-height: 60vh; overflow: auto; }
 footer .spacer { flex: 1; }
 
@@ -3560,7 +3587,7 @@ function put(c, doc, f = S.firmId) {
   if (!doc.id) doc.id = uid();
   if (!doc.createdAt) doc.createdAt = Date.now();
   doc.updatedAt = Date.now(); doc.by = DEVICE();
-  if (c === 'vouchers' && typeof me === 'function' && me()) { if (!doc.userId) { doc.userId = me().id; doc.user = me().name; } else if (doc.userId !== me().id) doc.editedBy = me().name; }
+  if (c === 'vouchers') logVoucher(doc);
   const fk = GLOBAL[c] ? '_' : f;
   memSet(fk, c, doc);
   const k = keyOf(fk, c, doc.id);
@@ -3568,6 +3595,18 @@ function put(c, doc, f = S.firmId) {
   syncQueue(k);
   changed();
   return doc;
+}
+// Every change to an entry is written into its own log: who, when, which device, what happened.
+function logVoucher(doc) {
+  const u = typeof me === 'function' ? me() : null;
+  if (u) { if (!doc.userId) { doc.userId = u.id; doc.user = u.name; } else if (doc.userId !== u.id) doc.editedBy = u.name; }
+  if (doc.sample) { delete doc._act; return; }
+  const log = doc.log || (doc.log = []); const last = log[log.length - 1];
+  const st = doc.deleted ? 'deleted' : doc.status === 'cancelled' ? 'cancelled' : 'active';
+  const a = doc._act || (!last ? (doc.createdAt >= doc.updatedAt - 5 ? 'created' : 'edited') : st !== last.s ? (st === 'active' ? 'restored' : st) : 'edited');
+  delete doc._act;
+  log.push({ a, s: st, t: doc.updatedAt, u: u ? u.name : '', d: doc.by });
+  if (log.length > 40) log.splice(1, log.length - 40);
 }
 function del(c, id, f = S.firmId) { const d = memGet(GLOBAL[c] ? '_' : f, c, id); if (d) { d.deleted = true; put(c, d, f); } }
 
@@ -4238,7 +4277,7 @@ function listBody(type) {
   $('#lf-kpis').style.setProperty('--k', Math.min(4, k.length));
   const cols = t.trade ? 6 : 5;
   $('#lf-tbl').innerHTML = rows.length ? `<thead><tr><th>Number</th><th>Date</th><th>${type === 'transfer' ? 'From → to' : type === 'adjust' ? 'Godown' : type === 'journal' ? 'Narration' : 'Party'}</th>${t.trade ? '<th class="num">Items</th>' : '<th>Mode</th>'}<th class="num">Amount</th>${t.trade ? '<th>Status</th>' : ''}</tr></thead><tbody>` +
-    rows.map(v => `<tr class="click ${v.status === 'cancelled' ? 'void' : ''}" data-act="v-show" data-id="${v.id}"><td class="mono"><b>${esc(v.no)}</b>${v.billNo ? `<div class="muted small">Bill ${esc(v.billNo)}</div>` : ''}</td><td>${fmtDate(v.date)}</td>
+    rows.map(v => `<tr class="click ${v.status === 'cancelled' ? 'void' : ''}" data-act="v-show" data-id="${v.id}"><td class="mono"><b>${esc(v.no)}</b>${v.billNo ? `<div class="muted small">Bill ${esc(v.billNo)}</div>` : ''}</td><td>${fmtDate(v.date)}<div class="muted small">${fmtTime(v.createdAt)}${v.user ? ' · ' + esc(v.user) : ''}</div></td>
       <td>${type === 'transfer' ? esc(godownName(v.godown) + ' → ' + godownName(v.toGodown)) : type === 'adjust' ? esc(godownName(v.godown)) : type === 'journal' ? esc(v.note || '') : esc(vParty(v) || 'Walk-in')}${v.party?.phone ? `<div class="muted small">${esc(v.party.phone)}</div>` : ''}</td>
       ${t.trade ? `<td class="num">${qtyFmt(v.items || (v.lines || []).length)}</td>` : `<td>${esc(MODES[v.mode] || '')}</td>`}
       <td class="num"><b>${type === 'transfer' || type === 'adjust' ? qtyFmt((v.lines || []).reduce((a, l) => a + Math.abs(l.qty), 0)) + ' units' : inr(vTotal(v))}</b></td>
@@ -4510,7 +4549,7 @@ async function editorSave(then) {
     if (v.type === 'transfer' && v.godown === v.toGodown) return toast('Pick two different godowns', 'bad');
   }
   const saved = t.trade ? saveTrade(v) : put('vouchers', v);
-  if (v.type === 'sale' && v.fromQuote) { const q = get('vouchers', v.fromQuote); if (q && !q.convertedTo) { q.convertedTo = saved.id; put('vouchers', q); } }
+  if (v.type === 'sale' && v.fromQuote) { const q = get('vouchers', v.fromQuote); if (q && !q.convertedTo) { q.convertedTo = saved.id; q._act = 'converted'; put('vouchers', q); } }
   CURRENT_EDIT = null;
   toast(`${t.label} ${saved.no} saved`, 'ok');
   if (then === 'new') { openEditor(v.type); return; }
@@ -4541,12 +4580,27 @@ Object.assign(ACT, {
 });
 
 /* ---------------- viewer ---------------- */
+const ACT_LABEL = { created: 'Made', edited: 'Edited', cancelled: 'Cancelled', restored: 'Restored', deleted: 'Deleted', converted: 'Converted to invoice' };
+const whoWhen = (u, t, d) => `${esc(u || ('Device ' + (d || '?')))} · ${fmtDate(t)} ${fmtTime(t)}`;
+function madeBy(v) {
+  const log = v.log || []; const first = log[0], last = log[log.length - 1];
+  const made = first && first.a === 'created' ? first : { u: v.user, t: v.createdAt, d: (first || {}).d || v.by };
+  const parts = [`<span>Made by <b>${whoWhen(made.u, made.t, made.d)}</b></span>`];
+  if (last && last !== first && last.a !== 'created') parts.push(`<span>${ACT_LABEL[last.a] || last.a} by <b>${whoWhen(last.u, last.t, last.d)}</b></span>`);
+  if (log.length > 1) parts.push(`<button class="btn sm ghost" data-act="v-log" data-id="${v.id}">History (${log.length})</button>`);
+  return `<div class="made-by muted small">${parts.join('')}</div>`;
+}
+ACT['v-log'] = b => {
+  const v = get('vouchers', b.dataset.id) || memGet(S.firmId, 'vouchers', b.dataset.id); if (!v) return;
+  openModal(`${mHead('History · ' + esc(v.no))}<div class="body"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Date</th><th>Time</th><th>User</th><th>What</th><th>Device</th></tr></thead><tbody>
+    ${(v.log || []).slice().reverse().map(l => `<tr><td>${fmtDate(l.t)}</td><td class="nw">${fmtTime(l.t)}</td><td><b>${esc(l.u || '–')}</b></td><td>${ACT_LABEL[l.a] || l.a}</td><td class="muted">${esc(l.d || '')}</td></tr>`).join('')}</tbody></table></div></div>`);
+};
 function showVoucher(v, { justSaved } = {}) {
   if (!v) return;
   const t = VT[v.type]; const canc = v.status === 'cancelled';
   const phone = (v.party?.phone || get('parties', v.partyId)?.phone || '').replace(/\D/g, '');
   const m = openModal(`${mHead(`${justSaved ? 'Saved · ' : ''}${t.label} ${esc(v.no)} ${canc ? '<span class="pill bad">Cancelled</span>' : ''}`)}
-    <div class="body"><div class="paper-wrap" id="vw-paper">${docHTML(v, v.source === 'counter' && firm().counter.paper !== 'A4' ? 'counter' : '')}</div></div>
+    <div class="body">${madeBy(v)}<div class="paper-wrap" id="vw-paper">${docHTML(v, v.source === 'counter' && firm().counter.paper !== 'A4' ? 'counter' : '')}</div></div>
     <footer>
       ${!canc && can('edit') && canType(v.type) ? `<button class="btn" data-y="edit">Edit</button>` : ''}
       ${v.type === 'quotation' && !canc && can('sale') ? `<button class="btn" data-y="convert">${v.convertedTo ? 'Converted · open invoice' : 'Convert to invoice'}</button>` : ''}
@@ -5152,17 +5206,20 @@ VIEWS.home = () => {
 };
 
 /* ---------------- reports ---------------- */
-const RF = { tab: 'summary', range: 'month' };
-const REPORT_TABS = [['summary', 'Sales & purchase'], ['gst', 'GST returns'], ['pl', 'Profit & loss'], ['stock', 'Stock summary'], ['outstanding', 'Outstanding'], ['daybook', 'Day book']];
+const RF = { tab: 'summary', range: 'month', user: '' };
+const REPORT_TABS = [['summary', 'Sales & purchase'], ['gst', 'GST returns'], ['pl', 'Profit & loss'], ['stock', 'Stock summary'], ['outstanding', 'Outstanding'], ['daybook', 'Day book'], ['activity', 'User activity']];
 VIEWS.reports = tab => {
   if (tab) RF.tab = tab;
   if (RF.tab === 'pl' && !can('cost')) RF.tab = 'summary';
-  view().innerHTML = `<div class="view-head"><h1>Reports</h1><select id="rf-range" style="width:auto">${rangeOptions(RF.range)}</select><button class="btn" data-act="r-csv">Export CSV</button></div>
+  view().innerHTML = `<div class="view-head"><h1>Reports</h1><select id="rf-range" style="width:auto">${rangeOptions(RF.range)}</select><select id="rf-user" style="width:auto" ${['daybook', 'activity'].includes(RF.tab) ? '' : 'hidden'} aria-label="User"><option value="">All users</option>${userNames().map(n => `<option ${RF.user === n ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select><button class="btn" data-act="r-csv">Export CSV</button></div>
     <div class="tabs" role="tablist">${REPORT_TABS.filter(([k]) => k !== 'pl' || can('cost')).map(([k, l]) => `<button role="tab" aria-selected="${RF.tab === k}" data-act="r-tab" data-k="${k}">${l}</button>`).join('')}</div><div id="rf-body"></div>`;
   $('#rf-range').addEventListener('input', e => { RF.range = e.target.value; reportBody(); });
+  $('#rf-user').addEventListener('input', e => { RF.user = e.target.value; reportBody(); });
   reportBody();
 };
 let REPORT_CSV = null;
+const userNames = () => [...new Set([...users().map(u => u.name), ...col('vouchers').flatMap(v => [v.user, ...(v.log || []).map(l => l.u)])].filter(Boolean))].sort();
+const stamp = t => `${dayKey(t)} ${fmtTime(t)}`;
 function reportBody() {
   const r = RF.range; const el = $('#rf-body'); REPORT_CSV = null;
   if (RF.tab === 'summary') {
@@ -5232,10 +5289,22 @@ function reportBody() {
     REPORT_CSV = ['outstanding', [['party', 'mobile', 'balance (+ receive / - pay)'], ...ps.map(p => [p.name, p.phone, r2(balOf(p.id))])]];
   }
   if (RF.tab === 'daybook') {
-    const vs = col('vouchers').filter(v => inRange(v.date, r)).sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt);
-    el.innerHTML = `<div class="card"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Date</th><th>Number</th><th>Type</th><th>Party</th><th class="num">Amount</th><th>Device</th></tr></thead><tbody>
-      ${vs.map(v => `<tr class="click ${v.status === 'cancelled' ? 'void' : ''}" data-act="v-show" data-id="${v.id}"><td>${fmtDate(v.date)}</td><td class="mono">${esc(v.no)}</td><td>${VT[v.type].label}</td><td>${esc(vParty(v) || v.note || '')}</td><td class="num">${vTotal(v) ? inr(vTotal(v)) : ''}</td><td class="muted">${esc(v.by || '')}</td></tr>`).join('') || '<tr><td colspan="6" class="muted">No entries in this range</td></tr>'}</tbody></table></div></div>`;
-    REPORT_CSV = ['day-book', [['date', 'number', 'type', 'party', 'amount', 'status', 'device'], ...vs.map(v => [v.date, v.no, VT[v.type].label, vParty(v), vTotal(v), v.status, v.by])]];
+    const vs = col('vouchers').filter(v => inRange(v.date, r) && (!RF.user || v.user === RF.user || (v.log || []).some(l => l.u === RF.user))).sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt);
+    const lastCh = v => { const l = (v.log || []).slice(-1)[0]; return l && l.a !== 'created' ? `${ACT_LABEL[l.a] || l.a} · ${esc(l.u || 'Device ' + (l.d || '?'))}<div class="muted small">${fmtDate(l.t)} ${fmtTime(l.t)}</div>` : '<span class="muted">–</span>'; };
+    el.innerHTML = `<div class="card"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Date</th><th>Number</th><th>Type</th><th>Party</th><th class="num">Amount</th><th>Made by</th><th>Last change</th></tr></thead><tbody>
+      ${vs.map(v => `<tr class="click ${v.status === 'cancelled' ? 'void' : ''}" data-act="v-show" data-id="${v.id}"><td>${fmtDate(v.date)}<div class="muted small">${fmtTime(v.createdAt)}</div></td><td class="mono">${esc(v.no)}</td><td>${VT[v.type].label}</td><td>${esc(vParty(v) || v.note || '')}</td><td class="num">${vTotal(v) ? inr(vTotal(v)) : ''}</td><td><b>${esc(v.user || 'Device ' + (v.by || '?'))}</b><div class="muted small">${fmtDate(v.createdAt)} ${fmtTime(v.createdAt)}</div></td><td>${lastCh(v)}</td></tr>`).join('') || '<tr><td colspan="7" class="muted">No entries in this range</td></tr>'}</tbody></table></div></div>`;
+    REPORT_CSV = ['day-book', [['date', 'number', 'type', 'party', 'amount', 'status', 'made by', 'made at', 'last change', 'changed by', 'changed at', 'device'], ...vs.map(v => { const l = (v.log || []).slice(-1)[0] || {}; return [v.date, v.no, VT[v.type].label, vParty(v), vTotal(v), v.status, v.user || '', stamp(v.createdAt), l.a || '', l.u || '', l.t ? stamp(l.t) : '', v.by]; })]];
+  }
+  if (RF.tab === 'activity') {
+    const all = Object.values(S.data[S.firmId]?.vouchers || {});
+    const ev = all.filter(v => !v.sample).flatMap(v => (v.log && v.log.length ? v.log : [{ a: 'created', t: v.createdAt, u: v.user || '', d: v.by }]).map(l => ({ l, v })))
+      .filter(({ l }) => l.t && inRange(dayKey(l.t), r) && (!RF.user || l.u === RF.user)).sort((a, b) => b.l.t - a.l.t);
+    const per = {}; for (const { l, v } of ev) { const k = l.u || 'Device ' + (l.d || '?'); const o = per[k] || (per[k] = { n: 0, bills: 0, amt: 0, ed: 0, cn: 0 }); o.n++; if (l.a === 'created' && v.type === 'sale') { o.bills++; o.amt += +v.total || 0; } if (l.a === 'edited') o.ed++; if (l.a === 'cancelled' || l.a === 'deleted') o.cn++; }
+    el.innerHTML = `<div class="card" style="margin-bottom:14px"><div class="pad" style="padding-bottom:0"><h2>By user</h2></div><div class="tbl-wrap"><table class="tbl"><thead><tr><th>User</th><th class="num">Actions</th><th class="num">Sales bills</th><th class="num">Sales amount</th><th class="num">Edits</th><th class="num">Cancelled / deleted</th></tr></thead><tbody>
+      ${Object.entries(per).sort((a, b) => b[1].n - a[1].n).map(([k, o]) => `<tr><td><b>${esc(k)}</b></td><td class="num">${o.n}</td><td class="num">${o.bills}</td><td class="num">${inr(o.amt)}</td><td class="num">${o.ed}</td><td class="num ${o.cn ? 'neg' : ''}">${o.cn}</td></tr>`).join('') || '<tr><td colspan="6" class="muted">Nothing in this range</td></tr>'}</tbody></table></div></div>
+      <div class="card"><div class="pad" style="padding-bottom:0"><h2>Every change, newest first</h2></div><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Date</th><th>Time</th><th>User</th><th>What</th><th>Entry</th><th>Type</th><th class="num">Amount</th><th>Device</th></tr></thead><tbody>
+      ${ev.slice(0, 500).map(({ l, v }) => `<tr class="click ${l.a === 'cancelled' || l.a === 'deleted' ? 'void-soft' : ''}" ${v.deleted ? '' : `data-act="v-show" data-id="${v.id}"`}><td>${fmtDate(l.t)}</td><td class="nw">${fmtTime(l.t)}</td><td><b>${esc(l.u || 'Device ' + (l.d || '?'))}</b></td><td>${l.a === 'cancelled' || l.a === 'deleted' ? `<span class="pill bad">${ACT_LABEL[l.a]}</span>` : l.a === 'edited' ? '<span class="pill warn">Edited</span>' : ACT_LABEL[l.a] || l.a}</td><td class="mono">${esc(v.no)}</td><td>${VT[v.type]?.label || v.type}</td><td class="num">${vTotal(v) ? inr(vTotal(v)) : ''}</td><td class="muted">${esc(l.d || '')}</td></tr>`).join('') || '<tr><td colspan="8" class="muted">Nothing in this range</td></tr>'}</tbody></table></div></div>`;
+    REPORT_CSV = ['user-activity', [['date', 'time', 'user', 'action', 'entry', 'type', 'amount', 'device'], ...ev.map(({ l, v }) => [dayKey(l.t), fmtTime(l.t), l.u, l.a, v.no, VT[v.type]?.label || v.type, vTotal(v), l.d])]];
   }
 }
 Object.assign(ACT, {
@@ -5531,17 +5600,39 @@ function denyToast(what) { toast(`${me()?.name || 'You'} can't ${what}. Ask the 
 
 function loginScreen() {
   document.documentElement.classList.add('locked');
-  let pick = null;
+  const list = users(); let pick = list.length === 1 ? list[0].id : LS.get('last-user', null); if (!S.users[pick] || S.users[pick].deleted) pick = null;
+  let pin = '';
+  const f = firm() || {};
   const paint = () => {
-    $('#view').innerHTML = `<div class="card pad login" style="max-width:440px;margin:40px auto"><h1 style="margin-top:0">Who is billing?</h1>
-      <div class="login-users">${users().map(u => `<button class="btn ${pick === u.id ? 'primary' : ''}" data-u="${u.id}"><b>${esc(u.name)}</b><small>${ROLE_LABEL[u.role] || 'Staff'}</small></button>`).join('')}</div>
-      ${pick ? `<form id="lg-f" class="stack" style="margin-top:14px"><label class="f"><span>PIN for ${esc(S.users[pick].name)}</span><input type="password" inputmode="numeric" id="lg-pin" autocomplete="off"></label><div class="neg small" id="lg-err"></div><button class="btn primary">Sign in</button></form>` : ''}</div>`;
-    $$('[data-u]').forEach(b => b.onclick = () => { pick = b.dataset.u; paint(); setTimeout(() => $('#lg-pin')?.focus(), 30); });
-    const f = $('#lg-f'); if (f) f.onsubmit = e => {
+    const u = pick && S.users[pick];
+    $('#view').innerHTML = `<div class="login-page"><div class="login-card">
+      <div class="login-brand"><img src="${f.logo || LOGO_ICON}" alt=""><div><b>${esc(f.name || 'Patidar')}</b><small>${new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</small></div></div>
+      <h1>${u ? `Hello, ${esc(u.name)}` : 'Who is using the app?'}</h1>
+      <div class="login-users">${list.map(x => `<button class="lu ${pick === x.id ? 'on' : ''}" data-u="${x.id}" aria-pressed="${pick === x.id}"><i>${esc(x.name.slice(0, 1).toUpperCase())}</i><b>${esc(x.name)}</b><small>${ROLE_LABEL[x.role] || 'Staff'}</small></button>`).join('')}</div>
+      ${u ? `<form id="lg-f" class="login-pin">
+        <label class="muted small" for="lg-pin">Enter your PIN</label>
+        <input type="password" inputmode="numeric" id="lg-pin" autocomplete="off" maxlength="8" value="${pin}" aria-label="PIN for ${esc(u.name)}">
+        <div class="pin-dots" aria-hidden="true">${Array.from({ length: Math.max(4, pin.length) }, (_, i) => `<i class="${i < pin.length ? 'on' : ''}"></i>`).join('')}</div>
+        <div class="neg small" id="lg-err" role="alert"></div>
+        <div class="pin-pad">${['1', '2', '3', '4', '5', '6', '7', '8', '9', 'clear', '0', 'back'].map(k => `<button type="button" data-k="${k}" aria-label="${k}">${k === 'back' ? '⌫' : k === 'clear' ? 'C' : k}</button>`).join('')}</div>
+        <button class="btn primary big">Sign in</button></form>` : '<p class="muted" style="margin:6px 0 0">Tap your name to sign in.</p>'}
+      <p class="muted small login-foot">Every bill and entry you make is saved with your name, date and time.</p>
+    </div></div>`;
+    $$('[data-u]').forEach(b => b.onclick = () => { pick = b.dataset.u; pin = ''; paint(); setTimeout(() => !IS_ANDROID && $('#lg-pin')?.focus(), 30); });
+    const fm = $('#lg-f'); if (!fm) return;
+    const inp = $('#lg-pin');
+    const dots = () => { $('.pin-dots').innerHTML = Array.from({ length: Math.max(4, pin.length) }, (_, i) => `<i class="${i < pin.length ? 'on' : ''}"></i>`).join(''); };
+    inp.addEventListener('input', () => { pin = inp.value.replace(/\D/g, '').slice(0, 8); inp.value = pin; dots(); $('#lg-err').textContent = ''; });
+    $$('.pin-pad [data-k]').forEach(b => b.onclick = () => {
+      const k = b.dataset.k; if (k === 'back') pin = pin.slice(0, -1); else if (k === 'clear') pin = ''; else if (pin.length < 8) pin += k;
+      inp.value = pin; dots(); $('#lg-err').textContent = '';
+      if (pin.length >= 4 && S.users[pick].pin === pinHash(pin)) fm.requestSubmit();
+    });
+    fm.onsubmit = e => {
       e.preventDefault();
-      if (S.users[pick].pin !== pinHash($('#lg-pin').value)) { $('#lg-err').textContent = 'Wrong PIN'; $('#lg-pin').select(); return; }
-      LS.set('user', pick); document.documentElement.classList.remove('locked'); LOCK_OPEN = 0; DERIVED = null;
-      go(firstRoute(), null, { force: true }); toast('Signed in as ' + S.users[pick].name, 'ok');
+      if (S.users[pick].pin !== pinHash(inp.value)) { $('#lg-err').textContent = 'Wrong PIN'; pin = ''; inp.value = ''; dots(); fm.classList.remove('shake'); void fm.offsetWidth; fm.classList.add('shake'); return; }
+      LS.set('user', pick); LS.set('last-user', pick); document.documentElement.classList.remove('locked'); LOCK_OPEN = 0; DERIVED = null;
+      go(firstRoute(), null, { force: true }); toast(`Signed in as ${S.users[pick].name} · ${fmtTime(Date.now())}`, 'ok');
     };
   };
   paint();
@@ -5930,7 +6021,7 @@ onChange(() => { if ($('#view') && !$('#view').dataset.ready && firm()) { $('#vi
    Updates: every copy of the app checks one fixed address for a newer build.
    Online (PC / iPhone): reload picks it up. Android app: downloads it in the background.
    ========================================================= */
-const APP_BUILD = +'5' || 0, APP_VERSION = '2.8';
+const APP_BUILD = +'6' || 0, APP_VERSION = '2.9';
 const SITE_URL = 'https://patidar-app.github.io/Patidar-app/';
 const HOSTED = (location.protocol === 'https:' || location.hostname === 'localhost') && !IN_FRAME;
 const UPDATE_BASE = HOSTED ? new URL('./', location.href).href : SITE_URL;
