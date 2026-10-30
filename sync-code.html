@@ -1,0 +1,18 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Patidar Sync Code</title><meta name="robots" content="noindex">
+<style>
+body{margin:0;font:16px/1.5 system-ui,sans-serif;background:#6e1428;color:#26151b;min-height:100vh;display:grid;place-items:center;padding:16px;box-sizing:border-box}
+.c{background:#fff;border-radius:18px;max-width:440px;width:100%;padding:22px 18px;box-shadow:0 20px 60px rgba(0,0,0,.35);border-top:5px solid #a87f22}
+h1{font-size:21px;margin:0 0 4px;color:#6e1428} p{margin:6px 0}
+textarea{width:100%;box-sizing:border-box;height:110px;font:13px monospace;border:1px solid #d9cfd2;border-radius:10px;padding:10px;word-break:break-all}
+button{width:100%;margin-top:10px;padding:15px;font-size:18px;font-weight:700;border:0;border-radius:12px;background:#6e1428;color:#fff7ea}
+button.ok{background:#1f8f4e} ol{padding-left:20px;margin:12px 0 0} li{margin:4px 0}
+</style></head><body><div class="c">
+<h1>Patidar Counter · Sync code</h1><p>Naye phone ko jodne ke liye ye code copy karo.</p>
+<textarea id="t" readonly>PATIDAR-SYNC:eyJhcGlLZXkiOiJBSXphU3lCckktcU5WUWhZVlhubXYzUEZscmJ4S3RVYlV3ZlNDSlEiLCJhdXRoRG9tYWluIjoicGF0aWRhci1zaG9wLWY1ZTMwLmZpcmViYXNlYXBwLmNvbSIsInByb2plY3RJZCI6InBhdGlkYXItc2hvcC1mNWUzMCIsInN0b3JhZ2VCdWNrZXQiOiJwYXRpZGFyLXNob3AtZjVlMzAuZmlyZWJhc2VzdG9yYWdlLmFwcCIsIm1lc3NhZ2luZ1NlbmRlcklkIjoiMTQxNTU1MTEwODU2IiwiYXBwSWQiOiIxOjE0MTU1NTExMDg1Njp3ZWI6OThlNGViZjc4ZDAyZWVkNTI3NjZmZCJ9</textarea>
+<button id="b">Copy code</button>
+<ol><li>Patidar app kholo › Settings › Sync &amp; devices</li><li>"Firebase config or setup code" box pe ungli daba ke rakho › <b>Paste</b></li><li>Shop email aur password daalo</li><li>Device ka naam: B (ya C, D…)</li><li><b>Another device: replace with data from the cloud</b> chuno</li><li><b>Turn on sync</b> dabao</li></ol>
+</div><script>
+const t=document.getElementById('t'),b=document.getElementById('b');
+b.onclick=async()=>{try{await navigator.clipboard.writeText(t.value)}catch(e){t.select();document.execCommand('copy')}b.textContent='Copied ✓ Ab app me paste karo';b.className='ok'};
+</script></body></html>
