@@ -4122,7 +4122,8 @@ function renderTop() {
   $('#tb-tag').textContent = f.tagline || '';
   $('#tb-logo').src = f.logo || LOGO_ICON;
   const sel = $('#firm-pick');
-  sel.innerHTML = firms().filter(x => firmOK(x.id)).map(x => `<option value="${x.id}" ${x.id === S.firmId ? 'selected' : ''}>${esc(x.name)}</option>`).join('') + (isOwner() ? '<option value="__new">+ Add another firm</option>' : '');
+  const shown = firms().filter(x => firmOK(x.id));
+  sel.innerHTML = shown.map(x => `<option value="${x.id}" ${x.id === S.firmId ? 'selected' : ''}>${esc(firmLabel(x, shown))}</option>`).join('') + (isOwner() ? '<option value="__new">+ Add another firm</option>' : '');
   $('#firm-pick2').innerHTML = sel.innerHTML; $('#firm-pick2').value = S.firmId || '';
   const t = today();
   $('#tb-today').textContent = inr0(col('vouchers').filter(v => v.type === 'sale' && v.status !== 'cancelled' && v.date === t).reduce((a, v) => a + (+v.total || 0), 0));
@@ -4130,6 +4131,13 @@ function renderTop() {
   renderSyncPill(); renderUserPill();
   $('#rail-sync').textContent = SYNC.state === 'off' ? 'off' : (SYNC.msg || SYNC.state);
   $('#rail-user').hidden = !users().length;
+}
+// Two firms with the same name are told apart by what they hold.
+function firmSize(f) { return { bills: col('vouchers', f.id).length, items: col('items', f.id).filter(i => !i.sample).length, sample: col('items', f.id).some(i => i.sample) }; }
+function firmLabel(f, list) {
+  if (list.filter(x => x.name === f.name).length < 2) return f.name;
+  const z = firmSize(f);
+  return `${f.name} (${z.bills} bills, ${z.items} items${z.sample ? ', sample' : ''})`;
 }
 function renderSyncPill() {
   const p = $('#sync-pill'); if (!p) return;
@@ -5798,7 +5806,7 @@ function stData() {
     <div class="card pad stack"><h2>This firm</h2>
       ${hasSample ? '<button class="btn" data-act="dt-sample" style="justify-self:start">Remove sample data</button>' : ''}
       <button class="btn" data-act="dt-theme" style="justify-self:start">Switch light / dark screen</button>
-      ${firms().length > 1 ? `<button class="btn danger" data-act="dt-delfirm" style="justify-self:start">Delete ${esc(firm().name)}</button>` : ''}
+      ${firms().length > 1 ? `<button class="btn danger" data-act="dt-delfirm" style="justify-self:start">Delete ${esc(firmLabel(firm(), firms()))}</button>` : ''}
       <p class="muted small" style="margin:0">App version ${APP_VERSION} (build ${APP_BUILD}) · device ${esc(DEVICE())}</p></div></div>`;
 }
 function backupJSON() {
@@ -5826,7 +5834,7 @@ Object.assign(ACT, {
   },
   'dt-theme': () => { const cur = document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); const n = cur === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = n; LS.set('theme', n); },
   'dt-delfirm': async () => {
-    const f = firm(); if (!(await ask(`Delete ${f.name}?`, 'The firm and all its items, parties and bills are deleted on every device. Download a backup first.', 'Delete firm', true))) return;
+    const f = firm(), z = firmSize(f), list = firms(); if (!(await ask(`Delete ${firmLabel(f, list)}?`, `This firm has <b>${z.bills}</b> bills/entries, <b>${z.items}</b> items and <b>${col('parties', f.id).length}</b> parties. All of it is deleted on every device. Download a backup first.`, 'Delete firm', true))) return;
     for (const c of COLS) for (const d of col(c)) del(c, d.id);
     del('firms', f.id); S.firmId = null; pickFirm(); go('home', null, { force: true });
   }
@@ -6425,7 +6433,7 @@ window.onAppCrash = text => {
    Updates: every copy of the app checks one fixed address for a newer build.
    Online (PC / iPhone): reload picks it up. Android app: downloads it in the background.
    ========================================================= */
-const APP_BUILD = +'12' || 0, APP_VERSION = '2.15';
+const APP_BUILD = +'13' || 0, APP_VERSION = '2.16';
 const SITE_URL = 'https://patidar-app.github.io/Patidar-app/';
 const HOSTED = (location.protocol === 'https:' || location.hostname === 'localhost') && !IN_FRAME;
 const UPDATE_BASE = HOSTED ? new URL('./', location.href).href : SITE_URL;
