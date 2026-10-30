@@ -348,7 +348,7 @@ html.android kbd { display: none; }
 .user-pill i { width: 22px; height: 22px; border-radius: 50%; background: var(--gold-soft); color: var(--gold-ink); display: grid; place-items: center; font-style: normal; font-size: 12px; }
 .locked .rail, .locked #firm-pick, .locked .top-stat, .locked #sample-flag { visibility: hidden; }
 /* login page: full screen, brand side + sign-in card, gentle motion */
-.login-page { position: fixed; inset: 0; z-index: 80; overflow-y: auto; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); align-items: center; gap: 4vw; padding: 32px max(24px, 5vw); background: radial-gradient(120% 90% at 0% 0%, #8c1d36 0%, #6e1428 45%, #3d0a17 100%); color: var(--on-maroon); isolation: isolate; }
+.login-page { position: fixed; inset: 0; z-index: 45; overflow-y: auto; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); align-items: center; gap: 4vw; padding: 32px max(24px, 5vw); background: radial-gradient(120% 90% at 0% 0%, #8c1d36 0%, #6e1428 45%, #3d0a17 100%); color: var(--on-maroon); isolation: isolate; }
 .lg-bg { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
 .lg-bg i { position: absolute; border-radius: 50%; filter: blur(60px); opacity: .45; animation: lg-float 18s ease-in-out infinite alternate; }
 .lg-bg i:nth-child(1) { width: 46vmax; height: 46vmax; left: -12vmax; top: -14vmax; background: #c79a3a; opacity: .28; }
@@ -390,6 +390,8 @@ html.android kbd { display: none; }
 .pin-pad button:active { transform: scale(.94); background: var(--gold-soft); }
 .login-pin .btn.big { width: 100%; max-width: 232px; min-height: 46px; border-radius: 12px; }
 .lg-hint { margin: 2px 0 0; text-align: center; }
+.lg-forgot { border: 0; background: none; color: var(--maroon); font-weight: 600; font-size: 14px; cursor: pointer; padding: 4px 8px; text-decoration: underline; text-underline-offset: 3px; }
+.lg-forgot:hover { color: var(--maroon-2); }
 .login-foot { margin: 0; display: flex; gap: 6px; align-items: center; justify-content: center; text-align: center; }
 /* entrance */
 .login-page.enter .lg-hero > * { animation: lg-up .6s cubic-bezier(.2,.8,.2,1) both; }
@@ -5522,6 +5524,7 @@ function nextDeviceLetter() {
   for (const c of 'ABCDEFGHJKLMNPQRSTUVWXYZ') if (!used.has(c)) return c; return 'Z';
 }
 function stSync() {
+  if (!$("#st-body")) return;
   const on = !!SYNC.cfg;
   if (on) {
     const code = 'PATIDAR-SYNC:' + btoa(JSON.stringify(SYNC.cfg));
@@ -5705,7 +5708,8 @@ function loginScreen() {
           <div class="pin-dots" aria-hidden="true">${dotsHtml()}</div>
           <div class="neg small" id="lg-err" role="alert"></div>
           <div class="pin-pad">${['1', '2', '3', '4', '5', '6', '7', '8', '9', 'clear', '0', 'back'].map(k => `<button type="button" data-k="${k}" aria-label="${k}">${k === 'back' ? '⌫' : k === 'clear' ? 'C' : k}</button>`).join('')}</div>
-          <button class="btn primary big lg-go">Sign in</button></form>` : '<p class="muted lg-hint">Tap your name to sign in.</p>'}
+          <button class="btn primary big lg-go">Sign in</button>
+          <button type="button" class="lg-forgot" id="lg-forgot">Forgot PIN?</button></form>` : '<p class="muted lg-hint">Tap your name to sign in.</p>'}
         <p class="muted small login-foot"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg> Every bill and entry is saved with your name, date and time.</p>
       </div></div>`;
     first = false;
@@ -5719,6 +5723,7 @@ function loginScreen() {
       inp.value = pin; dots(); $('#lg-err').textContent = '';
       if (pin.length >= 4 && S.users[pick].pin === pinHash(pin)) fm.requestSubmit();
     });
+    $('#lg-forgot').onclick = () => forgotPin(pick, () => { pin = ''; paint(); });
     let done = false;
     fm.onsubmit = e => {
       e.preventDefault(); if (done) return;
@@ -5732,6 +5737,46 @@ function loginScreen() {
     };
   };
   paint();
+}
+/* Forgot PIN: prove you own the shop by typing the sync login (Firebase email + password), then set a new PIN.
+   The new PIN syncs to every device like any other change. */
+function forgotPin(id, after) {
+  const u = S.users[id]; if (!u) return;
+  if (!SYNC.auth) {
+    const owner = users().some(x => x.role === 'owner' && x.id !== id);
+    openModal(`${mHead('Forgot PIN')}<div class="body stack"><p style="margin:0">This device is not connected to sync, so the PIN can't be reset here.</p>
+      <p class="muted" style="margin:0">${owner ? 'Ask the owner to sign in and set a new PIN for you in Settings › Users.' : 'Reset it on a device where sync is on (Forgot PIN? on its sign-in screen), then it reaches this device.'}</p></div>
+      <footer><button class="btn primary" data-close>OK</button></footer>`);
+    return;
+  }
+  const m = openModal(`${mHead('Reset PIN for ' + esc(u.name))}<form class="body stack" autocomplete="off">
+    <p class="muted small" style="margin:0">Type the shop login used for sync (the email and password made in Firebase). Then choose a new PIN for <b>${esc(u.name)}</b>.</p>
+    <label class="f"><span>Shop login email</span><input type="email" name="email" autocomplete="username" value="${esc(SYNC.user?.email || '')}" required></label>
+    <label class="f"><span>Shop password</span><input type="password" name="pass" autocomplete="current-password" required></label>
+    <div class="grid2"><label class="f"><span>New PIN (4 to 8 digits)</span><input type="password" inputmode="numeric" name="pin" maxlength="8" autocomplete="new-password" required></label>
+      <label class="f"><span>Type it again</span><input type="password" inputmode="numeric" name="pin2" maxlength="8" autocomplete="new-password" required></label></div>
+    <div class="neg small" data-err role="alert"></div>
+    <footer style="padding:0"><button type="button" class="btn" data-close>Cancel</button><button class="btn primary">Reset PIN</button></footer></form>`);
+  const f = m.querySelector('form'), err = m.querySelector('[data-err]');
+  f.onsubmit = async e => {
+    e.preventDefault(); err.textContent = '';
+    const email = f.email.value.trim(), pass = f.pass.value, np = f.pin.value.trim();
+    if (!/^\d{4,8}$/.test(np)) return err.textContent = 'PIN must be 4 to 8 numbers.';
+    if (np !== f.pin2.value.trim()) return err.textContent = 'The two PINs are not the same.';
+    if (!navigator.onLine) return err.textContent = 'Internet is needed to check the shop password.';
+    const btn = f.querySelector('.btn.primary'); btn.disabled = true; btn.textContent = 'Checking…';
+    try {
+      if (SYNC.user) {
+        if (email.toLowerCase() !== (SYNC.user.email || '').toLowerCase()) throw { code: 'auth/wrong-email' };
+        await SYNC.user.reauthenticateWithCredential(firebase.auth.EmailAuthProvider.credential(email, pass));
+      } else await SYNC.auth.signInWithEmailAndPassword(email, pass);
+    } catch (x) {
+      btn.disabled = false; btn.textContent = 'Reset PIN';
+      return err.textContent = x && x.code === 'auth/network-request-failed' ? 'No internet. Try again.' : x && x.code === 'auth/too-many-requests' ? 'Too many tries. Wait a few minutes and try again.' : 'Shop email or password is wrong.';
+    }
+    const v = { ...S.users[id], pin: pinHash(np) }; put('users', v);
+    closeModal(); toast(`New PIN set for ${u.name}. It reaches your other devices by sync.`, 'ok'); after && after();
+  };
 }
 function renderUserPill() {
   const p = $('#user-pill'); if (!p) return;
@@ -6118,11 +6163,21 @@ menuSync();
 // A device waiting for its first download shows the shop as soon as the data arrives.
 onChange(() => { if ($('#view') && !$('#view').dataset.ready && firm()) { $('#view').dataset.ready = '1'; render(); } });
 
+/* ---- Android: the app closed by itself last time; show why, so it can be sent to support ---- */
+window.onAppCrash = text => {
+  LS.set('last-crash', { t: Date.now(), text: String(text || '') });
+  const show = () => openModal(`${mHead('The app closed last time')}<div class="body stack">
+    <p style="margin:0">Sorry about that. Please take a screenshot of this box and send it to us so we can fix it. Your bills and data are safe.</p>
+    <pre class="mono small" style="white-space:pre-wrap;word-break:break-word;max-height:40vh;overflow:auto;background:var(--sunken);padding:10px;border-radius:8px;margin:0">${esc(String(text || '').slice(0, 1200))}</pre></div>
+    <footer><button class="btn primary" data-close>OK</button></footer>`);
+  if (document.documentElement.classList.contains('locked')) setTimeout(() => window.onAppCrash.shown || (window.onAppCrash.shown = 1, show()), 50); else show();
+};
+
 /* =========================================================
    Updates: every copy of the app checks one fixed address for a newer build.
    Online (PC / iPhone): reload picks it up. Android app: downloads it in the background.
    ========================================================= */
-const APP_BUILD = +'9' || 0, APP_VERSION = '2.12';
+const APP_BUILD = +'10' || 0, APP_VERSION = '2.13';
 const SITE_URL = 'https://patidar-app.github.io/Patidar-app/';
 const HOSTED = (location.protocol === 'https:' || location.hostname === 'localhost') && !IN_FRAME;
 const UPDATE_BASE = HOSTED ? new URL('./', location.href).href : SITE_URL;
@@ -6141,6 +6196,8 @@ async function checkUpdate() {
     else updateBanner(`New version ${v.version} is online. Open the online app to always stay up to date.`, 'Open', () => window.open(SITE_URL, '_blank'));
   } catch (e) { }
 }
+// Called by the Android app when a newer Android app (APK) has been downloaded: one tap installs it, data stays.
+window.onApkUpdate = version => updateBanner(`New app ${version || ''} ready to install. Your data stays safe.`, 'Install', () => { try { AndroidPOS.installUpdate(); } catch (e) { } });
 // Called by the Android app after it has downloaded a newer build.
 window.onAppUpdate = version => updateBanner(`Update ${version} downloaded.`, 'Restart now', () => { try { AndroidPOS.reloadApp(); } catch (e) { location.reload(); } });
 if (HOSTED && 'serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => { });
