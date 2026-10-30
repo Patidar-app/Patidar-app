@@ -728,6 +728,21 @@ textarea { border-radius: var(--r-ctl); font-size: 15px; }
 .vh-menu { display: grid; gap: 6px; }
 .vh-menu .btn { justify-content: flex-start; width: 100%; min-height: 46px; font-size: 15px; }
 
+/* ---- shop extras: brand care on bills, brands settings, supplier order, finance box, backups ---- */
+.inv .i-care { margin-top: 10px; padding: 8px 10px; border: 1px dashed #bbb; border-radius: 6px; font-size: .88em; display: grid; gap: 4px; }
+.inv .i-care-t { white-space: pre-line; color: #444; }
+.brand-list { display: grid; gap: 10px; }
+.brand-row { display: grid; grid-template-columns: 160px 220px 1fr; gap: 10px; align-items: start; padding: 10px 0; border-top: 1px solid var(--line); }
+.brand-row .brand-name { padding-top: 26px; }
+@media (max-width: 760px) { .brand-row { grid-template-columns: 1fr; } .brand-row .brand-name { padding-top: 0; } }
+.so-list { display: grid; gap: 6px; max-height: 46vh; overflow: auto; }
+.so-row { display: grid; grid-template-columns: auto 1fr 76px auto; gap: 10px; align-items: center; padding: 6px 2px; border-bottom: 1px solid var(--line); }
+.fin-box { margin-top: 10px; }
+.fin-box summary { cursor: pointer; font-weight: 600; padding: 4px 0; }
+.fin-box .grid2 { margin-top: 8px; }
+.bk-row { align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.bk-row .spacer { flex: 1; }
+
 </style>
 </head>
 <body>
@@ -768,6 +783,9 @@ textarea { border-radius: var(--r-ctl); font-size: 15px; }
     <button data-go="list" data-arg="quotation">Quotations</button>
     <button data-go="list" data-arg="saleReturn">Sales returns</button>
     <button data-go="list" data-arg="receipt">Payments in</button>
+    <button data-go="warranty">Warranty &amp; serial</button>
+    <button data-go="finance">Finance / EMI</button>
+    <button data-go="delivery">Delivery &amp; fitting <b class="badge" id="rail-dlv" hidden>0</b></button>
     <div class="grp">Purchase</div>
     <button data-go="list" data-arg="purchase">Purchase bills</button>
     <button data-go="list" data-arg="purchaseReturn">Purchase returns</button>
@@ -780,6 +798,7 @@ textarea { border-radius: var(--r-ctl); font-size: 15px; }
     <button data-go="items">Items &amp; stock <kbd>F3</kbd></button>
     <button data-go="godowns">Godowns</button>
     <button data-go="labels">Barcode labels <kbd>F6</kbd></button>
+    <button data-act="sup-order">Order from supplier</button>
     <div class="grp">More</div>
     <button data-go="reports">Reports &amp; GST</button>
     <button data-go="settings">Settings</button>
@@ -3863,7 +3882,7 @@ function syncListen() {
       if (applyRemote(x)) touched = true;
     });
     LS.set(lastKey, maxSrv);
-    SYNC.err = '';
+    SYNC.err = ''; SYNC.snap = true;
     if (touched) { pickFirm(); changed(); }
     syncStatus();
   }, err => { SYNC.err = err.code === 'permission-denied' ? 'Firebase rules block this account. Check step 4 of the setup.' : err.message; syncStatus(); });
@@ -3993,7 +4012,10 @@ function calcVoucher(v) {
     roundOff: r2(total - amount), total, hsn: Object.values(hsn), mrpTotal: r2(mrpTotal), saved: Math.max(0, r2(mrpTotal - total)), cost: r2(cost)
   };
 }
-const paidTotal = v => Object.values(v.paid || {}).reduce((a, x) => a + (+x || 0), 0);
+// Money the customer has settled: paid now, plus any amount a finance company pays for them.
+const paidNow = v => Object.values(v.paid || {}).reduce((a, x) => a + (+x || 0), 0);
+const finAmt = v => v.type === 'sale' && v.fin ? (+v.fin.amount || 0) : 0;
+const paidTotal = v => paidNow(v) + finAmt(v);
 // Total for any voucher type (trade vouchers store it at save time).
 const vTotal = v => VT[v.type]?.trade ? (+v.total || 0) : (+v.amount || 0);
 
@@ -4016,6 +4038,7 @@ function D() {
       if (t.stock) for (const l of v.lines || []) if (l.itemId) addStock(l.itemId, v.godown || 'main', t.stock * (+l.qty || 0));
       if (t.party) { const pt = paidTotal(v); addBal(v.partyId, t.party * ((+v.total || 0) - pt)); }
       if (t.cash) for (const [m, x] of Object.entries(v.paid || {})) addMoney(m, t.cash * (+x || 0));
+      if (finAmt(v) && v.fin.gotOn) addMoney(v.fin.gotMode || 'bank', +v.fin.got || 0);
       if (v.type === 'sale') for (const l of v.lines || []) if (l.itemId) lastSale[l.itemId] = v.date;
     } else if (v.type === 'receipt') { addBal(v.partyId, -(+v.amount || 0)); addMoney(v.mode, +v.amount || 0); }
     else if (v.type === 'payment') { if (v.partyId) addBal(v.partyId, +v.amount || 0); addMoney(v.mode, -(+v.amount || 0)); }
@@ -4228,7 +4251,7 @@ function pickFile(accept) {
    Counter billing: the fast scan-and-bill screen. Saves ordinary sales invoices.
    ========================================================= */
 let BILL;
-function resetCounter() { BILL = { lines: [], disc: '', phone: '', name: '', mode: 'cash', tendered: '', split: { cash: '', upi: '', card: '', credit: '' }, ref: '', godown: LS.get('godown-' + S.firmId, 'main') }; }
+function resetCounter() { BILL = { lines: [], disc: '', phone: '', name: '', mode: 'cash', tendered: '', split: { cash: '', upi: '', card: '', credit: '' }, fin: { co: '', down: '', downMode: 'cash', ref: '' }, ref: '', godown: LS.get('godown-' + S.firmId, 'main') }; }
 resetCounter();
 
 function parseBillDisc(str, base) { const s = String(str || '').trim(); if (!s) return 0; return s.endsWith('%') ? r2(base * (parseFloat(s) || 0) / 100) : r2(parseFloat(s) || 0); }
@@ -4239,7 +4262,7 @@ function counterVoucher() {
 }
 function lineFromItem(it, qty = 1, type = 'sale') {
   const buy = type === 'purchase' || type === 'purchaseReturn';
-  return { itemId: it.id, name: it.name, code: it.code, hsn: it.hsn || '', unit: it.unit || 'pcs', qty, rate: +(buy ? it.purchase : it.sale) || 0, disc: 0, gst: +it.gst || 0, mrp: +it.mrp || 0, cost: +it.purchase || 0, serial: '', warranty: +it.warranty || 0, category: it.category || '' };
+  return { itemId: it.id, name: it.name, code: it.code, hsn: it.hsn || '', unit: it.unit || 'pcs', qty, rate: +(buy ? it.purchase : it.sale) || 0, disc: 0, gst: +it.gst || 0, mrp: +it.mrp || 0, cost: +it.purchase || 0, serial: '', warranty: +it.warranty || 0, category: it.category || '', brand: it.brand || '' };
 }
 
 VIEWS.counter = () => {
@@ -4276,7 +4299,8 @@ VIEWS.counter = () => {
       </div>
       <div class="card">
         <h2>Payment</h2>
-        <div class="chips" id="pay-modes">${['cash', 'upi', 'card', 'credit', 'split'].map(m => `<button class="chip" data-act="c-mode" data-mode="${m}" aria-pressed="${BILL.mode === m}">${{ cash: 'Cash', upi: 'UPI', card: 'Card', credit: 'Udhaar', split: 'Split' }[m]}</button>`).join('')}</div>
+        <div class="chips" id="pay-modes">${['cash', 'upi', 'card', 'credit', 'split', 'finance'].map(m => `<button class="chip" data-act="c-mode" data-mode="${m}" aria-pressed="${BILL.mode === m}">${{ cash: 'Cash', upi: 'UPI', card: 'Card', credit: 'Udhaar', split: 'Split', finance: 'Finance / EMI' }[m]}</button>`).join('')}</div>
+        <div id="pay-fin" class="grid2" style="margin-top:10px" ${BILL.mode === 'finance' ? '' : 'hidden'}>${finFields(BILL.fin)}</div>
         <div id="pay-cash" style="margin-top:10px" ${BILL.mode === 'cash' ? '' : 'hidden'}>
           <label class="f"><span>Cash received</span><input type="number" id="tendered" min="0" placeholder="Leave empty for exact amount" value="${esc(BILL.tendered)}"></label>
           <div class="chips" id="cash-quick" style="margin-top:6px"></div>
@@ -4320,6 +4344,7 @@ VIEWS.counter = () => {
   $('#tendered').addEventListener('input', e => { BILL.tendered = e.target.value; counterChange(); });
   $$('[data-split]').forEach(i => i.addEventListener('input', () => { BILL.split[i.dataset.split] = i.value; counterChange(); }));
   $('#pay-ref-in').addEventListener('input', e => BILL.ref = e.target.value);
+  $$('#pay-fin [data-fin]').forEach(i => i.addEventListener('input', () => { BILL.fin[i.dataset.fin] = i.value; counterChange(); }));
   const gsel = $('#c-godown'); if (gsel) gsel.addEventListener('change', () => { BILL.godown = gsel.value; LS.set('godown-' + S.firmId, gsel.value); counterRefresh(); });
   const tb = $('#cart-tbl');
   tb.addEventListener('change', e => {
@@ -4379,6 +4404,7 @@ function counterChange(c) {
   if (BILL.mode === 'cash' && +BILL.tendered) { const d = r2(+BILL.tendered - c.total); el.innerHTML = `<div class="change ${d < 0 ? 'due' : ''}"><span>${d < 0 ? 'Still to collect' : 'Return change'}</span><span>${inr(Math.abs(d))}</span></div>`; }
   else if (BILL.mode === 'split') { const s = Object.values(BILL.split).reduce((a, v) => a + (+v || 0), 0); const d = r2(c.total - s); el.innerHTML = `<div class="change ${d !== 0 ? 'due' : ''}"><span>${d > 0 ? 'Remaining' : d < 0 ? 'Over by' : 'Fully paid'}</span><span>${inr(Math.abs(d))}</span></div>`; }
   else if (BILL.mode === 'credit') el.innerHTML = `<div class="change due"><span>Added to customer's udhaar</span><span>${inr(c.total)}</span></div>`;
+  else if (BILL.mode === 'finance') el.innerHTML = `<div class="change"><span>Finance company pays</span><span>${inr(Math.max(0, c.total - (+BILL.fin.down || 0)))}</span></div>`;
 }
 function custNote() {
   const el = $('#c-note'); if (!el) return;
@@ -4402,14 +4428,23 @@ async function counterSave(btn) {
   if (BILL.mode === 'cash') { if (+BILL.tendered && +BILL.tendered < c.total) { toast(`Cash received is less than ${inr(c.total)}`, 'bad'); return; } paid.cash = c.total; }
   else if (BILL.mode === 'upi' || BILL.mode === 'card') paid[BILL.mode] = c.total;
   else if (BILL.mode === 'split') { const s = Object.values(BILL.split).reduce((a, x) => a + (+x || 0), 0); if (r2(s) !== c.total) { toast(`Split adds up to ${inr(s)}, bill is ${inr(c.total)}`, 'bad'); return; } paid.cash = +BILL.split.cash || 0; paid.upi = +BILL.split.upi || 0; paid.card = +BILL.split.card || 0; }
-  const unpaid = r2(c.total - paid.cash - paid.upi - paid.card);
+  let fin = null;
+  if (BILL.mode === 'finance') {
+    const down = +BILL.fin.down || 0;
+    if (!BILL.fin.co.trim()) { toast('Enter the finance company', 'bad'); return; }
+    if (down > c.total) { toast(`Down payment is more than ${inr(c.total)}`, 'bad'); return; }
+    paid[BILL.fin.downMode || 'cash'] = down;
+    fin = { co: BILL.fin.co.trim(), amount: r2(c.total - down), ref: BILL.fin.ref.trim() };
+    if (!BILL.name.trim() || !BILL.phone.trim()) { toast('Finance bills need the customer name and mobile', 'bad'); $('#c-phone').focus(); return; }
+  }
+  const unpaid = r2(c.total - paid.cash - paid.upi - paid.card - (fin ? fin.amount : 0));
   if (unpaid > 0 && (!BILL.name.trim() || !BILL.phone.trim())) { toast('Udhaar needs the customer name and mobile', 'bad'); $('#c-phone').focus(); return; }
   const short = BILL.lines.filter(l => l.itemId && BILL.lines.filter(x => x.itemId === l.itemId).reduce((a, x) => a + x.qty, 0) > stockOf(l.itemId, BILL.godown));
   if (short.length && !(await ask('Stock is short', `Stock will go below zero for <b>${[...new Set(short.map(l => esc(l.name)))].join(', ')}</b>. Save the bill anyway?`, 'Save bill'))) return;
   const p = counterParty();
   const doc = Object.assign(v, {
     no: nextNo('sale'), date: today(), time: new Date().toISOString(), partyId: p?.id || null, party: p ? { name: p.name, phone: p.phone, gstin: p.gstin || '', state: p.state || '', addr: p.addr || '' } : { name: BILL.name.trim(), phone: BILL.phone },
-    godown: BILL.godown, paid, tendered: BILL.mode === 'cash' && +BILL.tendered ? +BILL.tendered : 0, ref: BILL.ref, source: 'counter', status: 'active'
+    godown: BILL.godown, paid, ...(fin ? { fin } : {}), tendered: BILL.mode === 'cash' && +BILL.tendered ? +BILL.tendered : 0, ref: BILL.ref, source: 'counter', status: 'active'
   });
   const saved = saveTrade(doc);
   resetCounter(); VIEWS.counter();
@@ -4452,7 +4487,7 @@ let CURRENT_EDIT = null;
 
 function saveTrade(doc) {
   const c = calcVoucher(doc);
-  doc.lines = c.lines.map(l => ({ itemId: l.itemId || null, name: l.name, code: l.code || '', hsn: l.hsn || '', unit: l.unit || 'pcs', qty: l.qty, rate: l.rate, disc: +l.disc || 0, gst: l.gst, mrp: +l.mrp || 0, cost: +l.cost || 0, serial: l.serial || '', warranty: +l.warranty || 0, category: l.category || '', taxable: r2(l.taxable), tax: r2(l.tax), amount: r2(l.amount) }));
+  doc.lines = c.lines.map(l => ({ itemId: l.itemId || null, name: l.name, code: l.code || '', hsn: l.hsn || '', unit: l.unit || 'pcs', qty: l.qty, rate: l.rate, disc: +l.disc || 0, gst: l.gst, mrp: +l.mrp || 0, cost: +l.cost || 0, serial: l.serial || '', warranty: +l.warranty || 0, category: l.category || '', brand: l.brand || get('items', l.itemId)?.brand || '', taxable: r2(l.taxable), tax: r2(l.tax), amount: r2(l.amount) }));
   Object.assign(doc, { total: c.total, taxable: c.taxable, tax: c.tax, cgst: c.cgst, sgst: c.sgst, igst: c.igst, roundOff: c.roundOff, saved: c.saved, cost: c.cost, items: c.items, gross: r2(c.gross), lineDisc: r2(c.lineDisc), billDisc: r2(c.billDisc) });
   doc.paid = doc.paid || {};
   doc.change = doc.tendered ? r2(doc.tendered - paidTotal(doc)) : 0;
@@ -4603,6 +4638,7 @@ function renderTradeEditor(head) {
       ${t.party ? `<div class="card"><h2>${v.type === 'sale' || v.type === 'purchaseReturn' ? 'Received now' : 'Paid now'}</h2>
         <div class="grid2">${Object.entries(MODES).map(([m, l]) => `<label class="f"><span>${l}</span><input type="number" min="0" data-paid="${m}" value="${v.paid?.[m] || ''}" placeholder="0"></label>`).join('')}</div>
         <div class="chips" style="margin-top:8px"><button class="btn sm" data-act="e-fullpaid" data-mode="cash" type="button">Full in cash</button><button class="btn sm" data-act="e-fullpaid" data-mode="upi" type="button">Full by UPI</button><button class="btn sm ghost" data-act="e-fullpaid" data-mode="" type="button">Unpaid</button></div>
+        ${v.type === 'sale' ? `<details class="fin-box" ${finAmt(v) ? 'open' : ''}><summary>Finance / EMI</summary><div class="grid2" id="e-fin">${finFields(v.fin || {}, true)}</div></details>` : ''}
         <div id="e-due"></div></div>` : ''}
       <div class="actions">
         <button class="btn primary big" data-act="e-save" data-then="print">Save &amp; print</button>
@@ -4626,6 +4662,7 @@ function renderTradeEditor(head) {
   on('#e-billdisc', 'input', e => { v.billDisc = +e.value || 0; tradeTotals(); });
   on('#e-noround', 'change', e => { v.noRound = e.checked; tradeTotals(); });
   $$('[data-paid]').forEach(i => i.addEventListener('input', () => { v.paid[i.dataset.paid] = +i.value || 0; dirty(); tradeDue(); }));
+  $$('#e-fin [data-fin]').forEach(i => i.addEventListener('input', () => { v.fin = v.fin || {}; v.fin[i.dataset.fin] = i.dataset.fin === 'amount' ? (+i.value || 0) : i.value.trim(); if (!v.fin.co && !v.fin.amount) delete v.fin; dirty(); tradeDue(); }));
   const scan = $('#e-scan');
   attachPicker(scan, { search: q => searchItems(q, 8), row: itemRow, onPick: it => { addEditorItem(it); scan.value = ''; },
     onEnterRaw: (raw, none) => { if (!raw) return true; const it = col('items').find(i => i.code === raw); if (it) { addEditorItem(it); scan.value = ''; return true; } if (none) { toast(`No item with barcode ${raw}`, 'bad', { label: 'Add it', fn: () => editItem(null, { code: raw }) }); scan.value = ''; return true; } return false; } });
@@ -4827,6 +4864,7 @@ function showVoucher(v, { justSaved } = {}) {
       ${(v.type === 'sale' || v.type === 'purchase') && !canc && canType(v.type) ? `<button class="btn" data-y="return">Make return</button>` : ''}
       ${v.type === 'purchase' && !canc && can('labels') ? `<button class="btn" data-y="labels">Print labels</button>` : ''}
       ${t.trade && canType(v.type) ? `<button class="btn" data-y="dup">Duplicate</button>` : ''}
+      ${v.type === 'sale' && !canc && canType('sale') ? `<button class="btn" data-y="dlv">${v.dlv ? (v.dlv.done ? 'Delivered ✓' : 'Delivery · ' + fmtDate(v.dlv.date)) : 'Delivery / fitting'}</button>` : ''}
       ${canc ? `${can('cancel') ? '<button class="btn" data-y="restore">Restore</button>' : ''}${can('delete') ? '<button class="btn danger" data-y="delete">Delete</button>' : ''}` : can('cancel') ? `<button class="btn danger" data-y="cancel">Cancel ${t.trade ? 'bill' : 'entry'}</button>` : ''}
       <button class="btn" data-y="pdf">PDF</button>
       <button class="btn" data-y="print">Print</button>
@@ -4839,7 +4877,8 @@ function showVoucher(v, { justSaved } = {}) {
   y('pdf', () => pdfVoucher(v).then(r => r && download(r.name, r.blob, 'application/pdf')));
   y('share', () => shareVoucher(v));
   y('edit', async () => { if (!(await lockCheck(v.date, v.no))) return; closeModal(); openEditor(v.type, v.id); });
-  y('dup', () => { closeModal(); openEditor(v.type, null, v); });
+  y('dup', () => { closeModal(); openEditor(v.type, null, Object.assign({}, v, { fin: undefined, dlv: undefined })); });
+  y('dlv', () => { closeModal(); editDelivery(v.id); });
   y('labels', () => { closeModal(); LAB.sel = {}; v.lines.forEach(l => { if (l.itemId) LAB.sel[l.itemId] = (LAB.sel[l.itemId] || 0) + l.qty; }); go('labels'); });
   y('convert', () => { closeModal(); if (v.convertedTo && get('vouchers', v.convertedTo)) return showVoucher(get('vouchers', v.convertedTo)); openEditor('sale', null, Object.assign({}, v, { fromQuote: v.id, paid: {} })); });
   y('return', () => { closeModal(); openEditor(v.type === 'sale' ? 'saleReturn' : 'purchaseReturn', null, { partyId: v.partyId, party: v.party, against: v.id, lines: v.lines.map(l => ({ ...l })), taxMode: v.taxMode, godown: v.godown, pos: v.pos, interstate: v.interstate, paid: {} }); });
@@ -4998,7 +5037,7 @@ const categories = () => Array.from(new Set(['Electronics', 'Furniture', ...col(
 VIEWS.items = () => {
   view().innerHTML = `<div class="view-head"><h1>Items &amp; stock</h1>
       <button class="btn" data-act="i-import">Import CSV</button><button class="btn" data-act="i-export">Export CSV</button>
-      <button class="btn" data-act="v-new" data-type="adjust">Adjust stock</button><button class="btn primary" data-act="i-new">+ Add item</button></div>
+      <button class="btn" data-act="v-new" data-type="adjust">Adjust stock</button><button class="btn wa" data-act="sup-order">Order from supplier</button><button class="btn primary" data-act="i-new">+ Add item</button></div>
     <div class="grid4" style="margin-bottom:12px"><input type="search" id="if-q" placeholder="Name, barcode, brand, HSN" value="${esc(IF.q)}">
       <select id="if-cat"><option value="">All categories</option>${categories().map(c => `<option ${c === IF.cat ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select>
       <select id="if-gd"><option value="">All godowns</option>${gdOptions(IF.gd)}</select>
@@ -5121,6 +5160,7 @@ function moneyRows() {
   for (const v of col('vouchers')) {
     if (v.status === 'cancelled' || v.legacy) continue; const t = VT[v.type];
     if (t.trade && t.cash) for (const [mo, x] of Object.entries(v.paid || {})) if (+x) rows.push({ v, mode: mo, amt: t.cash * x, text: `${t.label} ${v.no} · ${vParty(v) || 'Walk-in'}` });
+    if (finAmt(v) && v.fin.gotOn && +v.fin.got) rows.push({ v, date: v.fin.gotOn, mode: v.fin.gotMode || 'bank', amt: +v.fin.got, text: `Finance from ${v.fin.co || 'finance company'} · ${v.no}` });
     if (v.type === 'receipt') rows.push({ v, mode: v.mode, amt: +v.amount, text: `Received from ${vParty(v)}` });
     if (v.type === 'payment') rows.push({ v, mode: v.mode, amt: -v.amount, text: v.head ? `Expense: ${v.head}` : `Paid to ${vParty(v)}` });
     if (v.type === 'journal') for (const l of v.jlines) if (l.acc in MODES) rows.push({ v, mode: l.acc, amt: (+l.dr || 0) - (+l.cr || 0), text: `Journal ${v.no} · ${v.note || ''}` });
@@ -5128,9 +5168,10 @@ function moneyRows() {
   return rows;
 }
 function cashBody() {
-  const rows = moneyRows().filter(r => inRange(r.v.date, CBF.range) && (!CBF.mode || r.mode === CBF.mode)).sort((a, b) => b.v.date.localeCompare(a.v.date) || b.v.createdAt - a.v.createdAt);
+  const dt = r => r.date || r.v.date;
+  const rows = moneyRows().filter(r => inRange(dt(r), CBF.range) && (!CBF.mode || r.mode === CBF.mode)).sort((a, b) => dt(b).localeCompare(dt(a)) || b.v.createdAt - a.v.createdAt);
   const inn = rows.reduce((a, r) => a + Math.max(0, r.amt), 0), out = rows.reduce((a, r) => a + Math.max(0, -r.amt), 0);
-  $('#cb-tbl').innerHTML = rows.length ? `<thead><tr><th>Date</th><th>Particulars</th><th>Mode</th><th class="num">In</th><th class="num">Out</th></tr></thead><tbody>` + rows.map(r => `<tr class="click" data-act="v-show" data-id="${r.v.id}"><td>${fmtDate(r.v.date)}</td><td>${esc(r.text)}</td><td>${MODES[r.mode] || r.mode}</td><td class="num pos">${r.amt > 0 ? num(r.amt) : ''}</td><td class="num neg">${r.amt < 0 ? num(-r.amt) : ''}</td></tr>`).join('') + `</tbody><tfoot><tr><td colspan="3">Total</td><td class="num">${num(inn)}</td><td class="num">${num(out)}</td></tr></tfoot>`
+  $('#cb-tbl').innerHTML = rows.length ? `<thead><tr><th>Date</th><th>Particulars</th><th>Mode</th><th class="num">In</th><th class="num">Out</th></tr></thead><tbody>` + rows.map(r => `<tr class="click" data-act="v-show" data-id="${r.v.id}"><td>${fmtDate(dt(r))}</td><td>${esc(r.text)}</td><td>${MODES[r.mode] || r.mode}</td><td class="num pos">${r.amt > 0 ? num(r.amt) : ''}</td><td class="num neg">${r.amt < 0 ? num(-r.amt) : ''}</td></tr>`).join('') + `</tbody><tfoot><tr><td colspan="3">Total</td><td class="num">${num(inn)}</td><td class="num">${num(out)}</td></tr></tfoot>`
     : emptyRow('No money movement in this range', '', 5);
 }
 
@@ -5164,7 +5205,7 @@ function invoiceHTML(v, th, paper) {
   const p = v.party || {};
   const paid = paidTotal(v); const due = r2(c.total - paid);
   const showDisc = c.lines.some(l => +l.disc);
-  const lines = c.lines.map((l, i) => `<tr><td class="c">${i + 1}</td><td><b>${esc(l.name)}</b>${l.serial ? `<div class="i-sub">S/N: ${esc(l.serial)}</div>` : ''}${l.warranty && isSale ? `<div class="i-sub">Warranty ${l.warranty} months</div>` : ''}${show.mrp && l.mrp > l.rate && isSale ? `<div class="i-sub">MRP ₹${num(l.mrp)}</div>` : ''}</td>
+  const lines = c.lines.map((l, i) => `<tr><td class="c">${i + 1}</td><td><b>${esc(l.name)}</b>${l.serial ? `<div class="i-sub">S/N: ${esc(l.serial)}</div>` : ''}${l.warranty && isSale ? `<div class="i-sub">Warranty ${l.warranty} months${v.type === 'sale' ? ' (till ' + fmtDate(addMonths(v.date, l.warranty)) + ')' : ''}</div>` : ''}${show.mrp && l.mrp > l.rate && isSale ? `<div class="i-sub">MRP ₹${num(l.mrp)}</div>` : ''}</td>
     <td>${esc(l.hsn || '')}</td><td class="r">${qtyFmt(l.qty)} ${esc(l.unit || '')}</td><td class="r">${num(l.rate)}</td>${showDisc ? `<td class="r">${l.disc ? r2(l.disc) + '%' : ''}</td>` : ''}<td class="r">${l.gst}%</td><td class="r">${num(l.amount)}</td></tr>`).join('');
   const hsn = show.hsn && c.tax ? `<table class="i-hsn"><thead><tr><th>HSN</th><th class="r">Taxable</th>${v.interstate ? '<th class="r">IGST</th>' : '<th class="r">CGST</th><th class="r">SGST</th>'}<th class="r">Total tax</th></tr></thead><tbody>
     ${c.hsn.map(h => `<tr><td>${esc(h.hsn)} @ ${h.gst}%</td><td class="r">${num(h.taxable)}</td>${v.interstate ? `<td class="r">${num(h.tax)}</td>` : `<td class="r">${num(h.tax / 2)}</td><td class="r">${num(h.tax / 2)}</td>`}<td class="r">${num(h.tax)}</td></tr>`).join('')}</tbody></table>` : '';
@@ -5183,9 +5224,10 @@ function invoiceHTML(v, th, paper) {
         ${v.interstate ? `<tr><td>IGST</td><td class="r">${num(c.igst)}</td></tr>` : `<tr><td>CGST</td><td class="r">${num(c.cgst)}</td></tr><tr><td>SGST</td><td class="r">${num(c.sgst)}</td></tr>`}
         ${c.roundOff ? `<tr><td>Round off</td><td class="r">${c.roundOff > 0 ? '+' : '−'}${num(Math.abs(c.roundOff))}</td></tr>` : ''}
         <tr class="grand"><td>Total</td><td class="r">₹${num(c.total)}</td></tr>
-        ${t.party && v.type !== 'quotation' ? `<tr><td>${isSale ? 'Received' : 'Paid'}</td><td class="r">${num(paid)}</td></tr><tr><td><b>Balance</b></td><td class="r"><b>${num(Math.max(0, due))}</b></td></tr>` : ''}
+        ${t.party && v.type !== 'quotation' ? `<tr><td>${isSale ? 'Received' : 'Paid'}</td><td class="r">${num(paidNow(v))}</td></tr>${finAmt(v) ? `<tr><td>Finance · ${esc(v.fin.co || '')}${v.fin.ref ? ' (' + esc(v.fin.ref) + ')' : ''}</td><td class="r">${num(finAmt(v))}</td></tr>` : ''}<tr><td><b>Balance</b></td><td class="r"><b>${num(Math.max(0, due))}</b></td></tr>` : ''}
         ${show.savings && isSale && c.saved > 0 ? `<tr><td colspan="2" style="color:#1c7a4b;font-weight:600;padding-top:6px">You saved ₹${num(c.saved)} on MRP</td></tr>` : ''}
       </tbody></table></div>
+    ${isSale ? brandCareHTML(v, false) : ''}
     <div class="i-bottom"><div class="i-terms">${bank}${show.terms && f.terms && isSale ? `<div style="margin-top:4px"><b>Terms</b>\n${esc(f.terms)}</div>` : ''}</div>${qr}
       ${show.sign ? `<div class="i-sign">For ${esc(f.name)}<div style="height:44px"></div>${esc(f.signLabel || 'Authorised Signatory')}</div>` : '<div></div>'}</div>
     ${f.footer ? `<div class="i-thanks">${esc(f.footer)}</div>` : ''}
@@ -5195,12 +5237,13 @@ function receiptHTML(v, paper, opt) {
   const f = firm(); const c = calcVoucher(v); const cls = paper === '58' ? 'p58' : '';
   const isSale = v.type === 'sale';
   const rows = c.lines.map(l => {
-    const extra = []; if (l.serial) extra.push('S/N: ' + esc(l.serial)); if (l.warranty) extra.push('Warranty ' + l.warranty + ' mo'); if (l.discAmt) extra.push('Disc ' + num(l.discAmt));
+    const extra = []; if (l.serial) extra.push('S/N: ' + esc(l.serial)); if (l.warranty) extra.push('Warranty ' + l.warranty + ' mo' + (isSale ? ' till ' + fmtDate(addMonths(v.date, l.warranty)) : '')); if (l.discAmt) extra.push('Disc ' + num(l.discAmt));
     return `<tr><td colspan="2"><b>${esc(l.name)}</b></td></tr><tr class="sub"><td>&nbsp;&nbsp;${qtyFmt(l.qty)} × ${num(l.rate)}${extra.length ? '<br>&nbsp;&nbsp;' + extra.join(' · ') : ''}</td><td class="r">${num(l.net)}</td></tr>`;
   }).join('');
   const taxRows = c.hsn.length && c.tax ? Object.values(c.lines.reduce((a, l) => { const k = l.gst; a[k] = a[k] || { g: k, t: 0, x: 0 }; a[k].t += l.taxable; a[k].x += l.tax; return a; }, {})).filter(r => r.g > 0)
     .map(r => `<tr><td>${r.g}%</td><td class="r">${num(r.t)}</td><td class="r">${num(r.x / 2)}</td><td class="r">${num(r.x / 2)}</td></tr>`).join('') : '';
-  const pays = Object.entries(v.paid || {}).filter(([, x]) => +x).map(([k, x]) => `<div class="row"><span>Paid by ${MODES[k] || k}</span><span>${num(x)}</span></div>`).join('');
+  const pays = Object.entries(v.paid || {}).filter(([, x]) => +x).map(([k, x]) => `<div class="row"><span>Paid by ${MODES[k] || k}</span><span>${num(x)}</span></div>`).join('')
+    + (finAmt(v) ? `<div class="row"><span>Finance · ${esc(v.fin.co || '')}</span><span>${num(finAmt(v))}</span></div>${v.fin.ref ? `<div>Loan no: ${esc(v.fin.ref)}</div>` : ''}` : '');
   const due = r2(c.total - paidTotal(v));
   const logo = opt?.logo !== false ? (f.logo || (f === firms()[0] ? LOGO_MONO : '')) : '';
   return `<div class="rcpt ${cls}">
@@ -5223,6 +5266,7 @@ function receiptHTML(v, paper, opt) {
     ${taxRows ? `<hr><table class="tax"><thead><tr><th>GST</th><th class="r">Taxable</th><th class="r">CGST</th><th class="r">SGST</th></tr></thead><tbody>${taxRows}</tbody></table><div class="row" style="font-size:.9em"><span>${v.taxMode === 'excl' ? 'GST added' : 'Prices include GST'}</span><span>Tax ${num(c.tax)}</span></div>` : ''}
     ${c.saved > 0 ? `<hr><div class="c"><b>You saved ₹${num(c.saved)} on MRP</b></div>` : ''}
     ${f.upi && due > 0.5 ? `<hr><div class="c">Scan to pay ₹${num(due)}</div>${qrSVG(upiLink(f.upi, f.name, due, v.no), 'qr')}` : f.upi ? `<div class="c">UPI: ${esc(f.upi)}</div>` : ''}
+    ${isSale ? brandCareHTML(v, true) : ''}
     <hr><div class="c">${esc(f.footer || '')}</div>${f.terms ? `<div class="c" style="font-size:.85em;white-space:pre-line">${esc(f.terms)}</div>` : ''}
     ${barcodeSVG(v.no)}<div class="bc-txt">${esc(v.no)}</div>
   </div>`;
@@ -5596,13 +5640,13 @@ Object.assign(ACT, {
 /* =========================================================
    Settings: firm details, invoice design, printing, sync & devices, data.
    ========================================================= */
-const ST_TABS = [['firm', 'Firm details'], ['design', 'Invoice design'], ['printing', 'Counter & numbering'], ['users', 'Users'], ['report', 'Evening report'], ['sync', 'Sync & devices'], ['data', 'Backup & data']];
+const ST_TABS = [['firm', 'Firm details'], ['design', 'Invoice design'], ['printing', 'Counter & numbering'], ['brands', 'Brands & warranty'], ['users', 'Users'], ['report', 'Evening report'], ['sync', 'Sync & devices'], ['data', 'Backup & data']];
 let ST_TAB = 'firm';
 VIEWS.settings = tab => {
   if (tab) ST_TAB = tab;
   if (!isOwner()) { view().innerHTML = `<div class="view-head"><h1>Settings</h1></div><div class="card pad" style="max-width:520px"><h2>Owner only</h2><p class="muted" style="margin:0">You are signed in as <b>${esc(me()?.name || '')}</b> (staff). Ask the owner to change settings.</p><div class="row" style="margin-top:12px"><button class="btn" data-act="u-switch">Switch user</button></div></div>`; return; }
   view().innerHTML = `<div class="view-head"><h1>Settings</h1></div><div class="tabs" role="tablist">${ST_TABS.map(([k, l]) => `<button role="tab" aria-selected="${ST_TAB === k}" data-act="st-tab" data-k="${k}">${l}</button>`).join('')}</div><div id="st-body"></div>`;
-  ({ firm: stFirm, design: stDesign, printing: stPrinting, users: stUsers, report: stReport, sync: stSync, data: stData })[ST_TAB]();
+  ({ firm: stFirm, design: stDesign, printing: stPrinting, brands: stBrands, users: stUsers, report: stReport, sync: stSync, data: stData })[ST_TAB]();
 };
 ACT['st-tab'] = b => { ST_TAB = b.dataset.k; ROUTE.arg = null; VIEWS.settings(); };
 function bindFields(root, obj, after) {
@@ -5802,12 +5846,20 @@ function stData() {
   const hasSample = col('items').some(i => i.sample) || col('vouchers').some(v => v.sample);
   $('#st-body').innerHTML = `<div class="cols"><div class="card pad stack"><h2>Backup</h2>
       <p class="muted small" style="margin:0">${SYNC.cfg ? 'Sync keeps a copy of everything in your Firebase project. A file backup is still a good idea once a month.' : 'Everything is saved on this device only. Download a backup at closing time, or turn on sync.'}</p>
-      <div class="row"><button class="btn primary" data-act="bk-save">Download backup (all firms)</button><button class="btn" data-act="bk-load">Restore from backup</button></div></div>
+      <div class="row"><button class="btn primary" data-act="bk-save">Download backup (all firms)</button><button class="btn" data-act="bk-load">Restore from backup</button></div>
+      <h2 style="margin-top:10px">Automatic backups</h2><p class="muted small" style="margin:0">The app keeps a copy of everything on this device once a day, for the last 7 days.</p><div id="auto-bk" class="stack"></div></div>
     <div class="card pad stack"><h2>This firm</h2>
       ${hasSample ? '<button class="btn" data-act="dt-sample" style="justify-self:start">Remove sample data</button>' : ''}
       <button class="btn" data-act="dt-theme" style="justify-self:start">Switch light / dark screen</button>
       ${firms().length > 1 ? `<button class="btn danger" data-act="dt-delfirm" style="justify-self:start">Delete ${esc(firmLabel(firm(), firms()))}</button>` : ''}
       <p class="muted small" style="margin:0">App version ${APP_VERSION} (build ${APP_BUILD}) · device ${esc(DEVICE())}</p></div></div>`;
+  autoBkList();
+}
+function restoreBackup(o) {
+  for (const f of o.firms) put('firms', f);
+  for (const u of o.users || []) put('users', u);
+  for (const [fid, d] of Object.entries(o.data || {})) for (const c of COLS) for (const doc of d[c] || []) put(c, doc, fid);
+  pickFirm(); render(); toast('Backup restored', 'ok');
 }
 function backupJSON() {
   const out = { app: 'patidar-counter', v: 2, at: new Date().toISOString(), firms: Object.values(S.firms), users: Object.values(S.users), data: {} };
@@ -5822,10 +5874,7 @@ Object.assign(ACT, {
     if (o.app !== 'patidar-counter' || !Array.isArray(o.firms)) return toast('That is not a Patidar v2 backup file', 'bad');
     const n = Object.values(o.data || {}).reduce((a, d) => a + (d.vouchers || []).length, 0);
     if (!(await ask('Restore this backup?', `It has <b>${o.firms.length}</b> firm(s) and <b>${n}</b> entries from ${fmtDate(o.at)}. Records in the backup replace the same records here${SYNC.cfg ? ' and on your other devices' : ''}.`, 'Restore'))) return;
-    for (const f of o.firms) put('firms', f);
-    for (const u of o.users || []) put('users', u);
-    for (const [fid, d] of Object.entries(o.data || {})) for (const c of COLS) for (const doc of d[c] || []) put(c, doc, fid);
-    pickFirm(); render(); toast('Backup restored', 'ok');
+    restoreBackup(o);
   },
   'dt-sample': async () => {
     if (!(await ask('Remove sample data?', 'The example items, parties and bills are deleted. Your own entries stay.', 'Remove', true))) return;
@@ -5876,6 +5925,8 @@ function routeOK(name, arg) {
   if (name === 'list') return canType(arg);
   if (name === 'cashbook') return can('cash');
   if (name === 'labels') return can('labels');
+  if (name === 'warranty' || name === 'delivery') return can('sale') || can('counter');
+  if (name === 'finance') return can('payin');
   if (name === 'settings') return isOwner();
   return true;
 }
@@ -6433,7 +6484,7 @@ window.onAppCrash = text => {
    Updates: every copy of the app checks one fixed address for a newer build.
    Online (PC / iPhone): reload picks it up. Android app: downloads it in the background.
    ========================================================= */
-const APP_BUILD = +'13' || 0, APP_VERSION = '2.16';
+const APP_BUILD = +'14' || 0, APP_VERSION = '2.17';
 const SITE_URL = 'https://patidar-app.github.io/Patidar-app/';
 const HOSTED = (location.protocol === 'https:' || location.hostname === 'localhost') && !IN_FRAME;
 const UPDATE_BASE = HOSTED ? new URL('./', location.href).href : SITE_URL;
@@ -6530,7 +6581,7 @@ document.addEventListener('focusout', () => setTimeout(kbCheck, 60));
    this only keeps menus and buttons tidy so nobody taps something that would be refused.
    ========================================================= */
 const ACT_PERM = { 'q-item': 'items', 'i-new': 'items', 'i-import': 'items', 'p-new': 'parties', 'entry-party': 'parties', 'i-label': 'labels', 'p-receive': 'payin', 'p-pay': 'payout', 'p-edit': 'parties',
-  'v-export': 'export', 'p-export': 'export', 'i-export': 'export', 'r-csv': 'export', 'bk-save': 'export' };
+  'v-export': 'export', 'p-export': 'export', 'i-export': 'export', 'r-csv': 'export', 'bk-save': 'export', 'sup-order': 'purchase' };
 function noAccess() {
   const to = firstRoute();
   view().innerHTML = `<div class="card pad" style="max-width:520px;margin:30px auto"><h2>No access</h2>
@@ -6611,6 +6662,292 @@ function tidyHeads() {
 let tidyQueued = false;
 new MutationObserver(() => { if (!tidyQueued) { tidyQueued = true; requestAnimationFrame(() => { tidyQueued = false; tidyHeads(); }); } }).observe(document.body, { childList: true, subtree: true });
 addEventListener('resize', () => tidyHeads());
+
+/* =========================================================
+   Shop extras: warranty and serial search, finance (EMI) bills, delivery and fitting,
+   supplier orders on WhatsApp, brand care numbers on bills, daily automatic backup,
+   and clean-up of empty duplicate firms.
+   ========================================================= */
+const addMonths = (d, m) => { const x = new Date(d + 'T00:00:00'); x.setMonth(x.getMonth() + (+m || 0)); return dayKey(x); };
+const daysTo = d => Math.round((new Date(d + 'T00:00:00') - new Date(today() + 'T00:00:00')) / 86400000);
+function openWA(phone, text) {
+  const d = String(phone || '').replace(/\D/g, ''), ph = d.length === 10 ? '91' + d : d;
+  const a = document.createElement('a'); a.href = `https://wa.me/${ph}?text=${encodeURIComponent(text)}`; a.target = '_blank'; a.rel = 'noopener';
+  document.body.appendChild(a); a.click(); a.remove();
+}
+
+/* ---------------- brands: customer care number and warranty terms ---------------- */
+const brandKey = b => String(b || '').trim().toLowerCase();
+const brandOf = l => l.brand || (l.itemId ? get('items', l.itemId)?.brand : '') || '';
+const brandInfo = b => (firm()?.brands || {})[brandKey(b)] || null;
+function brandCareHTML(v, receipt) {
+  const seen = new Map();
+  for (const l of v.lines || []) { const b = brandOf(l), i = brandInfo(b); if (i && (i.care || i.terms) && !seen.has(brandKey(b))) seen.set(brandKey(b), { name: i.name || b, care: i.care || '', terms: i.terms || '' }); }
+  if (!seen.size) return '';
+  const list = [...seen.values()];
+  if (receipt) return `<hr><div class="c"><b>Service &amp; warranty</b></div>${list.map(x => `<div><b>${esc(x.name)}</b>${x.care ? ': Care ' + esc(x.care) : ''}</div>${x.terms ? `<div style="font-size:.85em;white-space:pre-line">${esc(x.terms)}</div>` : ''}`).join('')}`;
+  return `<div class="i-care"><b>Service &amp; warranty</b>${list.map(x => `<div><b>${esc(x.name)}</b>${x.care ? ` · Customer care <b>${esc(x.care)}</b>` : ''}${x.terms ? `<div class="i-care-t">${esc(x.terms)}</div>` : ''}</div>`).join('')}</div>`;
+}
+function brandNames() {
+  const m = new Map();
+  for (const i of col('items')) if (i.brand && i.brand.trim()) m.set(brandKey(i.brand), i.brand.trim());
+  for (const [k, x] of Object.entries(firm().brands || {})) m.set(k, x.name || m.get(k) || k);
+  return [...m.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+}
+function stBrands() {
+  const f = firm(); f.brands = f.brands || {};
+  const list = brandNames();
+  $('#st-body').innerHTML = `<div class="card pad stack"><h2>Brands &amp; warranty</h2>
+    <p class="muted small" style="margin:0">Fill in each brand's customer care (toll-free) number and warranty conditions once. They print on every bill that has that brand's items. Brands come from your items; add more below.</p>
+    <div class="brand-list">${list.length ? list.map(([k, n]) => { const x = f.brands[k] || {}; return `<div class="brand-row" data-b="${esc(k)}">
+      <b class="brand-name">${esc(n)}</b>
+      <label class="f"><span>Customer care / toll-free no.</span><input type="tel" data-bf="care" value="${esc(x.care || '')}" placeholder="e.g. 1800 000 0000"></label>
+      <label class="f"><span>Warranty conditions</span><textarea rows="2" data-bf="terms" placeholder="e.g. 2 years on product, 10 years on motor. Bill copy needed for service.">${esc(x.terms || '')}</textarea></label></div>`; }).join('') : '<p class="muted">No brands yet. Add the brand on each item, or add one here.</p>'}</div>
+    <form class="row" id="br-add"><input type="text" placeholder="Brand name, e.g. Havells" style="max-width:260px" aria-label="New brand"><button class="btn">+ Add brand</button></form></div>`;
+  $$('.brand-row').forEach(r => $$('[data-bf]', r).forEach(i => i.addEventListener('input', () => {
+    const k = r.dataset.b; const x = f.brands[k] || (f.brands[k] = { name: $('.brand-name', r).textContent });
+    x[i.dataset.bf] = i.value.trim(); saveFirmSoon();
+  })));
+  $('#br-add').onsubmit = e => { e.preventDefault(); const n = e.target.querySelector('input').value.trim(); if (!n) return; f.brands[brandKey(n)] = f.brands[brandKey(n)] || { name: n }; put('firms', f); stBrands(); };
+}
+
+/* ---------------- warranty and serial search ---------------- */
+const WF = { q: '', st: '' };
+function warrantyRows() {
+  const rows = [];
+  for (const v of col('vouchers')) {
+    if (v.type !== 'sale' || v.status === 'cancelled') continue;
+    for (const l of v.lines || []) if (l.serial || +l.warranty) rows.push({ v, l, end: +l.warranty ? addMonths(v.date, l.warranty) : '' });
+  }
+  return rows.sort((a, b) => b.v.date.localeCompare(a.v.date));
+}
+VIEWS.warranty = () => {
+  view().innerHTML = `<div class="view-head"><h1>Warranty &amp; serial</h1></div>
+    <div class="grid3" style="margin-bottom:12px"><input type="search" id="wf-q" placeholder="Serial / IMEI, mobile, name, item or bill no." value="${esc(WF.q)}" autofocus>
+      <select id="wf-st"><option value="">All</option><option value="on">Under warranty</option><option value="soon">Ending in 30 days</option><option value="off">Warranty over</option></select></div>
+    <div class="card"><div class="tbl-wrap"><table class="tbl" id="wf-tbl"></table></div></div>`;
+  $('#wf-st').value = WF.st;
+  const upd = () => { WF.q = $('#wf-q').value; WF.st = $('#wf-st').value; warrantyBody(); };
+  ['#wf-q', '#wf-st'].forEach(s => $(s).addEventListener('input', upd));
+  warrantyBody();
+};
+function warrantyBody() {
+  const q = WF.q.trim().toLowerCase(), qd = q.replace(/\D/g, '');
+  const all = warrantyRows();
+  const rows = all.filter(({ v, l, end }) => {
+    if (q) { const hay = [l.serial, l.name, l.code, v.no, v.party?.name, vParty(v), brandOf(l)].join(' ').toLowerCase(); const ph = (v.party?.phone || '').replace(/\D/g, ''); if (!hay.includes(q) && !(qd.length >= 4 && ph.includes(qd))) return false; }
+    const left = end ? daysTo(end) : -1;
+    return !WF.st || (WF.st === 'on' ? left >= 0 : WF.st === 'soon' ? left >= 0 && left <= 30 : !end || left < 0);
+  }).slice(0, 300);
+  $('#wf-tbl').innerHTML = rows.length ? `<thead><tr><th>Item</th><th>Customer</th><th>Bill</th><th>Warranty</th></tr></thead><tbody>` + rows.map(({ v, l, end }) => {
+    const left = end ? daysTo(end) : null, b = brandOf(l), care = brandInfo(b)?.care;
+    const pill = !end ? '<span class="pill">No warranty</span>' : left < 0 ? `<span class="pill bad">Over · ${fmtDate(end)}</span>` : `<span class="pill ${left <= 30 ? 'warn' : 'ok'}">Till ${fmtDate(end)}</span><div class="muted small">${left} days left</div>`;
+    return `<tr class="click" data-act="v-show" data-id="${v.id}"><td><b>${esc(l.name)}</b><div class="muted small">${l.serial ? 'S/N <span class="mono">' + esc(l.serial) + '</span>' : 'No serial'}${b ? ' · ' + esc(b) : ''}${care ? ' · Care ' + esc(care) : ''}</div></td>
+      <td>${esc(vParty(v) || 'Walk-in')}<div class="muted small">${esc(v.party?.phone || '')}</div></td>
+      <td>${esc(v.no)}<div class="muted small">${fmtDate(v.date)}</div></td><td>${pill}</td></tr>`;
+  }).join('') + '</tbody>'
+    : emptyRow(all.length ? 'Nothing matches' : 'No warranty items sold yet', all.length ? 'Try the last few digits of the serial or the mobile number.' : 'Items with a warranty, or with a serial number on the bill, show here.', 4);
+}
+
+/* ---------------- finance / EMI ---------------- */
+const FIN_COS = ['Bajaj Finserv', 'HDFC Bank', 'HDB Financial', 'IDFC First Bank', 'Home Credit', 'TVS Credit', 'ICICI Bank', 'Kotak Mahindra Bank', 'Samsung Finance+'];
+function finFields(fin, editor) {
+  return `<label class="f wide"><span>Finance company</span><input type="text" data-fin="co" list="fin-cos" value="${esc(fin.co || '')}" placeholder="e.g. Bajaj Finserv"></label>
+    ${editor ? `<label class="f"><span>Finance amount ₹</span><input type="number" min="0" data-fin="amount" value="${fin.amount || ''}" placeholder="0"></label>`
+    : `<label class="f"><span>Down payment ₹</span><input type="number" min="0" data-fin="down" value="${esc(fin.down || '')}" placeholder="0"></label>
+    <label class="f"><span>Down payment by</span><select data-fin="downMode">${['cash', 'upi', 'card'].map(m => `<option value="${m}" ${m === (fin.downMode || 'cash') ? 'selected' : ''}>${MODES[m]}</option>`).join('')}</select></label>`}
+    <label class="f"><span>Loan / DO no.</span><input type="text" data-fin="ref" value="${esc(fin.ref || '')}" placeholder="optional"></label>
+    <datalist id="fin-cos">${FIN_COS.map(c => `<option value="${esc(c)}">`).join('')}</datalist>`;
+}
+const FNF = { tab: 'due' };
+VIEWS.finance = () => {
+  const all = col('vouchers').filter(v => finAmt(v) && v.status !== 'cancelled');
+  const due = all.filter(v => !v.fin.gotOn), got = all.filter(v => v.fin.gotOn);
+  const byCo = {}; for (const v of due) byCo[v.fin.co || 'Other'] = (byCo[v.fin.co || 'Other'] || 0) + finAmt(v);
+  const list = (FNF.tab === 'due' ? due : got).sort((a, b) => (FNF.tab === 'due' ? a.date.localeCompare(b.date) : b.fin.gotOn.localeCompare(a.fin.gotOn)));
+  view().innerHTML = `<div class="view-head"><h1>Finance / EMI</h1><button class="btn primary" data-go="counter">New finance bill</button></div>
+    <div class="kpis">${kpiHTML([['To receive', inr0(due.reduce((a, v) => a + finAmt(v), 0)), `${due.length} bill${due.length === 1 ? '' : 's'}`, due.length ? 'neg' : ''], ['Received', inr0(got.reduce((a, v) => a + (+v.fin.got || 0), 0)), `${got.length} bill${got.length === 1 ? '' : 's'}`], ...Object.entries(byCo).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([c, x]) => [c, inr0(x), 'pending'])])}</div>
+    <div class="tabs" role="tablist"><button role="tab" aria-selected="${FNF.tab === 'due'}" data-act="fn-tab" data-k="due">Pending (${due.length})</button><button role="tab" aria-selected="${FNF.tab === 'got'}" data-act="fn-tab" data-k="got">Received (${got.length})</button></div>
+    <div class="card"><div class="tbl-wrap"><table class="tbl">${list.length ? `<thead><tr><th>Bill</th><th>Customer</th><th>Finance</th><th class="num">Amount</th><th></th></tr></thead><tbody>` + list.map(v => `<tr class="click" data-act="v-show" data-id="${v.id}">
+      <td>${esc(v.no)}<div class="muted small">${fmtDate(v.date)}${FNF.tab === 'due' ? ' · ' + agoText(new Date(v.date + 'T00:00:00').getTime()) : ''}</div></td><td>${esc(vParty(v))}<div class="muted small">${esc(v.party?.phone || '')}</div></td>
+      <td>${esc(v.fin.co || '')}<div class="muted small">${v.fin.ref ? 'Loan ' + esc(v.fin.ref) : ''}</div></td>
+      <td class="num"><b>${inr0(finAmt(v))}</b>${v.fin.gotOn ? `<div class="muted small">got ${inr0(v.fin.got)} on ${fmtDate(v.fin.gotOn)}</div>` : ''}</td>
+      <td><button class="btn sm ${v.fin.gotOn ? '' : 'primary'}" data-act="fn-got" data-id="${v.id}">${v.fin.gotOn ? 'Change' : 'Mark received'}</button></td></tr>`).join('') + '</tbody>'
+      : emptyRow(FNF.tab === 'due' ? 'Nothing pending from finance companies' : 'Nothing received yet', FNF.tab === 'due' ? 'On the counter, pick <b>Finance / EMI</b> as the payment to make a finance bill.' : '', 5)}</table></div></div>`;
+};
+ACT['fn-tab'] = b => { FNF.tab = b.dataset.k; VIEWS.finance(); };
+ACT['fn-got'] = b => {
+  const v = get('vouchers', b.dataset.id); if (!v || !v.fin) return;
+  if (!can('payin')) return denyToast('record payments in');
+  const m = openModal(`${mHead('Money from ' + esc(v.fin.co || 'finance company'))}<form class="body stack">
+    <p class="muted small" style="margin:0">${esc(v.no)} · ${esc(vParty(v))} · finance ${inr0(finAmt(v))}</p>
+    <div class="grid2"><label class="f"><span>Amount credited ₹</span><input type="number" min="0" name="got" value="${v.fin.got || finAmt(v)}"></label>
+      <label class="f"><span>Date</span><input type="date" name="on" value="${esc(v.fin.gotOn || today())}"></label>
+      <label class="f"><span>Received in</span><select name="mode">${Object.entries(MODES).map(([k, l]) => `<option value="${k}" ${k === (v.fin.gotMode || 'bank') ? 'selected' : ''}>${l}</option>`).join('')}</select></label></div>
+    <p class="muted small" style="margin:0">If the company keeps a fee, enter what actually came in.</p></form>
+    <footer>${v.fin.gotOn ? '<button class="btn" data-un>Not received yet</button>' : ''}<button class="btn" data-close>Cancel</button><button class="btn primary" data-yes>Save</button></footer>`);
+  m.querySelector('form').onsubmit = e => e.preventDefault();
+  const save = fin => { put('vouchers', Object.assign(v, { fin })); closeModal(); render(); };
+  m.querySelector('[data-yes]').onclick = () => { const f = m.querySelector('form'); save(Object.assign({}, v.fin, { got: +f.got.value || 0, gotOn: f.on.value || today(), gotMode: f.mode.value })); toast('Finance payment saved', 'ok'); };
+  const un = m.querySelector('[data-un]'); if (un) un.onclick = () => { const fin = Object.assign({}, v.fin); delete fin.got; delete fin.gotOn; delete fin.gotMode; save(fin); };
+};
+
+/* ---------------- delivery and fitting ---------------- */
+function editDelivery(id) {
+  const v = get('vouchers', id); if (!v) return;
+  const d = Object.assign({ date: today(), addr: v.party?.addr || get('parties', v.partyId)?.addr || '', by: '', fit: false, note: '' }, v.dlv || {});
+  const m = openModal(`${mHead('Delivery / fitting · ' + esc(v.no))}<form class="body stack">
+    <div class="grid2"><label class="f"><span>Date</span><input type="date" name="date" value="${esc(d.date)}"></label>
+      <label class="f"><span>Time (optional)</span><input type="text" name="time" value="${esc(d.time || '')}" placeholder="e.g. evening"></label>
+      <label class="f wide"><span>Address</span><textarea name="addr" rows="2">${esc(d.addr)}</textarea></label>
+      <label class="f"><span>Delivery / fitter</span><input type="text" name="by" value="${esc(d.by)}" placeholder="Name"></label>
+      <label class="f"><span>Fitter mobile (optional)</span><input type="tel" name="byPhone" value="${esc(d.byPhone || '')}"></label></div>
+    <label class="chip"><input type="checkbox" name="fit" ${d.fit ? 'checked' : ''}> Needs fitting / installation</label>
+    <label class="f"><span>Note</span><input type="text" name="note" value="${esc(d.note)}" placeholder="e.g. 3rd floor, call before coming"></label></form>
+    <footer>${v.dlv ? '<button class="btn danger" data-rm>Remove</button>' : ''}<button class="btn" data-close>Cancel</button><button class="btn primary" data-yes>Save</button></footer>`);
+  m.querySelector('form').onsubmit = e => e.preventDefault();
+  m.querySelector('[data-yes]').onclick = () => {
+    const f = m.querySelector('form');
+    v.dlv = Object.assign({}, v.dlv || {}, { date: f.date.value || today(), time: f.time.value.trim(), addr: f.addr.value.trim(), by: f.by.value.trim(), byPhone: f.byPhone.value.trim(), fit: f.fit.checked, note: f.note.value.trim(), done: !!(v.dlv && v.dlv.done) });
+    put('vouchers', v); closeModal(); toast(`Delivery set for ${fmtDate(v.dlv.date)}`, 'ok'); if (ROUTE.name === 'delivery') render();
+  };
+  const rm = m.querySelector('[data-rm]'); if (rm) rm.onclick = () => { delete v.dlv; put('vouchers', v); closeModal(); render(); };
+}
+const DLF = { tab: 'due' };
+const dlvItems = v => (v.lines || []).map(l => `${l.name}${l.qty > 1 ? ' × ' + qtyFmt(l.qty) : ''}`).join(', ');
+const dlvPending = () => col('vouchers').filter(v => v.type === 'sale' && v.dlv && !v.dlv.done && v.status !== 'cancelled');
+VIEWS.delivery = () => {
+  const all = col('vouchers').filter(v => v.type === 'sale' && v.dlv && v.status !== 'cancelled');
+  const due = all.filter(v => !v.dlv.done).sort((a, b) => a.dlv.date.localeCompare(b.dlv.date));
+  const done = all.filter(v => v.dlv.done).sort((a, b) => (b.dlv.doneOn || '').localeCompare(a.dlv.doneOn || ''));
+  const list = DLF.tab === 'due' ? due : done.slice(0, 200);
+  view().innerHTML = `<div class="view-head"><h1>Delivery &amp; fitting</h1></div>
+    <div class="kpis">${kpiHTML([['Today', due.filter(v => v.dlv.date === today()).length, 'to deliver'], ['Late', due.filter(v => v.dlv.date < today()).length, 'past the date', due.some(v => v.dlv.date < today()) ? 'neg' : ''], ['Pending', due.length, 'in all'], ['Fitting', due.filter(v => v.dlv.fit).length, 'to install']])}</div>
+    <div class="tabs" role="tablist"><button role="tab" aria-selected="${DLF.tab === 'due'}" data-act="dl-tab" data-k="due">Pending (${due.length})</button><button role="tab" aria-selected="${DLF.tab === 'done'}" data-act="dl-tab" data-k="done">Done</button></div>
+    <div class="card"><div class="tbl-wrap"><table class="tbl">${list.length ? `<thead><tr><th>Date</th><th>Customer</th><th>Items</th><th>By</th><th></th></tr></thead><tbody>` + list.map(v => { const d = v.dlv, n = daysTo(d.date); return `<tr class="click" data-act="v-show" data-id="${v.id}">
+      <td>${d.done ? fmtDate(d.doneOn) : `<span class="pill ${n < 0 ? 'bad' : n === 0 ? 'warn' : ''}">${n === 0 ? 'Today' : n === 1 ? 'Tomorrow' : fmtDate(d.date)}</span>`}${d.time ? `<div class="muted small">${esc(d.time)}</div>` : ''}</td>
+      <td><b>${esc(vParty(v) || 'Walk-in')}</b><div class="muted small">${esc(v.party?.phone || '')}${d.addr ? ' · ' + esc(d.addr) : ''}</div></td>
+      <td>${esc(dlvItems(v))}<div class="muted small">${esc(v.no)}${d.fit ? ' · <b>fitting</b>' : ''}${d.note ? ' · ' + esc(d.note) : ''}</div></td>
+      <td>${esc(d.by || '')}</td>
+      <td style="white-space:nowrap">${d.done ? `<button class="btn sm" data-act="dl-undo" data-id="${v.id}">Not done</button>` : `${v.party?.phone ? `<button class="btn sm wa icon-wa" data-act="dl-wa" data-id="${v.id}" title="Tell customer on WhatsApp" aria-label="Tell customer on WhatsApp">${WA_ICON}</button> ` : ''}${d.byPhone ? `<button class="btn sm" data-act="dl-fitter" data-id="${v.id}">Send to fitter</button> ` : ''}<button class="btn sm" data-act="dl-edit" data-id="${v.id}">Edit</button> <button class="btn sm primary" data-act="dl-done" data-id="${v.id}">Done</button>`}</td></tr>`; }).join('') + '</tbody>'
+      : emptyRow(DLF.tab === 'due' ? 'No pending deliveries' : 'Nothing delivered yet', DLF.tab === 'due' ? 'Open a sales bill and tap <b>Delivery / fitting</b> to add one.' : '', 5)}</table></div></div>`;
+};
+Object.assign(ACT, {
+  'dl-tab': b => { DLF.tab = b.dataset.k; VIEWS.delivery(); },
+  'dl-edit': b => editDelivery(b.dataset.id),
+  'dl-done': b => { const v = get('vouchers', b.dataset.id); v.dlv = Object.assign({}, v.dlv, { done: true, doneOn: today() }); put('vouchers', v); toast(`${vParty(v) || v.no}: delivered`, 'ok'); render(); },
+  'dl-undo': b => { const v = get('vouchers', b.dataset.id); v.dlv = Object.assign({}, v.dlv, { done: false }); delete v.dlv.doneOn; put('vouchers', v); render(); },
+  'dl-wa': b => {
+    const v = get('vouchers', b.dataset.id), d = v.dlv, f = firm();
+    openWA(v.party.phone, `Namaste ${vParty(v) || ''} ji,\n${f.name} se aapka saman (${dlvItems(v)}) ${fmtDate(d.date)}${d.time ? ' ' + d.time : ''} ko ${d.fit ? 'deliver aur fit' : 'deliver'} kiya jayega.${d.by ? '\nDelivery: ' + d.by + (d.byPhone ? ' (' + d.byPhone + ')' : '') : ''}\nBill no. ${v.no}\nDhanyavaad 🙏`);
+  },
+  'dl-fitter': b => {
+    const v = get('vouchers', b.dataset.id), d = v.dlv;
+    openWA(d.byPhone, `${d.fit ? 'Delivery + fitting' : 'Delivery'} ${fmtDate(d.date)}${d.time ? ' ' + d.time : ''}\nCustomer: ${vParty(v) || ''} ${v.party?.phone || ''}\nAddress: ${d.addr || '-'}\nItems: ${dlvItems(v)}\nBill: ${v.no}${d.note ? '\nNote: ' + d.note : ''}`);
+  }
+});
+
+/* ---------------- order from supplier on WhatsApp ---------------- */
+function lastSupplier(itemId) {
+  let best = null;
+  for (const v of col('vouchers')) if (v.type === 'purchase' && v.status !== 'cancelled' && v.partyId && (v.lines || []).some(l => l.itemId === itemId) && (!best || v.date > best.date)) best = v;
+  return best?.partyId || '';
+}
+ACT['sup-order'] = () => {
+  if (!can('purchase')) return denyToast('order from suppliers');
+  const low = col('items').filter(i => stockOf(i.id) <= (+i.min || 0)).map(i => ({ i, sup: lastSupplier(i.id), qty: Math.max(1, Math.ceil((+i.min || 1) * 2 - stockOf(i.id))) }));
+  const sups = col('parties').filter(p => p.kind === 'supplier' || low.some(x => x.sup === p.id)).sort((a, b) => a.name.localeCompare(b.name));
+  const first = (low.find(x => x.sup) || {}).sup || sups[0]?.id || '';
+  const m = openModal(`${mHead('Order from supplier')}<form class="body stack">
+    <label class="f"><span>Supplier</span><select name="sup"><option value="">Choose on WhatsApp</option>${sups.map(p => `<option value="${p.id}" ${p.id === first ? 'selected' : ''}>${esc(p.name)}${p.phone ? '' : ' (no mobile)'}</option>`).join('')}</select></label>
+    <div id="so-list" class="so-list"></div>
+    <label class="f"><span>Add an item</span><input type="search" id="so-find" placeholder="Search any item to add" autocomplete="off"></label></form>
+    <footer><button class="btn" data-close>Cancel</button><button class="btn wa" data-yes>${WA_ICON} Send order</button></footer>`, { wide: true });
+  m.querySelector('form').onsubmit = e => e.preventDefault();
+  const rows = low.slice();
+  const draw = () => {
+    const sup = m.querySelector('[name=sup]').value;
+    $('#so-list', m).innerHTML = rows.length ? rows.map((x, k) => `<label class="so-row"><input type="checkbox" data-k="${k}" ${x.on ?? (!x.sup || x.sup === sup) ? 'checked' : ''}>
+      <span><b>${esc(x.i.name)}</b><span class="muted small"> · stock ${qtyFmt(stockOf(x.i.id))}${x.sup && x.sup !== sup ? ' · usually from ' + esc(get('parties', x.sup)?.name || '') : ''}</span></span>
+      <input class="in-num" type="number" min="1" data-q="${k}" value="${x.qty}" aria-label="Quantity"> <span class="muted small">${esc(x.i.unit || 'pcs')}</span></label>`).join('')
+      : '<p class="muted" style="margin:0">No item is low on stock. Search below to add items to the order.</p>';
+    $$('[data-k]', m).forEach(c => c.onchange = () => { rows[+c.dataset.k].on = c.checked; });
+    $$('[data-q]', m).forEach(c => c.oninput = () => { rows[+c.dataset.q].qty = +c.value || 1; });
+  };
+  m.querySelector('[name=sup]').onchange = () => { rows.forEach(x => delete x.on); draw(); };
+  attachPicker($('#so-find', m), { search: q => searchItems(q, 8), row: itemRow, onPick: it => { if (!rows.some(x => x.i.id === it.id)) rows.push({ i: it, sup: lastSupplier(it.id), qty: 1, on: true }); $('#so-find', m).value = ''; draw(); } });
+  draw();
+  m.querySelector('[data-yes]').onclick = () => {
+    const sup = get('parties', m.querySelector('[name=sup]').value);
+    const pick = rows.filter((x, k) => $(`[data-k="${k}"]`, m)?.checked);
+    if (!pick.length) return toast('Tick at least one item', 'bad');
+    const text = `Namaste${sup ? ' ' + sup.name : ''} ji,\n${firm().name} ka order:\n` + pick.map((x, n) => `${n + 1}. ${x.i.name}${x.i.code && !/^2\d{12}$/.test(x.i.code) ? ' (' + x.i.code + ')' : ''} – ${qtyFmt(x.qty)} ${x.i.unit || 'pcs'}`).join('\n') + '\nKripya rate aur delivery date confirm karein. Dhanyavaad 🙏';
+    openWA(sup?.phone || '', text); closeModal(); toast('Order opened in WhatsApp', 'ok');
+  };
+};
+
+/* ---------------- daily automatic backup (kept on this device, last 7 days) ---------------- */
+let BKDB = null;
+function bkDB() {
+  if (BKDB) return Promise.resolve(BKDB);
+  return new Promise((res, rej) => { const r = indexedDB.open('patidar-autobackup', 1); r.onupgradeneeded = () => r.result.createObjectStore('snaps', { keyPath: 'day' }); r.onsuccess = () => res(BKDB = r.result); r.onerror = () => rej(r.error); });
+}
+const bkTx = (mode, fn) => bkDB().then(db => new Promise((res, rej) => { const t = db.transaction('snaps', mode); const s = t.objectStore('snaps'); let out; const r = fn(s); if (r) r.onsuccess = () => { out = r.result; }; t.oncomplete = () => res(out); t.onerror = () => rej(t.error); }));
+async function autoBackup(force) {
+  try {
+    if (!S.ready || !firms().length) return;
+    const day = today(); if (!force && LS.get('auto-bk', '') === day) return;
+    const json = backupJSON();
+    await bkTx('readwrite', s => s.put({ day, at: Date.now(), size: json.length, firms: firms().length, json }));
+    const keys = (await bkTx('readonly', s => s.getAllKeys())) || [];
+    for (const k of keys.sort().slice(0, Math.max(0, keys.length - 7))) await bkTx('readwrite', s => s.delete(k));
+    LS.set('auto-bk', day);
+  } catch (e) { console.warn('auto backup', e); }
+}
+async function autoBkList() {
+  const el = $('#auto-bk'); if (!el) return;
+  let list = []; try { list = (await bkTx('readonly', s => s.getAll())) || []; } catch (e) { }
+  list.sort((a, b) => b.day.localeCompare(a.day));
+  el.innerHTML = list.length ? list.map(b => `<div class="row bk-row"><span><b>${fmtDate(b.day)}</b> <span class="muted small">${fmtTime(b.at)} · ${(b.size / 1024 / 1024).toFixed(1)} MB</span></span><span class="spacer"></span>
+    <button class="btn sm" data-act="abk-get" data-d="${b.day}">Download</button><button class="btn sm" data-act="abk-load" data-d="${b.day}">Restore</button></div>`).join('')
+    : '<p class="muted small" style="margin:0">The first one is made a few seconds after the app opens.</p>';
+}
+Object.assign(ACT, {
+  'abk-get': async b => { const x = await bkTx('readonly', s => s.get(b.dataset.d)); if (x) download(`patidar-backup-${x.day}.json`, x.json, 'application/json'); },
+  'abk-load': async b => {
+    const x = await bkTx('readonly', s => s.get(b.dataset.d)); if (!x) return;
+    if (!(await ask(`Restore the backup of ${fmtDate(x.day)}?`, `Records in it replace the same records here${SYNC.cfg ? ' and on your other devices' : ''}. Entries made after ${fmtTime(x.at)} that day stay as they are.`, 'Restore'))) return;
+    await autoBackup(true); restoreBackup(JSON.parse(x.json));
+  }
+});
+
+/* ---------------- empty duplicate firms ----------------
+   A new phone makes a sample firm before sync is set up; once the real shop arrives it shows twice.
+   A firm with no entries of its own is removed when another firm with the same name has real data. */
+const ownData = fid => ['vouchers', 'items', 'parties'].some(c => col(c, fid).some(d => !d.sample));
+let dedupeBusy = false;
+async function dedupeFirms() {
+  if (dedupeBusy || !S.ready || (SYNC.cfg && !SYNC.snap)) return;
+  const list = firms(), name = f => String(f.name || '').trim().toLowerCase();
+  const gone = list.filter(f => !ownData(f.id) && list.some(x => x !== f && name(x) === name(f) && ownData(x.id)));
+  if (!gone.length) return;
+  dedupeBusy = true;
+  await autoBackup(true);
+  for (const f of gone) {
+    for (const c of COLS) for (const d of col(c, f.id)) del(c, d.id, f.id);
+    del('firms', f.id);
+    if (S.firmId === f.id) { const twin = firms().find(x => name(x) === name(f)); S.firmId = twin?.id || null; LS.set('firm', S.firmId); }
+  }
+  pickFirm(); dedupeBusy = false;
+  toast(`Removed ${gone.length} empty duplicate firm${gone.length > 1 ? 's' : ''}`, 'ok'); render();
+}
+let dedupeTimer = 0;
+onChange(() => {
+  clearTimeout(dedupeTimer); dedupeTimer = setTimeout(dedupeFirms, 2500);
+  const n = S.ready && firm() ? dlvPending().length : 0, b = $('#rail-dlv'); if (b) { b.hidden = !n; b.textContent = n; }
+});
+setTimeout(() => { autoBackup(); dedupeFirms(); }, 6000);
+setInterval(() => autoBackup(), 3600000);
 
 </script>
 
