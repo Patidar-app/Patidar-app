@@ -665,6 +665,69 @@ input.ro { background: var(--sunken); color: var(--muted); }
 @keyframes sp-in { from { opacity: 0; transform: scale(.85); } }
 @keyframes sp-draw { to { stroke-dashoffset: 0; } }
 
+/* ---------- join requests ---------- */
+.lg-join { display: flex; align-items: center; justify-content: center; gap: 4px; flex-wrap: wrap; border-top: 1px solid var(--line); padding-top: 10px; }
+.req-banner { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: space-between; padding: 10px 14px; margin-bottom: 12px; border-radius: 12px; background: var(--gold-soft); color: var(--gold-ink); border: 1px solid color-mix(in srgb, var(--gold) 40%, transparent); }
+.req-card { border-left: 4px solid var(--gold); }
+.req-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); }
+.req-row:first-of-type { border-top: 0; }
+.req-row i { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-weight: 700; background: var(--maroon); color: var(--on-maroon); }
+.req-row div { display: grid; min-width: 0; } .req-row div b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rail .badge { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 99px; background: #ffd27a; color: #3d0a17; font-size: 12px; display: inline-grid; place-items: center; }
+@media (max-width: 520px) { .req-row { grid-template-columns: auto minmax(0, 1fr); } .req-row .btn { grid-column: span 1; } }
+
+/* =========================================================
+   Professional polish: one type scale, one control height, segmented tabs, tidy phone headers.
+   ========================================================= */
+:root { --ctl: 40px; --ctl-sm: 32px; --r-ctl: 10px; }
+body { font-size: 15px; letter-spacing: .005em; }
+.view-head { gap: 8px; margin-bottom: 16px; min-height: 40px; }
+.view-head h1 { font-size: 22px; line-height: 1.2; }
+.view-head h1 small { font-size: 13px; }
+.btn { min-height: var(--ctl); padding: 0 16px; border-radius: var(--r-ctl); font-size: 14px; line-height: 1.2; }
+.btn.sm { min-height: var(--ctl-sm); padding: 0 11px; font-size: 13px; border-radius: 8px; }
+.view-head .btn { min-height: var(--ctl); }
+input[type=text], input[type=search], input[type=tel], input[type=email], input[type=number], input[type=password], input[type=date], input:not([type]), select { min-height: var(--ctl); border-radius: var(--r-ctl); font-size: 15px; }
+textarea { border-radius: var(--r-ctl); font-size: 15px; }
+.f > span, label.f > span { font-size: 13px; font-weight: 600; color: var(--muted); }
+.card { border-radius: 14px; }
+.card h2, .h2 { font-size: 11.5px; letter-spacing: .12em; margin-bottom: 10px; }
+.kpi { padding: 14px 16px; }
+.kpi small { font-size: 11px; letter-spacing: .12em; }
+.kpi strong { font-size: 24px; line-height: 1.2; margin: 4px 0 2px; }
+.kpi span { font-size: 12.5px; }
+.tbl th { font-size: 11px; letter-spacing: .1em; padding: 10px 12px; }
+.tbl td { padding: 10px 12px; font-size: 14.5px; }
+@media (min-width: 641px) { .tbl th:first-child, .tbl td:first-child { padding-left: 16px; } .tbl th:last-child, .tbl td:last-child { padding-right: 16px; } }
+.pill { font-size: 12px; padding: 2px 9px; border-radius: 99px; font-weight: 600; }
+.modal header h3 { font-size: 18px; font-weight: 700; }
+.modal { border-radius: 16px; }
+/* tabs as a segmented control */
+.tabs { display: inline-flex; flex-wrap: nowrap; gap: 2px; padding: 4px; margin-bottom: 16px; border: 0; border-radius: 12px; background: var(--sunken); max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tabs button { flex: none; border: 0; margin: 0; padding: 0 14px; min-height: 34px; border-radius: 9px; font-size: 14px; font-weight: 600; color: var(--muted); white-space: nowrap; transition: background-color .15s ease, color .15s ease, box-shadow .15s ease; }
+.tabs button:hover { color: var(--ink); }
+.tabs button[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.12); border: 0; }
+/* phone: only the main action stays in the header, the rest go under ⋯ */
+.vh-more { display: none; }
+@media (max-width: 640px) {
+  body { font-size: 15px; }
+  .view-head { flex-wrap: wrap; row-gap: 10px; }
+  .view-head h1 { font-size: 19px; flex: 1 1 100%; margin-right: 0; }
+  .view-head.has-more h1 { flex: 1 1 0; }
+  .view-head h1 small { display: block; margin: 2px 0 0; }
+  .view-head.has-more > .btn:not(.primary):not(.keep):not(.vh-more), .view-head.has-more > a.btn:not(.primary):not(.keep) { display: none; }
+  .view-head.has-more .vh-more { display: inline-flex; }
+  .view-head > select { flex: 1 1 140px; }
+  .tabs { display: flex; margin-left: -4px; margin-right: -4px; }
+  .kpi strong { font-size: 21px; }
+  .tbl td { font-size: 14.5px; }
+  .toast { font-size: 13.5px; padding: 9px 12px; }
+  .toasts { bottom: calc(76px + env(safe-area-inset-bottom, 0px)); left: 12px; right: 12px; max-width: none; }
+}
+.vh-menu { display: grid; gap: 6px; }
+.vh-menu .btn { justify-content: flex-start; width: 100%; min-height: 46px; font-size: 15px; }
+
 </style>
 </head>
 <body>
@@ -721,6 +784,7 @@ input.ro { background: var(--sunken); color: var(--muted); }
     <button data-go="reports">Reports &amp; GST</button>
     <button data-go="settings">Settings</button>
     <button data-go="settings" data-arg="users">Users &amp; access</button>
+    <button data-act="u-review" id="rail-req" class="rail-req" hidden>Join requests <b class="badge">0</b></button>
     <div class="grp">This device</div>
     <label class="rail-firm"><span>Firm</span><select id="firm-pick2" aria-label="Firm"></select></label>
     <button data-go="settings" data-arg="sync">Sync <span class="muted small" id="rail-sync"></span></button>
@@ -5036,7 +5100,7 @@ Object.assign(ACT, { 'g-new': () => editGodown(null), 'g-edit': b => editGodown(
 const CBF = { range: 'month', mode: '' };
 VIEWS.cashbook = () => {
   const m = D().money;
-  view().innerHTML = `<div class="view-head"><h1>Cash &amp; bank</h1><button class="btn" data-act="v-new" data-type="receipt">+ Payment in</button><button class="btn" data-act="v-new" data-type="payment">+ Payment out / expense</button></div>
+  view().innerHTML = `<div class="view-head"><h1>Cash &amp; bank</h1><button class="btn keep" data-act="v-new" data-type="payment">+ Payment out</button><button class="btn primary" data-act="v-new" data-type="receipt">+ Payment in</button></div>
     <div class="kpis">${kpiHTML(Object.entries(MODES).map(([k, l]) => [l, inr0(m[k]), k === 'cash' ? 'cash in hand' : 'balance', m[k] < 0 ? 'neg' : '']))}</div>
     <div class="grid3" style="margin-bottom:12px"><select id="cb-range">${rangeOptions(CBF.range)}</select><select id="cb-mode"><option value="">All modes</option>${Object.entries(MODES).map(([k, l]) => `<option value="${k}" ${k === CBF.mode ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
     <div class="card"><div class="tbl-wrap"><table class="tbl" id="cb-tbl"></table></div></div>`;
@@ -5401,6 +5465,7 @@ VIEWS.home = () => {
   const quotes = col('vouchers').filter(v => v.type === 'quotation' && !v.convertedTo && v.status !== 'cancelled').length;
   view().innerHTML = `<div class="view-head dash-head"><h1>${esc(firm().name)}<small>${new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</small></h1>
       <button class="btn" data-act="entry">+ New entry</button><button class="btn primary" data-go="counter">Counter billing</button></div>
+    ${me()?.role === 'owner' && pendingUsers().length ? `<div class="req-banner"><span><b>${esc(pendingUsers()[0].name)}</b>${pendingUsers().length > 1 ? ` and ${pendingUsers().length - 1} more` : ''} asked to join the shop.</span><button class="btn sm primary" data-act="u-review">Review</button></div>` : ''}
     ${todayCard(todaySales, lowAll.length)}
     <div class="kpis">${kpiHTML([['This month', inr0(sumBy(month, v => v.total)), `${month.length} bill${month.length === 1 ? '' : 's'}`], ['To receive', inr0(rec), 'from customers', rec ? 'neg' : ''], ['To pay', inr0(pay), 'to suppliers'], ['Cash in hand', inr0(d.money.cash), `Bank + UPI ${inr0(d.money.bank + d.money.upi + d.money.card)}`]])}</div>
     <div class="cols">
@@ -5771,8 +5836,10 @@ Object.assign(ACT, {
    Users (owner / staff) and the evening report sent to the owner's WhatsApp.
    With no users set up, the app runs as one owner with no login.
    ========================================================= */
-const users = () => Object.values(S.users).filter(u => !u.deleted).sort((a, b) => (a.role === 'owner' ? 0 : 1) - (b.role === 'owner' ? 0 : 1) || a.name.localeCompare(b.name));
-const me = () => { const u = S.users[LS.get('user', '')]; return u && !u.deleted ? u : null; };
+const users = () => Object.values(S.users).filter(u => !u.deleted && u.status !== 'pending').sort((a, b) => (a.role === 'owner' ? 0 : 1) - (b.role === 'owner' ? 0 : 1) || a.name.localeCompare(b.name));
+const me = () => { const u = S.users[LS.get('user', '')]; return u && !u.deleted && u.status !== 'pending' ? u : null; };
+// People who asked to join from the sign-in screen; the owner approves them and picks their rights.
+const pendingUsers = () => Object.values(S.users).filter(u => !u.deleted && u.status === 'pending').sort((a, b) => (a.requestedAt || 0) - (b.requestedAt || 0));
 const isOwner = () => !users().length || me()?.role === 'owner';
 const needLogin = () => users().length > 0 && !me();
 
@@ -5840,9 +5907,11 @@ function loginScreen() {
           <div class="pin-pad">${['1', '2', '3', '4', '5', '6', '7', '8', '9', 'clear', '0', 'back'].map(k => `<button type="button" data-k="${k}" aria-label="${k}">${k === 'back' ? '⌫' : k === 'clear' ? 'C' : k}</button>`).join('')}</div>
           <button class="btn primary big lg-go">Sign in</button>
           <button type="button" class="lg-forgot" id="lg-forgot">Forgot PIN?</button></form>` : '<p class="muted lg-hint">Tap your name to sign in.</p>'}
+        <div class="lg-join">${pendingUsers().length ? `<span class="muted small">${pendingUsers().length} request${pendingUsers().length === 1 ? '' : 's'} waiting for the owner</span>` : '<span class="muted small">New to the shop?</span>'}<button type="button" class="lg-forgot" id="lg-signup">Request access</button></div>
         <p class="muted small login-foot"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg> Every bill and entry is saved with your name, date and time.</p>
       </div></div>`;
     first = false;
+    $('#lg-signup').onclick = () => signupForm(() => paint());
     $$('[data-u]').forEach(b => b.onclick = () => { pick = b.dataset.u; pin = ''; paint(); setTimeout(() => !IS_ANDROID && $('#lg-pin')?.focus(), 30); });
     const fm = $('#lg-f'); if (!fm) return;
     const inp = $('#lg-pin');
@@ -5908,9 +5977,48 @@ function forgotPin(id, after) {
     closeModal(); toast(`New PIN set for ${u.name}. It reaches your other devices by sync.`, 'ok'); after && after();
   };
 }
+function signupForm(after) {
+  const m = openModal(`${mHead('Request access')}<form class="body stack" autocomplete="off">
+    <p class="muted small" style="margin:0">Fill this in and the owner will approve you and choose what you can do. You can sign in once approved.</p>
+    <div class="grid2"><label class="f"><span>Your name *</span><input type="text" name="name" required autofocus></label>
+      <label class="f"><span>Mobile *</span><input type="tel" name="phone" inputmode="tel" maxlength="13"></label></div>
+    <div class="grid2"><label class="f"><span>Choose a PIN (4 to 8 digits) *</span><input type="password" inputmode="numeric" name="pin" maxlength="8" autocomplete="new-password"></label>
+      <label class="f"><span>PIN again *</span><input type="password" inputmode="numeric" name="pin2" maxlength="8" autocomplete="new-password"></label></div>
+    <label class="f"><span>Work you will do</span><select name="role"><option value="staff">Staff: billing at the counter</option><option value="manager">Manager: billing, purchase, stock and reports</option></select></label>
+    <div class="neg small" data-err role="alert"></div>
+    <footer style="padding:0"><button type="button" class="btn" data-close>Cancel</button><button class="btn primary">Send request</button></footer></form>`);
+  const f = m.querySelector('form'), err = t => m.querySelector('[data-err]').textContent = t;
+  f.onsubmit = e => {
+    e.preventDefault();
+    const name = f.name.value.trim(), phone = f.phone.value.replace(/[^\d+]/g, ''), pin = f.pin.value.trim();
+    if (!name) return err('Enter your name.');
+    if (phone.replace(/\D/g, '').length < 10) return err('Enter your 10-digit mobile number.');
+    if (Object.values(S.users).some(x => !x.deleted && x.name.toLowerCase() === name.toLowerCase())) return err('This name is already used. Add your surname.');
+    if (!/^\d{4,8}$/.test(pin)) return err('PIN should be 4 to 8 numbers.');
+    if (pin !== f.pin2.value.trim()) return err('The two PINs are different.');
+    put('users', { name, phone, pin: pinHash(pin), role: f.role.value, status: 'pending', requestedAt: Date.now(), requestedOn: DEVICE() });
+    closeModal(); toast('Request sent. The owner will approve it, then sign in with your PIN.', 'ok'); after && after();
+  };
+}
+// The owner hears about new requests on any device, as they arrive by sync.
+let PENDING_SEEN = -1;
+function notePending() {
+  const n = pendingUsers().length;
+  if (PENDING_SEEN >= 0 && n > PENDING_SEEN && me()?.role === 'owner') { const u = pendingUsers().at(-1); toast(`${u.name} asked to join the shop`, 'ok', { label: 'Review', fn: () => reviewRequest(u.id) }); }
+  PENDING_SEEN = n;
+  const b = $('#rail-req'); if (b) { b.hidden = !n || me()?.role !== 'owner'; b.querySelector('b').textContent = n; }
+}
+function reviewRequest(id) { if (!isOwner()) return denyToast('approve users'); editUser(id); }
+ACT['u-review'] = b => reviewRequest(b.dataset.id || pendingUsers()[0]?.id);
+ACT['u-reject'] = async b => {
+  const u = S.users[b.dataset.id]; if (!u) return;
+  if (!(await ask(`Reject ${u.name}?`, 'The request is removed. They can ask again later.', 'Reject', true))) return;
+  del('users', u.id); toast('Request rejected'); stUsers(); notePending();
+};
 function renderUserPill() {
   const p = $('#user-pill'); if (!p) return;
   p.hidden = !users().length || !me();
+  const rq = $('#rail-req'); if (rq) { const n = pendingUsers().length; rq.hidden = !n || me()?.role !== 'owner'; rq.querySelector('b').textContent = n; }
   for (const id of ['#logout-btn', '#rail-logout']) { const b = $(id); if (b) b.hidden = p.hidden; }
   if (me()) p.innerHTML = `<i aria-hidden="true">${esc(me().name.slice(0, 1).toUpperCase())}</i><span>${esc(me().name)}</span>`;
 }
@@ -5927,8 +6035,13 @@ ACT['u-switch'] = async (sure) => {
 const accessCount = u => u.role === 'owner' ? 'Everything' : `${PERM_KEYS.filter(k => permsOf(u)[k]).length} of ${PERM_KEYS.length}`;
 const firmsLabel = u => u.role === 'owner' || !(u.firms || []).length ? 'All firms' : u.firms.map(id => S.firms[id]?.name).filter(Boolean).join(', ');
 function stUsers() {
+  if (!$('#st-body')) return;
   const list = users();
+  const reqs = pendingUsers();
   $('#st-body').innerHTML = `<div class="stack">
+    ${reqs.length ? `<div class="card pad stack req-card"><h2 style="margin:0">Waiting for approval <span class="pill gold">${reqs.length}</span></h2>
+      ${reqs.map(u => `<div class="req-row"><i>${esc(u.name.slice(0, 1).toUpperCase())}</i><div><b>${esc(u.name)}</b><span class="muted small">${esc(u.phone || '')} · asked as ${ROLE_LABEL[u.role] || 'Staff'} · ${agoText(u.requestedAt || Date.now())}</span></div>
+        <button class="btn sm" data-act="u-reject" data-id="${u.id}">Reject</button><button class="btn sm primary" data-act="u-review" data-id="${u.id}">Approve…</button></div>`).join('')}</div>` : ''}
     <div class="card pad stack"><div class="row"><h2 style="margin:0;margin-right:auto">Users</h2><button class="btn primary" data-act="u-edit">${list.length ? '+ Add user' : 'Add yourself as owner'}</button></div>
       <p class="muted small" style="margin:0">Everyone signs in with their own PIN and every bill records who made it. <b>Owner</b> can do everything, including Settings. <b>Manager</b> and <b>Staff</b> start with a ready set of rights; tick or untick any right for each person. Users are shared by all firms and all synced devices.</p>
       ${list.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Name</th><th>Role</th><th>Access</th><th>Firms</th><th>Mobile</th><th></th></tr></thead><tbody>${list.map(u => `<tr class="click" data-act="u-edit" data-id="${u.id}"><td><b>${esc(u.name)}</b>${u.id === me()?.id ? ' <span class="pill">you</span>' : ''}</td><td><span class="pill ${u.role === 'owner' ? 'gold' : u.role === 'manager' ? 'ok' : ''}">${ROLE_LABEL[u.role] || 'Staff'}</span></td><td>${accessCount(u)}</td><td>${esc(firmsLabel(u))}</td><td class="mono">${esc(u.phone || '')}</td><td><button class="btn sm" data-act="u-edit" data-id="${u.id}">Edit</button></td></tr>`).join('')}</tbody></table></div>`
@@ -5941,18 +6054,20 @@ function stUsers() {
 function editUser(id) {
   const first = !users().length;
   const u = id ? S.users[id] : { name: '', role: first ? 'owner' : 'staff', phone: '', firms: [] };
+  const approving = u.status === 'pending';
   let role = u.role || 'staff', perms = permsOf(u), fsel = new Set(u.firms || []);
   const allFirms = firms();
-  const m = openModal(`${mHead(id ? 'Edit user · ' + esc(u.name) : first ? 'Add yourself as owner' : 'Add a user')}<form class="body stack" autocomplete="off">
+  const m = openModal(`${mHead(approving ? 'Approve ' + esc(u.name) : id ? 'Edit user · ' + esc(u.name) : first ? 'Add yourself as owner' : 'Add a user')}<form class="body stack" autocomplete="off">
+    ${approving ? `<div class="note">${esc(u.name)} asked to join ${agoText(u.requestedAt || Date.now())} and chose their own PIN. Pick the role and tick what they can do, then approve.</div>` : ''}
     <div class="grid2"><label class="f"><span>Name</span><input type="text" name="name" value="${esc(u.name)}" required autofocus></label>
       <label class="f"><span>Mobile</span><input type="tel" name="phone" value="${esc(u.phone || '')}"></label></div>
-    <div class="grid2"><label class="f"><span>${id ? 'New PIN (leave empty to keep)' : 'PIN (4 to 8 digits)'}</span><input type="password" inputmode="numeric" name="pin" autocomplete="new-password"></label>
+    <div class="grid2" ${approving ? 'hidden' : ''}><label class="f"><span>${id ? 'New PIN (leave empty to keep)' : 'PIN (4 to 8 digits)'}</span><input type="password" inputmode="numeric" name="pin" autocomplete="new-password"></label>
       <label class="f"><span>PIN again</span><input type="password" inputmode="numeric" name="pin2" autocomplete="new-password"></label></div>
     <div class="f"><span class="muted small">Role</span><div class="role-pick" data-roles></div></div>
     <div data-firms></div>
     <div data-perms></div>
     <div class="neg small" data-err></div></form>
-    <footer>${id && id !== me()?.id ? '<button class="btn danger" data-del>Remove user</button>' : ''}<span class="spacer"></span><button class="btn" data-close>Cancel</button><button class="btn primary" data-ok>Save</button></footer>`, { wide: true });
+    <footer>${id && id !== me()?.id ? `<button class="btn danger" data-del>${approving ? 'Reject' : 'Remove user'}</button>` : ''}<span class="spacer"></span><button class="btn" data-close>Cancel</button><button class="btn primary" data-ok>${approving ? 'Approve' : 'Save'}</button></footer>`, { wide: true });
   const paint = () => {
     m.querySelector('[data-roles]').innerHTML = [['owner', 'Owner', 'Everything, including Settings and users'], ['manager', 'Manager', 'Everything except deleting; you can change it'], ['staff', 'Staff', 'Billing and payments in; you can change it']]
       .map(([k, l, d]) => `<button type="button" data-role="${k}" aria-pressed="${role === k}" ${first && k !== 'owner' ? 'disabled' : ''}><b>${l}</b><small>${d}</small></button>`).join('');
@@ -5984,17 +6099,18 @@ function editUser(id) {
     if (id && u.role === 'owner' && role !== 'owner' && users().filter(x => x.role === 'owner').length < 2) return err('Keep at least one owner');
     if (id && id === me()?.id && u.role === 'owner' && role !== 'owner') return err('You can\'t take away your own owner role. Sign in as another owner to do it.');
     const doc = Object.assign(id ? u : {}, { name, role, phone: g('phone') });
+    if (approving) { doc.status = 'active'; doc.approvedAt = Date.now(); doc.approvedBy = me()?.name || ''; }
     if (role === 'owner') { delete doc.perms; doc.firms = []; } else { doc.perms = Object.fromEntries(PERM_KEYS.map(k => [k, !!perms[k]])); doc.firms = [...fsel].filter(x => S.firms[x]); }
     if (pin) doc.pin = pinHash(pin);
     put('users', doc);
     if (first) LS.set('user', doc.id);
-    closeModal(); toast(first ? 'You are the owner now. Use this PIN to sign in.' : 'User saved', 'ok'); renderUserPill(); stUsers();
+    closeModal(); toast(first ? 'You are the owner now. Use this PIN to sign in.' : approving ? `${name} approved. They can sign in with their PIN now.` : 'User saved', 'ok'); renderUserPill(); stUsers(); notePending();
   };
   m.querySelector('[data-ok]').onclick = save; m.querySelector('form').onsubmit = e => { e.preventDefault(); save(); };
   const d = m.querySelector('[data-del]'); if (d) d.onclick = async () => {
     if (u.role === 'owner' && users().filter(x => x.role === 'owner').length < 2) return err('Keep at least one owner');
-    if (!(await ask(`Remove ${u.name}?`, 'They can no longer sign in. Their bills stay.', 'Remove', true))) return;
-    del('users', u.id); closeModal(); stUsers();
+    if (!(await ask(approving ? `Reject ${u.name}?` : `Remove ${u.name}?`, approving ? 'The request is removed. They can ask again later.' : 'They can no longer sign in. Their bills stay.', approving ? 'Reject' : 'Remove', true))) return;
+    del('users', u.id); closeModal(); stUsers(); notePending();
   };
 }
 ACT['u-edit'] = b => editUser(b.dataset.id || null);
@@ -6102,6 +6218,8 @@ function reportSchedule() {
   const mine = firms().map(reportCfg).filter(c => c.on && c.device === DEVICE()).map(c => c.time).sort();
   try { AndroidPOS.scheduleReport(mine[0] || ''); } catch (e) { }
 }
+
+onChange(notePending);
 
 /* =========================================================
    Start-up: load this device's data, bring over the old single-shop app's data,
@@ -6307,7 +6425,7 @@ window.onAppCrash = text => {
    Updates: every copy of the app checks one fixed address for a newer build.
    Online (PC / iPhone): reload picks it up. Android app: downloads it in the background.
    ========================================================= */
-const APP_BUILD = +'11' || 0, APP_VERSION = '2.14';
+const APP_BUILD = +'12' || 0, APP_VERSION = '2.15';
 const SITE_URL = 'https://patidar-app.github.io/Patidar-app/';
 const HOSTED = (location.protocol === 'https:' || location.hostname === 'localhost') && !IN_FRAME;
 const UPDATE_BASE = HOSTED ? new URL('./', location.href).href : SITE_URL;
@@ -6465,6 +6583,26 @@ function successPop(title, sub = '') {
   d.innerHTML = `<div class="sp-card"><svg viewBox="0 0 52 52" width="64" height="64"><circle cx="26" cy="26" r="23"/><path d="M15 27l7 7 15-16"/></svg><b>${esc(title)}</b>${sub ? `<span>${esc(sub)}</span>` : ''}</div>`;
   document.body.appendChild(d); setTimeout(() => d.classList.add('out'), 950); setTimeout(() => d.remove(), 1300);
 }
+
+/* Phone headers: when a page has several buttons, keep the main one and put the rest under ⋯ */
+function tidyHeads() {
+  if (innerWidth > 640) return;
+  for (const h of $$('.view-head')) {
+    if (h.querySelector(':scope > .vh-more')) continue;
+    const extra = $$(':scope > .btn:not(.primary):not(.keep), :scope > a.btn:not(.primary):not(.keep)', h).filter(b => !b.hidden);
+    if (extra.length < 2) continue;
+    const m = document.createElement('button'); m.type = 'button'; m.className = 'btn vh-more'; m.textContent = '⋯ More'; m.setAttribute('aria-label', 'More actions');
+    m.onclick = () => {
+      const list = $$(':scope > .btn:not(.primary):not(.keep):not(.vh-more), :scope > a.btn:not(.primary):not(.keep)', h).filter(b => !b.hidden);
+      const md = openModal(`${mHead('More actions')}<div class="body vh-menu">${list.map((b, i) => `<button class="btn" data-i="${i}">${esc(b.textContent.trim())}</button>`).join('')}</div>`);
+      md.querySelectorAll('[data-i]').forEach(x => x.onclick = () => { closeModal(); list[+x.dataset.i].click(); });
+    };
+    h.appendChild(m); h.classList.add('has-more');
+  }
+}
+let tidyQueued = false;
+new MutationObserver(() => { if (!tidyQueued) { tidyQueued = true; requestAnimationFrame(() => { tidyQueued = false; tidyHeads(); }); } }).observe(document.body, { childList: true, subtree: true });
+addEventListener('resize', () => tidyHeads());
 
 </script>
 
