@@ -872,6 +872,85 @@ textarea { border-radius: var(--r-ctl); font-size: 15px; }
 .eg-btn:active { background: var(--sunken); }
 @media (min-width: 641px) { .eg-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 
+/* 5 + 6. items and parties on phones: two lines each */
+@media (max-width: 640px) {
+  #if-tbl.cardify tbody tr, #pf-tbl.cardify tbody tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 10px; padding: 10px 14px; align-items: center; }
+  #if-tbl.cardify td, #pf-tbl.cardify td { display: none; }
+  #if-tbl.cardify td::before, #pf-tbl.cardify td::before { display: none !important; }
+  #if-tbl.cardify td:first-child { display: block; grid-column: 1; grid-row: 1 / 3; font-weight: 400; }
+  #if-tbl.cardify td:first-child b { display: block; font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #if-tbl.cardify td:first-child .small { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #if-tbl.cardify td:nth-child(3) { display: block; grid-column: 2; grid-row: 1; text-align: right; font-size: 15px; }
+  #if-tbl.cardify td:nth-child(3) .small { display: none; }
+  #if-tbl.cardify td:nth-last-child(2) { display: block; grid-column: 2; grid-row: 2; text-align: right; }
+  #if-tbl.cardify td:nth-last-child(2) .pill { font-size: 11.5px; padding: 1px 8px; }
+  #pf-tbl.cardify td:first-child { display: block; grid-column: 1; grid-row: 1; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #pf-tbl.cardify td:first-child .small { display: none; }
+  #pf-tbl.cardify td:nth-child(2) { display: block; grid-column: 1; grid-row: 2; font-size: 12.5px; color: var(--muted); }
+  #pf-tbl.cardify td:nth-child(5) { display: block; grid-column: 2; grid-row: 1; text-align: right; }
+  #pf-tbl.cardify td:nth-child(5) .pill { font-size: 12px; padding: 1px 8px; }
+  #pf-tbl.cardify td:nth-child(5) .small { display: none; }
+  #pf-tbl.cardify td:nth-child(6) { display: flex; gap: 6px; grid-column: 2; grid-row: 2; justify-content: flex-end; }
+  #pf-tbl.cardify td:nth-child(6) .btn { min-height: 30px; padding: 0 10px; font-size: 13px; }
+  #pf-kpis, #if-kpis { display: flex; overflow-x: auto; scrollbar-width: none; gap: 8px; margin-left: -12px; margin-right: -12px; padding: 0 12px 2px; }
+  #pf-kpis::-webkit-scrollbar, #if-kpis::-webkit-scrollbar { display: none; }
+  #pf-kpis .kpi, #if-kpis .kpi { flex: none; min-width: 120px; padding: 8px 12px; }
+  #pf-kpis .kpi strong, #if-kpis .kpi strong { font-size: 17px; }
+}
+
+/* 7. top items on the counter */
+.quick-items { display: flex; gap: 6px; align-items: center; margin-top: 10px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.quick-items::-webkit-scrollbar { display: none; }
+.quick-items .qi-h { flex: none; font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 700; margin-right: 2px; }
+.quick-items .chip { flex: none; white-space: nowrap; }
+@media (min-width: 1101px) { .quick-items { flex-wrap: wrap; overflow: visible; } }
+
+/* 8. smaller toasts on phones */
+@media (max-width: 640px) {
+  .toasts { left: 50%; right: auto; transform: translateX(-50%); width: max-content; max-width: calc(100vw - 32px); justify-items: center; gap: 6px; }
+  .toast { font-size: 13px; padding: 7px 12px; border-radius: 99px; box-shadow: 0 4px 14px rgba(0,0,0,.18); }
+  .toast button { padding: 1px 8px; font-size: 12.5px; }
+}
+
+/* 9 + 10. language and text size */
+.seg-pick { display: flex; gap: 4px; padding: 4px; background: var(--sunken); border-radius: 12px; }
+.seg-pick button { flex: 1; border: 0; background: none; padding: 9px 8px; border-radius: 9px; font-weight: 600; color: var(--muted); cursor: pointer; font-size: 14px; }
+.seg-pick button[aria-checked="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+html.tz { zoom: var(--tz, 1); }
+html.lang-hi body { line-height: 1.5; }
+
+html.lang-hi * { letter-spacing: 0 !important; }
+
+/* 12. customer history on the counter */
+.c-hist { margin-top: 8px; display: grid; gap: 4px; }
+.c-hist-h { font-size: 12px; color: var(--muted); font-weight: 600; }
+.c-hist-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 2px 10px; align-items: baseline; text-align: left; border: 1px solid var(--line); background: var(--sunken); border-radius: 9px; padding: 6px 10px; cursor: pointer; color: var(--ink); font-size: 13px; }
+.c-hist-row span:first-child { color: var(--muted); white-space: nowrap; }
+.c-hist-it { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.c-hist-row i { grid-column: 3; font-style: normal; font-size: 12px; text-align: right; }
+
+/* 13. swipe a bill */
+#lf-tbl tbody tr { transition: transform .18s ease; position: relative; }
+#lf-tbl tbody tr .sw-acts { display: none; }
+#lf-tbl tbody tr.swiped .sw-acts { display: flex !important; position: absolute; top: 0; bottom: 0; left: 100%; width: 150px; gap: 6px; align-items: center; justify-content: center; padding: 0 6px; background: var(--sunken); grid-row: auto !important; }
+#lf-tbl tbody tr.swiped .sw-acts .btn { min-height: 38px; padding: 0 10px; font-size: 13px; color: var(--ink); }
+#lf-tbl tbody tr.swiped .sw-acts .btn.wa { color: #fff; }
+.card:has(#lf-tbl) { overflow: hidden; }
+
+/* 14. home shortcuts */
+.home-shortcuts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+.hs-btn { display: grid; justify-items: start; gap: 2px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--ink); cursor: pointer; text-align: left; }
+.hs-btn svg { color: var(--maroon); margin-bottom: 4px; }
+:root[data-theme="dark"] .hs-btn svg { color: var(--gold); }
+.hs-btn b { font-size: 15px; } .hs-btn small { font-size: 12px; color: var(--muted); }
+.hs-btn:active { background: var(--sunken); }
+@media (max-width: 640px) { .home-shortcuts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; } .hs-btn { padding: 10px 12px; } }
+@media (max-width: 640px) {
+  .hs-btn { grid-template-columns: auto minmax(0, 1fr); column-gap: 10px; align-items: center; padding: 9px 12px; }
+  .hs-btn svg { grid-row: 1 / 3; margin: 0; }
+  .hs-btn b { font-size: 14.5px; line-height: 1.2; } .hs-btn small { line-height: 1.2; }
+}
+
 </style>
 </head>
 <body>
@@ -7880,7 +7959,7 @@ counterTotals = function (c) {
   const n = BILL.lines.length;
   bar.hidden = !n;
   document.documentElement.classList.toggle('has-paybar', !!n);
-  $('#pb-n').textContent = `${qtyFmt(c.items)} item${c.items === 1 ? '' : 's'} · to pay`;
+  $('#pb-n').textContent = typeof LANG !== 'undefined' && LANG === 'hi' ? `${qtyFmt(c.items)} सामान · देय रकम` : `${qtyFmt(c.items)} item${c.items === 1 ? '' : 's'} · to pay`;
   $('#pb-t').textContent = inr(c.total);
   $('#pb-m').textContent = { cash: 'Cash', upi: 'UPI', card: 'Card', credit: 'Udhaar', split: 'Split', finance: 'Finance' }[BILL.mode] || '';
 };
@@ -7919,6 +7998,227 @@ ACT.entry = () => {
   </div>`);
   m.classList.add('sheet-wrap');
 };
+
+/* =========================================================
+   UX pass part 2 (v2.19)
+   7. Counter: quick-add chips for the most sold items (last 90 days), tap to add.
+   8. Toasts: the same message is never stacked, red warnings go away sooner (2.6 s), at most 2 on screen.
+   9. Hindi for menus, buttons and labels (per device). Printed bills stay in English.
+   10. Text size: Normal / Large / Extra large (per device).
+   (Items and party lists in two lines are CSS only.)
+   ========================================================= */
+function topItems(n = 8) {
+  const from = addDays(today(), -90), cnt = {};
+  for (const v of col('vouchers')) {
+    if (v.type !== 'sale' || v.status === 'cancelled' || (v.date || '') < from) continue;
+    for (const l of v.lines || []) if (l.itemId) cnt[l.itemId] = (cnt[l.itemId] || 0) + (+l.qty || 1);
+  }
+  return Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a]).map(id => get('items', id)).filter(Boolean).slice(0, n);
+}
+const _counterView = VIEWS.counter;
+VIEWS.counter = function () {
+  _counterView.apply(this, arguments);
+  const top = topItems(), box = $('.scan-box'); if (!top.length || !box) return;
+  const row = document.createElement('div'); row.className = 'quick-items'; row.id = 'c-top';
+  row.innerHTML = `<span class="qi-h">Top items</span>` + top.map(i => `<button class="chip" data-act="c-top" data-id="${i.id}" title="${esc(i.name)}">${esc(i.name.length > 22 ? i.name.slice(0, 21) + '…' : i.name)}</button>`).join('');
+  box.after(row);
+};
+ACT['c-top'] = b => { const it = get('items', b.dataset.id); if (it) { counterAdd(it); b.animate([{ transform: 'scale(.92)' }, { transform: 'none' }], { duration: 160 }); } };
+
+const _toast = toast;
+toast = function (msg, kind = '', action) {
+  const box = $('#toasts'); if (!box) return _toast(msg, kind, action);
+  [...box.children].forEach(t => { if (t.firstChild && t.firstChild.textContent === msg) t.remove(); });
+  _toast(msg, kind, action);
+  while (box.children.length > 2) box.firstChild.remove();
+  const t = box.lastChild;
+  if (t && !action && kind === 'bad') setTimeout(() => t.remove(), 2600);
+};
+
+/* ---- 9. Hindi ---- */
+const HI = {
+  'Home': 'होम', 'Bill': 'बिल', 'Entry': 'एंट्री', 'Report': 'रिपोर्ट', 'More': 'और', '⋯ More': '⋯ और',
+  'Quick': 'जल्दी', 'Go to': 'जाएँ', 'New bill': 'नया बिल', 'Invoice': 'बिल', 'Purchase': 'खरीद', 'Quotation': 'कोटेशन', 'Payment in': 'रकम आई', 'Payment out': 'रकम दी',
+  'Add item': 'सामान जोड़ें', 'Search': 'खोजें', 'Scan barcode': 'बारकोड स्कैन', 'Dashboard': 'डैशबोर्ड', 'Counter billing': 'काउंटर बिलिंग', 'Sales': 'बिक्री',
+  'Sales invoices': 'बिक्री बिल', 'Quotations': 'कोटेशन', 'Sales returns': 'बिक्री वापसी', 'Payments in': 'आई रकम', 'Warranty & serial': 'वारंटी और सीरियल',
+  'Finance / EMI': 'फाइनेंस / EMI', 'Delivery & fitting': 'डिलीवरी और फिटिंग', 'Purchase bills': 'खरीद बिल', 'Purchase returns': 'खरीद वापसी', 'Payments out': 'दी गई रकम',
+  'Supplier payments due': 'सप्लायर का बकाया', 'Accounts': 'खाते', 'Journal': 'जर्नल', 'Parties': 'पार्टी', 'Cash & bank': 'कैश और बैंक', 'Stock': 'स्टॉक',
+  'Items & stock': 'सामान और स्टॉक', 'Stock count (scan)': 'स्टॉक गिनती (स्कैन)', 'Godowns': 'गोदाम', 'Barcode labels': 'बारकोड लेबल', 'Order from supplier': 'सप्लायर से ऑर्डर',
+  'Reports & GST': 'रिपोर्ट और GST', 'Settings': 'सेटिंग', 'Users & access': 'यूज़र और अधिकार', 'Join requests': 'जुड़ने की अर्ज़ी', 'This device': 'यह डिवाइस', 'Firm': 'फर्म', 'Sync': 'सिंक',
+  'Switch user': 'यूज़र बदलें', 'Log out': 'लॉग आउट', 'Download backup': 'बैकअप डाउनलोड', 'Light / dark screen': 'लाइट / डार्क स्क्रीन', 'Language & text size': 'भाषा और अक्षर का आकार',
+  'Customer': 'ग्राहक', 'Mobile': 'मोबाइल', 'Name': 'नाम', 'Items': 'सामान', 'Subtotal': 'कुल', 'Taxable value': 'टैक्स योग्य राशि', 'Bill discount (₹ or %)': 'बिल छूट (₹ या %)',
+  'To pay': 'देय रकम', 'Payment': 'भुगतान', 'Cash': 'नकद', 'Card': 'कार्ड', 'Udhaar': 'उधार', 'Split': 'बाँटें', 'Cash received': 'मिला नकद',
+  'Save & print': 'सेव और प्रिंट', 'Save & WhatsApp': 'सेव और WhatsApp', 'Save only': 'सिर्फ़ सेव', 'Hold bill': 'बिल रोकें', 'Clear bill': 'बिल साफ़ करें', 'Open full invoice': 'पूरा बिल खोलें',
+  'Camera scan': 'कैमरा स्कैन', 'Sell from godown': 'किस गोदाम से', 'Qty': 'मात्रा', 'Rate': 'रेट', 'Disc ₹': 'छूट ₹', 'Amount': 'रकम', 'Bill is empty': 'बिल खाली है', 'Top items': 'ज़्यादा बिकने वाले',
+  'New entry': 'नई एंट्री', '+ New entry': '+ नई एंट्री', 'Counter bill': 'काउंटर बिल', 'Fast billing with scan': 'स्कैन से जल्दी बिल', 'Sell': 'बेचें', 'Buy': 'खरीदें', 'Money': 'पैसा',
+  'Stock & more': 'स्टॉक और अन्य', 'Sales invoice': 'बिक्री बिल', 'Sales return': 'बिक्री वापसी', 'Purchase bill': 'खरीद बिल', 'Purchase return': 'खरीद वापसी', 'Order stock': 'माल मँगाएँ',
+  'Add party': 'पार्टी जोड़ें', 'Stock adjust': 'स्टॉक सुधार', 'Stock count': 'स्टॉक गिनती',
+  "Today's sales": 'आज की बिक्री', 'This month': 'इस महीने', 'To receive': 'लेना है', 'Cash in hand': 'हाथ में नकद', 'Low stock': 'कम स्टॉक', 'Out of stock': 'स्टॉक खत्म',
+  'Paid': 'चुका दिया', 'Unpaid': 'बाकी', 'Received': 'मिला', 'Export CSV': 'CSV निकालें', 'Last 30 days': 'पिछले 30 दिन', 'All': 'सभी', 'Today': 'आज', 'Yesterday': 'कल',
+  'Cancel': 'रद्द करें', 'Save': 'सेव', 'Delete': 'हटाएँ', 'Edit': 'बदलें', 'Receive': 'रकम लें', 'Pay': 'भुगतान करें', 'Label': 'लेबल', 'Close': 'बंद करें',
+  'Save item': 'सामान सेव करें', 'Save party': 'पार्टी सेव करें', 'Item name *': 'सामान का नाम *', 'Sale price': 'बिक्री रेट', 'Stock value': 'स्टॉक की कीमत', 'Barcode': 'बारकोड',
+  'Balance': 'बाकी रकम', 'Party': 'पार्टी', 'Date': 'तारीख', 'Number': 'नंबर', 'Status': 'स्थिति', 'Type': 'प्रकार', 'Category': 'कैटेगरी', 'Brand': 'ब्रांड',
+  'Udhaar list': 'उधार सूची', "Today's bills": 'आज के बिल', 'Beep when an item is added': 'सामान जुड़ने पर बीप', 'On': 'चालू', 'Off': 'बंद', 'Print': 'प्रिंट', 'Language': 'भाषा', 'Text size': 'अक्षर का आकार', 'Normal': 'सामान्य', 'Large': 'बड़ा', 'Extra large': 'बहुत बड़ा', 'Done': 'हो गया',
+  'Scan barcode or type item name  (F2)': 'बारकोड स्कैन करें या सामान का नाम लिखें', 'Walk-in customer': 'बिना नाम ग्राहक', '10-digit mobile': '10 अंक का मोबाइल',
+  'Leave empty for exact amount': 'पूरी रकम हो तो खाली छोड़ें', 'Number, party, mobile, item': 'नंबर, पार्टी, मोबाइल, सामान', 'Sync off': 'सिंक बंद'
+};
+const I18N_SKIP = '.inv, script, style, textarea, [contenteditable], .no-i18n, .pick-list';
+let LANG = LS.get('lang', 'en');
+function trText(n) {
+  const raw = n.nodeValue, k = raw.trim(); if (!k) return;
+  const hi = HI[k]; if (!hi) return;
+  const p = n.parentElement; if (!p || p.closest(I18N_SKIP)) return;
+  n.__en = raw; n.nodeValue = raw.replace(k, hi);
+}
+function trEl(el) {
+  if (el.nodeType === 3) return trText(el);
+  if (el.nodeType !== 1 || el.closest(I18N_SKIP)) return;
+  const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT); let n; const list = [];
+  while ((n = w.nextNode())) list.push(n);
+  list.forEach(trText);
+  [el, ...el.querySelectorAll('[data-l]')].forEach(i => { const l = i.dataset && i.dataset.l; if (l && HI[l] && !i.closest(I18N_SKIP)) { i.dataset.enL = l; i.dataset.l = HI[l]; } });
+  [el, ...el.querySelectorAll('[placeholder]')].forEach(i => { const ph = i.getAttribute && i.getAttribute('placeholder'); if (ph && HI[ph] && !i.closest(I18N_SKIP)) { i.dataset.enPh = ph; i.setAttribute('placeholder', HI[ph]); } });
+}
+const i18nObs = new MutationObserver(ms => { for (const m of ms) { if (m.type === 'characterData') trText(m.target); else if (m.type === 'attributes') trEl(m.target); else m.addedNodes.forEach(trEl); } });
+function applyLang() {
+  document.documentElement.lang = LANG === 'hi' ? 'hi' : 'en';
+  document.documentElement.classList.toggle('lang-hi', LANG === 'hi');
+  if (LANG === 'hi') { trEl(document.body); i18nObs.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['data-l'] }); }
+  else {
+    i18nObs.disconnect();
+    const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); let n;
+    while ((n = w.nextNode())) if (n.__en != null) { n.nodeValue = n.__en; delete n.__en; }
+    $$('[data-en-l]').forEach(i => { i.dataset.l = i.dataset.enL; delete i.dataset.enL; });
+    $$('[data-en-ph]').forEach(i => { i.setAttribute('placeholder', i.dataset.enPh); delete i.dataset.enPh; });
+  }
+}
+
+/* ---- 10. Text size ---- */
+const TSIZES = [['n', 'Normal', 1], ['l', 'Large', 1.1], ['xl', 'Extra large', 1.2]];
+let TSIZE = LS.get('tsize', 'n');
+function applyTsize() { const z = (TSIZES.find(t => t[0] === TSIZE) || TSIZES[0])[2]; document.documentElement.style.setProperty('--tz', z); document.documentElement.classList.toggle('tz', z !== 1); }
+
+ACT['ui-prefs'] = () => {
+  const seg = (name, opts, cur) => `<div class="seg-pick" role="radiogroup">${opts.map(([v, l]) => `<button type="button" role="radio" data-${name}="${v}" aria-checked="${v === cur}">${l}</button>`).join('')}</div>`;
+  const m = openModal(`${mHead('Language & text size')}<div class="body" style="display:grid;gap:14px">
+    <div><div class="eg-h" style="margin:0 0 6px">Language</div>${seg('lang', [['en', 'English'], ['hi', 'हिंदी']], LANG)}</div>
+    <div><div class="eg-h" style="margin:0 0 6px">Text size</div>${seg('ts', TSIZES.map(t => [t[0], t[1]]), TSIZE)}</div>
+    <p class="muted small" style="margin:0">Only for this phone or computer. Printed bills stay in English.</p>
+  </div><footer><button class="btn primary" data-close>Done</button></footer>`);
+  m.querySelectorAll('[data-lang]').forEach(b => b.onclick = () => { LANG = b.dataset.lang; LS.set('lang', LANG); m.querySelectorAll('[data-lang]').forEach(x => x.setAttribute('aria-checked', x === b)); applyLang(); });
+  m.querySelectorAll('[data-ts]').forEach(b => b.onclick = () => { TSIZE = b.dataset.ts; LS.set('tsize', TSIZE); m.querySelectorAll('[data-ts]').forEach(x => x.setAttribute('aria-checked', x === b)); applyTsize(); });
+};
+(function () {
+  const th = $('#rail [data-act="dt-theme"]');
+  if (th) { const b = document.createElement('button'); b.dataset.act = 'ui-prefs'; b.textContent = 'Language & text size'; th.before(b); }
+  applyTsize(); if (LANG === 'hi') applyLang();
+})();
+
+/* =========================================================
+   UX pass part 3 (v2.19)
+   11. Beep + short vibration when an item goes into the counter bill (can be turned off per device).
+   12. Customer history on the counter: last bills and udhaar as soon as the mobile matches.
+   13. Bill lists on phones: swipe a bill left for WhatsApp / Print.
+   14. Home: big shortcuts (Udhaar list, Payment in, Today's bills, Low stock).
+   ========================================================= */
+let BEEP = LS.get('beep', 'on'), AC = null;
+function scanBeep() {
+  if (BEEP !== 'on') return;
+  try { navigator.vibrate && navigator.vibrate(35); } catch (e) {}
+  try {
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    if (AC.state === 'suspended') AC.resume();
+    const o = AC.createOscillator(), g = AC.createGain(), t = AC.currentTime;
+    o.type = 'square'; o.frequency.value = 1760; g.gain.setValueAtTime(0.06, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
+    o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + 0.1);
+  } catch (e) {}
+}
+const _counterAddUX = counterAdd;
+counterAdd = function (it, qty) { scanBeep(); return _counterAddUX.apply(this, arguments); };
+// beep on/off lives in the Language & text size sheet
+const _uiPrefs = ACT['ui-prefs'];
+ACT['ui-prefs'] = () => {
+  _uiPrefs();
+  const body = $('#modal-root .scrim:last-child .body'); if (!body) return;
+  const d = document.createElement('div');
+  d.innerHTML = `<div class="eg-h" style="margin:0 0 6px">Beep when an item is added</div><div class="seg-pick" role="radiogroup">${[['on', 'On'], ['off', 'Off']].map(([v, l]) => `<button type="button" role="radio" data-beep="${v}" aria-checked="${v === BEEP}">${l}</button>`).join('')}</div>`;
+  body.insertBefore(d, body.lastElementChild);
+  d.querySelectorAll('[data-beep]').forEach(b => b.onclick = () => { BEEP = b.dataset.beep; LS.set('beep', BEEP); d.querySelectorAll('[data-beep]').forEach(x => x.setAttribute('aria-checked', x === b)); if (BEEP === 'on') scanBeep(); });
+};
+
+/* ---- 12. customer history ---- */
+const _custNote = custNote;
+custNote = function () {
+  _custNote();
+  const el = $('#c-note'); if (!el || !BILL.partyId) return;
+  const p = get('parties', BILL.partyId); if (!p) return;
+  const bills = col('vouchers').filter(v => v.type === 'sale' && v.status !== 'cancelled' && v.partyId === p.id)
+    .sort((a, b) => (b.date + (b.time || '')).localeCompare(a.date + (a.time || '')) || b.createdAt - a.createdAt);
+  if (!bills.length) return;
+  const spent = bills.reduce((a, v) => a + vTotal(v), 0);
+  el.innerHTML += `<div class="c-hist"><div class="c-hist-h">${bills.length} earlier bill${bills.length === 1 ? '' : 's'} · ${inr0(spent)} in all</div>` +
+    bills.slice(0, 3).map(v => `<button class="c-hist-row" data-act="v-show" data-id="${v.id}"><span>${fmtDate(v.date)}</span><span class="c-hist-it">${esc((v.lines || []).map(l => l.name).join(', '))}</span><b>${inr0(vTotal(v))}</b>${voucherDue(v) > 0.5 ? `<i class="neg">due ${inr0(voucherDue(v))}</i>` : ''}</button>`).join('') + '</div>';
+};
+
+/* ---- 13. swipe a bill ---- */
+let SWB = null, SWB_EAT = 0;
+document.addEventListener('touchstart', e => {
+  const tr = e.target.closest('#lf-tbl tbody tr[data-id]'); if (!tr || e.target.closest('.sw-acts')) { SWB = null; return; }
+  $$('#lf-tbl tr.swiped').forEach(r => { if (r !== tr) swClose(r); });
+  SWB = { tr, x: e.touches[0].clientX, y: e.touches[0].clientY, dx: 0, on: false };
+}, { passive: true });
+document.addEventListener('touchmove', e => {
+  if (!SWB) return; const dx = e.touches[0].clientX - SWB.x, dy = e.touches[0].clientY - SWB.y;
+  if (!SWB.on) { if (Math.abs(dy) > 12 && Math.abs(dy) > Math.abs(dx)) { SWB = null; return; } if (Math.abs(dx) > 12) SWB.on = true; else return; }
+  SWB.dx = Math.min(0, Math.max(-150, dx + (SWB.tr.classList.contains('swiped') ? -150 : 0)));
+  SWB.tr.style.transform = `translateX(${SWB.dx}px)`;
+}, { passive: true });
+document.addEventListener('touchend', () => {
+  if (!SWB) return; const { tr, on, dx } = SWB; SWB = null; if (!on) return;
+  SWB_EAT = Date.now();
+  if (dx < -60) swOpen(tr); else swClose(tr);
+});
+document.addEventListener('click', e => { if (Date.now() - SWB_EAT < 400 && e.target.closest('#lf-tbl tbody tr')) { e.stopPropagation(); e.preventDefault(); } }, true);
+function swOpen(tr) {
+  tr.classList.add('swiped'); tr.style.transform = 'translateX(-150px)';
+  if (!tr.querySelector('.sw-acts')) {
+    const d = document.createElement('td'); d.className = 'sw-acts span';
+    d.innerHTML = `<button class="btn wa" data-act="sw-wa" data-id="${tr.dataset.id}">WhatsApp</button><button class="btn" data-act="sw-print" data-id="${tr.dataset.id}">Print</button>`;
+    tr.appendChild(d);
+  }
+}
+function swClose(tr) { tr.classList.remove('swiped'); tr.style.transform = ''; }
+ACT['sw-wa'] = (b, e) => { e && e.stopPropagation(); const v = get('vouchers', b.dataset.id); swClose(b.closest('tr')); v && shareVoucher(v); };
+ACT['sw-print'] = (b, e) => { e && e.stopPropagation(); const v = get('vouchers', b.dataset.id); swClose(b.closest('tr')); v && printVoucher(v, v.source === 'counter' ? 'counter' : ''); };
+// first time on a phone: one tip about swiping
+const _listBodyUX = listBody;
+listBody = function (type) {
+  _listBodyUX.apply(this, arguments);
+  if (!LS.get('swipe-tip') && matchMedia('(max-width: 640px)').matches && $('#lf-tbl tbody tr[data-id]') && (type === 'sale' || type === 'quotation')) { LS.set('swipe-tip', 1); setTimeout(() => toast('Tip: swipe a bill left to WhatsApp or print it'), 600); }
+};
+
+/* ---- 14. home shortcuts ---- */
+const _homeView = VIEWS.home;
+VIEWS.home = function () {
+  _homeView.apply(this, arguments);
+  const head = $('.dash-head'); if (!head) return;
+  const ico = (p) => `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+  const due = col('parties').filter(p => balOf(p.id) > 0.5).length;
+  const low = col('items').filter(i => stockOf(i.id) <= (+i.min || 0)).length;
+  const todayN = col('vouchers').filter(v => v.type === 'sale' && v.status !== 'cancelled' && inRange(v.date, 'today')).length;
+  const d = document.createElement('div'); d.className = 'home-shortcuts';
+  d.innerHTML = [
+    ['hs-udhaar', ico(EI.user), 'Udhaar list', due ? `${due} customer${due === 1 ? '' : 's'}` : 'nobody owes'],
+    ['hs-payin', ico(EI.in), 'Payment in', 'take money'],
+    ['hs-today', ico(EI.doc), "Today's bills", `${todayN} bill${todayN === 1 ? '' : 's'}`],
+    ['hs-low', ico(EI.box), 'Low stock', low ? `${low} item${low === 1 ? '' : 's'}` : 'all fine']
+  ].map(([a, i, l, s]) => `<button class="hs-btn" data-act="${a}">${i}<b>${l}</b><small>${s}</small></button>`).join('');
+  head.after(d);
+};
+ACT['hs-udhaar'] = () => { PF.due = 'rec'; PF.kind = ''; PF.q = ''; go('parties'); };
+ACT['hs-payin'] = () => ACT['v-new']({ dataset: { type: 'receipt' } });
+ACT['hs-today'] = () => { LISTF.sale = Object.assign(LISTF.sale || { q: '', status: '' }, { range: 'today', q: '', status: '' }); go('list', 'sale'); };
+ACT['hs-low'] = () => { IF.stock = 'low'; IF.q = ''; IF.cat = ''; IF.brand = ''; go('items'); };
 
 </script>
 
