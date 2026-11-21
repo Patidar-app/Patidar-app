@@ -951,6 +951,11 @@ html.lang-hi * { letter-spacing: 0 !important; }
   .hs-btn b { font-size: 14.5px; line-height: 1.2; } .hs-btn small { line-height: 1.2; }
 }
 
+/* version stamp */
+.rail-ver { margin-top: auto; padding: 14px 12px 6px; font-size: 11.5px; color: var(--muted); line-height: 1.4; }
+.rail .rail-ver { color: rgba(255,247,234,.7); }
+.lg-ver { margin-top: 12px; text-align: center; font-size: 12px; color: var(--muted); }
+
 </style>
 </head>
 <body>
@@ -6136,7 +6141,7 @@ function stData() {
       ${hasSample ? '<button class="btn" data-act="dt-sample" style="justify-self:start">Remove sample data</button>' : ''}
       <button class="btn" data-act="dt-theme" style="justify-self:start">Switch light / dark screen</button>
       ${firms().length > 1 ? `<button class="btn danger" data-act="dt-delfirm" style="justify-self:start">Delete ${esc(firmLabel(firm(), firms()))}</button>` : ''}
-      <p class="muted small" style="margin:0">App version ${APP_VERSION} (build ${APP_BUILD}) · device ${esc(DEVICE())}</p></div></div>`;
+      <p class="muted small" style="margin:0">App version ${APP_VERSION} (build ${APP_BUILD}) · updated ${typeof APP_BUILT !== 'undefined' ? APP_BUILT : ''} · device ${esc(DEVICE())}</p></div></div>`;
   autoBkList();
 }
 function restoreBackup(o) {
@@ -8219,6 +8224,23 @@ ACT['hs-udhaar'] = () => { PF.due = 'rec'; PF.kind = ''; PF.q = ''; go('parties'
 ACT['hs-payin'] = () => ACT['v-new']({ dataset: { type: 'receipt' } });
 ACT['hs-today'] = () => { LISTF.sale = Object.assign(LISTF.sale || { q: '', status: '' }, { range: 'today', q: '', status: '' }); go('list', 'sale'); };
 ACT['hs-low'] = () => { IF.stock = 'low'; IF.q = ''; IF.cat = ''; IF.brand = ''; go('items'); };
+
+/* =========================================================
+   Version stamp: shows the app version and when that update was made, so it is easy to check
+   that a phone or PC has the latest update. Shown in the side menu, on the sign-in screen and in Settings,
+   plus a one-time note the first time a new update opens on this device.
+   ========================================================= */
+const APP_BUILT = '21 Nov 2026, 4:33 PM';
+const verText = () => `Version ${APP_VERSION} · updated ${APP_BUILT}`;
+(function () {
+  const rail = $('#rail');
+  if (rail && !$('#rail-ver')) { const d = document.createElement('div'); d.id = 'rail-ver'; d.className = 'rail-ver no-i18n'; d.textContent = verText(); rail.appendChild(d); }
+  const addLoginVer = () => { const lp = $('#view .login-page .login-card'); if (lp && !lp.querySelector('.lg-ver')) { const d = document.createElement('div'); d.className = 'lg-ver no-i18n'; d.textContent = verText(); lp.appendChild(d); } };
+  new MutationObserver(addLoginVer).observe($('#view') || document.body, { childList: true });
+  addLoginVer();
+  const seen = +LS.get('seenBuild', 0);
+  if (seen !== APP_BUILD) { LS.set('seenBuild', APP_BUILD); if (seen && seen < APP_BUILD) setTimeout(() => toast(`App updated to version ${APP_VERSION} (${APP_BUILT})`, 'ok'), 1500); }
+})();
 
 </script>
 
