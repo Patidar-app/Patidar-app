@@ -772,6 +772,23 @@ textarea { border-radius: var(--r-ctl); font-size: 15px; }
 @media (min-width: 641px) { .grid4.if-filters { grid-template-columns: minmax(0, 2fr) repeat(4, minmax(0, 1fr)); } }
 @media (max-width: 640px) { .topbar { gap: 8px; } .user-pill { font-size: 0; padding: 3px; gap: 0; } .user-pill i { font-size: 12px; } .top-search { width: 34px; height: 34px; } }
 @media (max-width: 385px) { .topbar .brand > div { display: none; } }
+.net-banner { position: fixed; left: 50%; transform: translateX(-50%); top: calc(env(safe-area-inset-top, 0px) + 64px); z-index: 60; background: #b45309; color: #fff; padding: 8px 14px; border-radius: 12px; font-size: 13px; box-shadow: 0 6px 20px rgba(0,0,0,.25); max-width: calc(100vw - 24px); text-align: center; }
+.net-banner span { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 99px; background: rgba(255,255,255,.2); font-weight: 600; }
+.i-review { display: flex; gap: 10px; align-items: center; margin-top: 12px; padding: 8px 10px; border: 1px dashed #bbb; border-radius: 8px; font-size: .95em; }
+.i-review svg { width: 64px; height: 64px; flex: none; }
+.doc-pdf { width: 794px; }
+.doc-pdf .gst-pdf .tbl { width: 100%; border-collapse: collapse; font-size: 11px; }
+.doc-pdf .gst-pdf .tbl th, .doc-pdf .gst-pdf .tbl td { border-bottom: 1px solid #ddd; padding: 4px 6px; text-align: left; }
+.doc-pdf .gst-pdf .tbl .num { text-align: right; }
+.doc-pdf .gst-pdf .card { border: 1px solid #ddd; border-radius: 6px; padding: 8px; margin-top: 10px; background: #fff; }
+.doc-pdf .gst-pdf .cols { display: block; }
+.doc-pdf .gst-pdf h2 { font-size: 13px; margin: 0 0 6px; color: var(--ic); }
+.doc-pdf .gst-pdf .note { display: none; }
+.doc-pdf .tbl-wrap { overflow: visible !important; }
+.doc-pdf .gst-pdf .tbl { font-size: 10px; }
+.doc-pdf .gst-pdf .tbl th, .doc-pdf .gst-pdf .tbl td { padding: 3px 4px; white-space: normal; }
+.doc-pdf .gst-pdf .row { display: none; }
+.doc-pdf h3 { font-size: 13px; color: var(--ic); }
 
 </style>
 </head>
@@ -822,6 +839,7 @@ textarea { border-radius: var(--r-ctl); font-size: 15px; }
     <button data-go="list" data-arg="purchase">Purchase bills</button>
     <button data-go="list" data-arg="purchaseReturn">Purchase returns</button>
     <button data-go="list" data-arg="payment">Payments out</button>
+    <button data-go="sdues">Supplier payments due <b class="badge" id="rail-sdue" hidden>0</b></button>
     <div class="grp">Accounts</div>
     <button data-go="list" data-arg="journal">Journal</button>
     <button data-go="parties">Parties</button>
@@ -3629,6 +3647,7 @@ const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 
 const pad = (n, w) => String(n).padStart(w, '0');
 const today = () => dayKey(new Date());
 const dayKey = d => { const x = new Date(d); return x.getFullYear() + '-' + pad(x.getMonth() + 1, 2) + '-' + pad(x.getDate(), 2); };
+const addDays = (d, n) => { const x = new Date(String(d || today()).slice(0, 10) + 'T00:00:00'); x.setDate(x.getDate() + n); return dayKey(x); };
 const fmtDate = d => { if (!d) return ''; const x = new Date(String(d).length === 10 ? d + 'T00:00:00' : d); return pad(x.getDate(), 2) + '-' + pad(x.getMonth() + 1, 2) + '-' + x.getFullYear(); };
 const fmtTime = d => new Date(d).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true });
 const focusScan = sel => { if (!IS_ANDROID) { const e = $(sel || '#scan'); e && e.focus(); } };
@@ -4653,6 +4672,7 @@ function renderTradeEditor(head) {
         <label class="f"><span>Date</span><input type="date" id="e-date" value="${esc(v.date)}" ${lockMin() && !lockFree() ? `min="${lockMin()}"` : ''}></label>
         ${partyField(v, t.partyKind, t.partyKind === 'supplier' ? 'Supplier' : 'Customer')}
         ${v.type === 'purchase' || v.type === 'purchaseReturn' ? `<label class="f"><span>Supplier's bill no.</span><input type="text" id="e-billno" value="${esc(v.billNo || '')}"></label>` : ''}
+        ${v.type === 'purchase' ? `<label class="f"><span>Pay by (due date)</span><input type="date" id="e-due" value="${esc(v.dueDate || addDays(v.date, 30))}"></label>` : ''}
         ${ret ? `<label class="f wide"><span>Against ${origType === 'sale' ? 'invoice' : 'bill'}</span><div class="row" style="flex-wrap:nowrap"><select id="e-against"><option value="">${v.partyId ? 'Select' : 'Pick the party first'}</option>${origs.map(o => `<option value="${o.id}" ${o.id === v.against ? 'selected' : ''}>${esc(o.no)} · ${fmtDate(o.date)} · ${inr0(o.total)}</option>`).join('')}</select><button class="btn" data-act="e-copylines" type="button">Copy items</button></div></label>` : ''}
         ${v.type === 'quotation' ? `<label class="f"><span>Valid till</span><input type="date" id="e-valid" value="${esc(v.validTill || '')}"></label>` : ''}
         <label class="f"><span>Place of supply</span><select id="e-pos">${stateOptions(v.pos || f.state)}</select></label>
@@ -4691,6 +4711,7 @@ function renderTradeEditor(head) {
   on('#e-no', 'input', e => v.no = e.value.trim());
   on('#e-date', 'input', e => v.date = e.value);
   on('#e-billno', 'input', e => v.billNo = e.value.trim());
+  on('#e-due', 'input', e => v.dueDate = e.value);
   on('#e-valid', 'input', e => v.validTill = e.value);
   on('#e-against', 'change', e => v.against = e.value);
   on('#e-pos', 'change', e => { v.pos = e.value; v.interstate = isInterstate(e.value); tradeLinesRender(); });
@@ -5460,6 +5481,11 @@ async function shareVoucher(v) {
   const text = waMessage(v);
   toast('Making the PDF…');
   const r = await pdfVoucher(v, v.source === 'counter' ? 'counter' : '');
+  return sendPdfWhatsApp(r, intl, text);
+}
+// Sends a ready PDF (r from pdfVoucher / htmlPdf) with a message to a WhatsApp number (intl, e.g. 919812345678).
+async function sendPdfWhatsApp(r, intl, text) {
+  intl = String(intl || '').replace(/\D/g, ''); if (intl.length === 10) intl = '91' + intl;
   if (IS_ANDROID && r) { AndroidPOS.shareFile(r.base64, r.name, 'application/pdf', intl, text); return; }
   // Phones: the share sheet sends the PDF itself to WhatsApp.
   if (r && IS_MOBILE && canShareFile(r)) {
@@ -6023,6 +6049,7 @@ function routeOK(name, arg) {
   if (name === 'cashbook') return can('cash');
   if (name === 'labels') return can('labels');
   if (name === 'stockcount') return can('items');
+  if (name === 'sdues') return canType('payment') || canType('purchase');
   if (name === 'warranty' || name === 'delivery') return can('sale') || can('counter');
   if (name === 'finance') return can('payin');
   if (name === 'settings') return isOwner();
@@ -7206,7 +7233,7 @@ function searchAll(q) {
     open: () => { if (can('items')) editItem(it.id); else { IF.q = it.name; go('items'); } } }));
   // Parties
   if (routeOK('parties')) col('parties').filter(p => hit([p.name, p.phone, p.gstin, p.city, p.address].filter(Boolean).join(' ')) || (digits.length >= 4 && String(p.phone || '').replace(/\D/g, '').includes(digits))).slice(0, 6)
-    .forEach(p => { const b = balOf(p.id); out.push({ grp: 'Parties', title: esc(p.name), side: b ? `<span class="${b > 0 ? 'neg' : 'pos'}">${inr0(Math.abs(b))} ${b > 0 ? 'due' : 'adv'}</span>` : '', sub: [p.phone, p.gstin].filter(Boolean).map(esc).join(' · ') || (p.kind === 'supplier' ? 'Supplier' : 'Customer'), open: () => partyLedger(p.id) }); });
+    .forEach(p => { const b = balOf(p.id); out.push({ grp: 'Parties', title: esc(p.name), side: b ? `<span class="${b > 0 ? 'neg' : 'pos'}">${inr0(Math.abs(b))} ${b > 0 ? 'due' : 'adv'}</span>` : '', sub: [p.phone, p.gstin].filter(Boolean).map(esc).join(' · ') || (p.kind === 'supplier' ? 'Supplier' : 'Customer'), open: () => showLedger(p.id) }); });
   // Bills, newest first
   col('vouchers').filter(v => canType(v.type))
     .filter(v => {
@@ -7483,6 +7510,271 @@ stPrinting = function () {
       : `<p class="muted small" style="margin:0">${IS_ANDROID ? 'Install the latest Patidar app (2.18 or newer) to print straight to a Bluetooth printer.' : 'Available in the Patidar Android app. On a PC, install the printer in Windows and use Print.'}</p>`}</div>`;
   const cols = $('#st-body .cols'); if (cols) cols.insertAdjacentHTML('beforeend', card);
 };
+
+/* =========================================================
+   More shop tools: supplier payments due, monthly GST file for the CA,
+   dead stock report, e-way bill / e-invoice JSON, Google review link + thank-you
+   WhatsApp, customer statement as PDF.
+   ========================================================= */
+
+/* ---- any HTML page → A4 PDF (same engine as invoices) ---- */
+async function htmlPdf(html, name) {
+  if (!window.html2canvas || !window.jspdf) { toast('PDF maker did not load', 'bad'); return null; }
+  const root = $('#pdf-root'); root.innerHTML = `<div class="inv doc-pdf" style="--ic:${esc(firm().theme?.color || '#6e1428')}">${html}</div>`; root.classList.add('on');
+  const el = root.firstElementChild;
+  try {
+    await new Promise(r => setTimeout(r, 60));
+    const canvas = await html2canvas(el, { scale: 2, backgroundColor: '#ffffff', logging: false });
+    const { jsPDF } = window.jspdf; const W = 210, H = 297; const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
+    const pageHpx = canvas.width * H / W; let y = 0, first = true;
+    while (y < canvas.height - 2) {
+      const h = Math.min(pageHpx, canvas.height - y);
+      const part = document.createElement('canvas'); part.width = canvas.width; part.height = h;
+      part.getContext('2d').drawImage(canvas, 0, y, canvas.width, h, 0, 0, canvas.width, h);
+      if (!first) pdf.addPage(); first = false;
+      pdf.addImage(part.toDataURL('image/jpeg', 0.9), 'JPEG', 0, 0, W, h * W / canvas.width); y += h;
+    }
+    return { blob: pdf.output('blob'), name, base64: pdf.output('datauristring').split(',')[1] };
+  } catch (e) { toast('Could not make the PDF: ' + e.message, 'bad'); return null; }
+  finally { root.classList.remove('on'); root.innerHTML = ''; }
+}
+const docHead = title => { const f = firm(); return `<div class="i-top">${firmBlock(f, f.theme || {})}<div class="i-title"><b>${title}</b><span>${fmtDate(today())}</span></div></div>`; };
+
+/* ---------------- 6. supplier payments due ---------------- */
+// What we still owe each supplier, matched to their newest purchase bills (older bills count as paid first).
+function supplierDues() {
+  const out = [];
+  for (const p of col('parties')) {
+    let owe = r2(-balOf(p.id)); if (owe < 1) continue;
+    const bills = col('vouchers').filter(v => v.type === 'purchase' && v.partyId === p.id && v.status !== 'cancelled').sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt || 0) - (a.createdAt || 0));
+    for (const v of bills) {
+      if (owe < 1) break;
+      const part = Math.min(owe, +v.total || 0); owe = r2(owe - part);
+      const due = v.dueDate || addDays(v.date, 30);
+      out.push({ p, v, amount: part, due, days: daysTo(due) });
+    }
+    if (owe >= 1) out.push({ p, v: null, amount: owe, due: today(), days: 0 }); // opening balance or other entries
+  }
+  return out.sort((a, b) => a.due.localeCompare(b.due));
+}
+VIEWS.sdues = () => {
+  const list = supplierDues(); const over = list.filter(x => x.days < 0), week = list.filter(x => x.days >= 0 && x.days <= 7), later = list.filter(x => x.days > 7);
+  const sum = l => l.reduce((a, x) => a + x.amount, 0);
+  const sec = (title, l, cls) => !l.length ? '' : `<div class="card" style="margin-top:12px"><div class="pad"><h2>${title} <span class="muted small">${inr0(sum(l))}</span></h2></div><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Supplier</th><th>Bill</th><th>Bill date</th><th>Pay by</th><th class="num">Pending</th><th></th></tr></thead><tbody>
+    ${l.map(x => `<tr><td><b>${esc(x.p.name)}</b>${x.p.phone ? `<div class="muted small">${esc(x.p.phone)}</div>` : ''}</td>
+      <td>${x.v ? `<a href="#" data-act="v-show" data-id="${x.v.id}">${esc(x.v.no)}</a>${x.v.billNo ? `<div class="muted small">Their no. ${esc(x.v.billNo)}</div>` : ''}` : '<span class="muted">Opening / other</span>'}</td>
+      <td data-l="Bill date">${x.v ? fmtDate(x.v.date) : ''}</td><td data-l="Pay by" class="${cls}">${fmtDate(x.due)}<div class="small">${x.days < 0 ? -x.days + ' days late' : x.days === 0 ? 'today' : 'in ' + x.days + ' days'}</div></td>
+      <td class="num" data-l="Pending"><b>${inr0(x.amount)}</b></td><td>${canType('payment') ? `<button class="btn sm" data-act="sd-pay" data-id="${x.p.id}" data-amt="${r2(x.amount)}">Pay</button>` : ''}</td></tr>`).join('')}</tbody></table></div></div>`;
+  view().innerHTML = `<div class="view-head"><h1>Supplier payments due</h1></div>
+    <div class="kpis">${kpiHTML([['Overdue', inr0(sum(over)), over.length + ' bills', over.length ? 'neg' : ''], ['Due in 7 days', inr0(sum(week)), week.length + ' bills'], ['Later', inr0(sum(later)), later.length + ' bills'], ['Total to pay', inr0(sum(list)), new Set(list.map(x => x.p.id)).size + ' suppliers']])}</div>
+    ${list.length ? sec('Overdue', over, 'neg') + sec('Due this week', week, '') + sec('Later', later, 'muted') : '<div class="card pad" style="margin-top:12px"><div class="empty"><b>Nothing to pay</b>All suppliers are paid.</div></div>'}
+    <p class="muted small">Set the "Pay by" date on each purchase bill (default 30 days). Payments you make count against the oldest bills first.</p>`;
+};
+ACT['sd-pay'] = b => { const p = get('parties', b.dataset.id); openEditor('payment', null, { partyId: p.id, party: partySnap(p), amount: +b.dataset.amt, mode: 'bank' }); };
+function sdueBadge() { const e = $('#rail-sdue'); if (!e || !S.ready || !firm()) return; const n = supplierDues().filter(x => x.days < 0).length; e.hidden = !n; e.textContent = n; }
+onChange(() => setTimeout(sdueBadge, 0)); setTimeout(sdueBadge, 1500);
+
+/* ---------------- 10. monthly GST file for the CA ---------------- */
+function gstReportHTML(range) {
+  const keep = { tab: RF.tab, range: RF.range }; const old = $('#rf-body'); if (old) old.id = 'rf-body-x';
+  const tmp = document.createElement('div'); tmp.id = 'rf-body'; tmp.hidden = true; document.body.appendChild(tmp);
+  try { RF.tab = 'gst'; RF.range = range; _reportBody(); return tmp.innerHTML; }
+  finally { tmp.remove(); if (old) old.id = 'rf-body'; RF.tab = keep.tab; RF.range = keep.range; }
+}
+async function sendGstToCA(range) {
+  const f = firm(); const label = range === 'lastmonth' ? (() => { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - 1); return d.toLocaleString('en-IN', { month: 'long', year: 'numeric' }); })() : new Date().toLocaleString('en-IN', { month: 'long', year: 'numeric' });
+  const pur = col('vouchers').filter(v => v.type === 'purchase' && v.status !== 'cancelled' && inRange(v.date, range)).sort((a, b) => a.date.localeCompare(b.date));
+  const sal = col('vouchers').filter(v => (v.type === 'sale' || v.type === 'saleReturn') && v.status !== 'cancelled' && inRange(v.date, range)).sort((a, b) => a.date.localeCompare(b.date) || String(a.no).localeCompare(String(b.no)));
+  const reg = (title, vs, gst) => `<h3 style="margin:16px 0 6px">${title} (${vs.length})</h3><table class="i-lines"><thead><tr><th>Date</th><th>No.</th><th>Party</th><th>GSTIN</th><th class="r">Taxable</th><th class="r">CGST</th><th class="r">SGST</th><th class="r">IGST</th><th class="r">Total</th></tr></thead><tbody>
+    ${vs.map(v => `<tr><td>${fmtDate(v.date)}</td><td>${esc(v.type === 'saleReturn' ? 'CN ' + v.no : (gst && v.billNo ? v.billNo : v.no))}</td><td>${esc(vParty(v) || 'Cash')}</td><td>${esc(v.party?.gstin || '')}</td><td class="r">${num(v.taxable)}</td><td class="r">${num(v.cgst)}</td><td class="r">${num(v.sgst)}</td><td class="r">${num(v.igst)}</td><td class="r">${num(v.total)}</td></tr>`).join('')}</tbody></table>`;
+  toast('Making the GST file…');
+  const html = `${docHead('GST summary · ' + label)}<div class="gst-pdf">${gstReportHTML(range)}</div>${reg('Purchase register (input tax credit)', pur, true)}${reg('Sales register', sal, false)}`;
+  const r = await htmlPdf(html, `GST-${label.replace(/\s+/g, '-')}-${(f.gstin || f.name).replace(/[^\w-]+/g, '-')}.pdf`);
+  const text = `*${f.name}*${f.gstin ? ' · GSTIN ' + f.gstin : ''}\nGST summary for ${label}: GSTR-3B, GSTR-1 (B2B, B2C, HSN), purchase and sales registers attached.`;
+  return sendPdfWhatsApp(r, f.caPhone || '', text);
+}
+function gstCaDialog() {
+  const f = firm();
+  const m = openModal(`${mHead('Send GST file to your CA')}<div class="body stack">
+    <p class="muted small" style="margin:0">One PDF with GSTR-3B, GSTR-1 (B2B, B2C, HSN), the purchase register and the sales register, sent on WhatsApp.</p>
+    <label class="f"><span>CA's WhatsApp number</span><input type="tel" id="ca-ph" value="${esc(f.caPhone || '')}" placeholder="10-digit mobile"></label>
+    <label class="f"><span>Month</span><select id="ca-rg"><option value="lastmonth">Last month</option><option value="month">This month</option></select></label></div>
+    <footer><button class="btn" data-close>Cancel</button><button class="btn wa" data-go2>Send on WhatsApp</button></footer>`);
+  m.querySelector('[data-go2]').onclick = () => { const ph = m.querySelector('#ca-ph').value.replace(/\D/g, ''); if (ph !== (f.caPhone || '')) { f.caPhone = ph; put('firms', f); } const rg = m.querySelector('#ca-rg').value; closeModal(); sendGstToCA(rg); };
+}
+ACT['gst-ca'] = gstCaDialog;
+
+/* ---------------- 13. dead stock ---------------- */
+const DEAD = { days: 90 };
+ACT['dead-days'] = b => { DEAD.days = +b.dataset.k; reportBody(); };
+function deadStock(days) {
+  const last = {}; for (const v of col('vouchers')) if (v.type === 'sale' && v.status !== 'cancelled') for (const l of v.lines || []) if (l.itemId && (!last[l.itemId] || v.date > last[l.itemId])) last[l.itemId] = v.date;
+  const cut = addDays(today(), -days);
+  return col('items').map(it => { const s = stockOf(it.id); const ls = last[it.id] || ''; const since = ls || (it.createdAt ? dayKey(it.createdAt) : ''); return { it, s, ls, idle: since ? -daysTo(since) : null, value: Math.max(0, s) * (+it.purchase || 0), since }; })
+    .filter(x => x.s > 0 && (!x.since || x.since <= cut)).sort((a, b) => b.value - a.value);
+}
+
+/* ---------------- 15. e-way bill and e-invoice (JSON for the GST portal) ---------------- */
+const pin6 = s => (String(s || '').match(/\b\d{6}\b/) || [''])[0];
+const dmy = d => { const [y, m, dd] = String(d).slice(0, 10).split('-'); return `${dd}/${m}/${y}`; };
+const UQC = { pcs: 'NOS', nos: 'NOS', set: 'SET', pair: 'PRS', kg: 'KGS', g: 'GMS', box: 'BOX', mtr: 'MTR', m: 'MTR', ltr: 'LTR', l: 'LTR', dozen: 'DOZ', roll: 'ROL', sqft: 'SQF' };
+const uqc = u => UQC[String(u || 'pcs').toLowerCase()] || 'NOS';
+function gstChecks(v) {
+  const f = firm(), p = v.partyId ? get('parties', v.partyId) : null; const miss = [];
+  if (!f.gstin) miss.push('Your GSTIN (Settings › Firm details)');
+  if (!pin6(f.city + ' ' + f.addr)) miss.push('Your PIN code (Settings › Firm details › City / PIN)');
+  if (v.lines.some(l => !String(l.hsn || '').trim())) miss.push('HSN code on every item');
+  return { f, p, miss, buyerPin: pin6((p?.addr || v.party?.addr || '') + ' ' + (p?.city || '')) };
+}
+function eInvoiceJSON(v) {
+  const { f, p } = gstChecks(v); const pos = v.pos || p?.state || f.state; const inter = !!v.interstate;
+  return [{ Version: '1.1', TranDtls: { TaxSch: 'GST', SupTyp: 'B2B', RegRev: 'N', IgstOnIntra: 'N' },
+    DocDtls: { Typ: v.type === 'saleReturn' ? 'CRN' : 'INV', No: String(v.no).replace(/[^A-Za-z0-9/-]/g, '').slice(0, 16), Dt: dmy(v.date) },
+    SellerDtls: { Gstin: f.gstin, LglNm: f.name, Addr1: (f.addr || f.name).slice(0, 100), Loc: (String(f.city || '').replace(/\d{6}/, '').replace(/[,\s-]+$/, '').trim() || 'NA').slice(0, 50), Pin: +pin6(f.city + ' ' + f.addr) || 0, Stcd: f.state, ...(f.phone ? { Ph: String(f.phone).replace(/\D/g, '').slice(-12) } : {}), ...(f.email ? { Em: f.email } : {}) },
+    BuyerDtls: { Gstin: v.party?.gstin || p?.gstin || '', LglNm: vParty(v), Pos: pos, Addr1: (p?.addr || v.party?.addr || vParty(v)).slice(0, 100), Loc: (p?.city || 'NA').slice(0, 50), Pin: +pin6((p?.addr || v.party?.addr || '') + ' ' + (p?.city || '')) || 0, Stcd: (v.party?.gstin || p?.gstin || '').slice(0, 2) || pos },
+    ItemList: v.lines.map((l, i) => ({ SlNo: String(i + 1), PrdDesc: l.name.slice(0, 300), IsServc: 'N', HsnCd: String(l.hsn || ''), Qty: +l.qty, Unit: uqc(l.unit), UnitPrice: r2(l.taxable / (l.qty || 1)), TotAmt: r2(l.taxable), Discount: 0, AssAmt: r2(l.taxable), GstRt: +l.gst,
+      IgstAmt: inter ? r2(l.tax) : 0, CgstAmt: inter ? 0 : r2(l.tax / 2), SgstAmt: inter ? 0 : r2(l.tax / 2), TotItemVal: r2(l.taxable + l.tax) })),
+    ValDtls: { AssVal: r2(v.taxable), CgstVal: r2(v.cgst || 0), SgstVal: r2(v.sgst || 0), IgstVal: r2(v.igst || 0), RndOffAmt: r2(v.roundOff || 0), TotInvVal: r2(v.total) } }];
+}
+function ewayJSON(v, o) {
+  const { f, p, buyerPin } = gstChecks(v); const inter = !!v.interstate; const toSt = +((v.party?.gstin || p?.gstin || '').slice(0, 2) || v.pos || f.state);
+  return { version: '1.0.0621', billLists: [{ userGstin: f.gstin, supplyType: 'O', subSupplyType: 1, subSupplyDesc: '', docType: 'INV', docNo: String(v.no).slice(0, 16), docDate: dmy(v.date),
+    fromGstin: f.gstin, fromTrdName: f.name, fromAddr1: (f.addr || '').slice(0, 120), fromAddr2: '', fromPlace: (String(f.city || '').replace(/\d{6}/, '').trim() || 'NA').slice(0, 50), fromPincode: +pin6(f.city + ' ' + f.addr) || 0, fromStateCode: +f.state, actFromStateCode: +f.state,
+    toGstin: v.party?.gstin || p?.gstin || 'URP', toTrdName: vParty(v) || 'Customer', toAddr1: (p?.addr || v.party?.addr || '').slice(0, 120), toAddr2: '', toPlace: (p?.city || 'NA').slice(0, 50), toPincode: +(o.pin || buyerPin) || 0, toStateCode: toSt, actToStateCode: +(v.pos || toSt),
+    transactionType: 1, otherValue: r2(v.roundOff || 0), totalValue: r2(v.taxable), cgstValue: r2(v.cgst || 0), sgstValue: r2(v.sgst || 0), igstValue: r2(v.igst || 0), cessValue: 0, cessNonAdvolValue: 0, totInvValue: r2(v.total),
+    transporterId: o.tid || '', transporterName: o.tname || '', transDocNo: '', transMode: o.vehicle ? 1 : '', transDistance: String(+o.km || 0), transDocDate: '', vehicleNo: (o.vehicle || '').replace(/\s/g, '').toUpperCase(), vehicleType: o.vehicle ? 'R' : '',
+    itemList: v.lines.map((l, i) => ({ itemNo: i + 1, productName: l.name.slice(0, 100), productDesc: l.name.slice(0, 100), hsnCode: +String(l.hsn || '0').replace(/\D/g, '') || 0, quantity: +l.qty, qtyUnit: uqc(l.unit), taxableAmount: r2(l.taxable), sgstRate: inter ? 0 : l.gst / 2, cgstRate: inter ? 0 : l.gst / 2, igstRate: inter ? +l.gst : 0, cessRate: 0, cessNonadvol: 0 })) }] };
+}
+function gstDocsDialog(v) {
+  const { miss, p, buyerPin } = gstChecks(v); const b2b = !!(v.party?.gstin || p?.gstin);
+  const m = openModal(`${mHead('E-way bill / e-invoice · ' + esc(v.no))}<div class="body stack">
+    ${miss.length ? `<div class="note neg">Fill these first: ${miss.map(esc).join(', ')}.</div>` : ''}
+    <p class="muted small" style="margin:0">The app makes the file. Upload it on the government portal (bulk upload / JSON) and the portal gives the IRN or e-way bill number. ${v.total < 50000 ? 'This bill is under ₹50,000, so an e-way bill is usually not needed.' : 'Bills over ₹50,000 need an e-way bill when goods move.'}</p>
+    <h3 style="margin:6px 0 0">E-way bill</h3>
+    <div class="grid2"><label class="f"><span>Vehicle no.</span><input type="text" id="ew-veh" placeholder="GJ01AB1234"></label><label class="f"><span>Distance (km)</span><input type="number" id="ew-km" placeholder="e.g. 12"></label></div>
+    <div class="grid2"><label class="f"><span>Customer PIN code</span><input type="text" id="ew-pin" value="${esc(buyerPin)}" placeholder="6 digits"></label><label class="f"><span>Transporter GSTIN / ID (optional)</span><input type="text" id="ew-tid"></label></div>
+    <div class="row"><button class="btn primary" data-g="eway">Download e-way bill JSON</button><a class="btn" href="https://ewaybillgst.gov.in" target="_blank" rel="noopener">Open e-way bill portal</a></div>
+    <h3 style="margin:10px 0 0">E-invoice (IRN)</h3>
+    ${b2b ? `<div class="row"><button class="btn primary" data-g="einv">Download e-invoice JSON</button><a class="btn" href="https://einvoice1.gst.gov.in" target="_blank" rel="noopener">Open e-invoice portal</a></div><p class="muted small" style="margin:0">Only needed if your yearly turnover is above ₹5 crore.</p>`
+      : '<p class="muted small" style="margin:0">E-invoice is only for bills to a customer with a GSTIN.</p>'}</div>
+    <footer><button class="btn" data-close>Close</button></footer>`);
+  const name = k => `${k}-${String(v.no).replace(/[^\w-]+/g, '-')}.json`;
+  const g = (k, fn) => { const e = m.querySelector(`[data-g="${k}"]`); if (e) e.onclick = fn; };
+  g('eway', () => download(name('ewaybill'), JSON.stringify(ewayJSON(v, { vehicle: m.querySelector('#ew-veh').value, km: m.querySelector('#ew-km').value, pin: m.querySelector('#ew-pin').value.replace(/\D/g, ''), tid: m.querySelector('#ew-tid').value.trim() }), null, 1), 'application/json'));
+  g('einv', () => download(name('einvoice'), JSON.stringify(eInvoiceJSON(v), null, 1), 'application/json'));
+}
+
+/* ---------------- 16. Google review link + thank-you WhatsApp ---------------- */
+const reviewUrl = () => String(firm()?.reviewUrl || '').trim();
+function reviewBlock(thermal) {
+  const u = reviewUrl(); if (!u) return '';
+  return thermal ? `<hr><div class="c"><b>Happy with us? Please review us on Google</b></div>${qrSVG(u, 'qr')}`
+    : `<div class="i-review">${qrSVG(u)}<div><b>Happy with our service?</b><br>Scan to review us on Google. It helps a lot!</div></div>`;
+}
+const _docHTML = docHTML;
+docHTML = function (v, mode) {
+  const h = _docHTML(v, mode);
+  if (!['sale'].includes(v.type) || !reviewUrl() || v.status === 'cancelled') return h;
+  const i = h.lastIndexOf('</div>'); const thermal = /^\s*<div class="rcpt/.test(h);
+  return h.slice(0, i) + reviewBlock(thermal) + h.slice(i);
+};
+function thanksText(v) {
+  const f = firm(); const name = (vParty(v) || '').split(' ')[0];
+  const t = (f.thanksMsg || 'Thank you {name} for shopping at {shop}! Your bill {bill} of ₹{total} is saved with us.').replace(/\{name\}/g, name || '').replace(/\{shop\}/g, f.name).replace(/\{bill\}/g, v.no).replace(/\{total\}/g, num(v.total)).replace(/\s+!/g, '!');
+  return t + (reviewUrl() ? `\n\nIf you liked our service, please give us a Google review: ${reviewUrl()}` : '');
+}
+function sendThanks(v) {
+  const ph = String(v.party?.phone || get('parties', v.partyId)?.phone || '').replace(/\D/g, ''); if (ph.length < 10) return toast('No mobile number on this bill', 'bad');
+  openLink(waUrl(ph.length === 10 ? '91' + ph : ph, thanksText(v)));
+}
+
+/* ---------------- 18. customer statement as PDF on WhatsApp ---------------- */
+async function statementPdf(id) {
+  const p = get('parties', id); const rows = partyLedger(id); const b = balOf(id); const f = firm();
+  const html = `${docHead('Statement of account')}
+    <div class="i-meta" style="margin-top:12px"><div class="i-box"><h4>${p.kind === 'supplier' ? 'Supplier' : 'Customer'}</h4><b>${esc(p.name)}</b>${p.phone ? `<div>Ph ${esc(p.phone)}</div>` : ''}${p.gstin ? `<div>GSTIN ${esc(p.gstin)}</div>` : ''}</div>
+      <div class="i-box"><h4>${b > 0.5 ? 'Amount due' : b < -0.5 ? 'Advance with us' : 'Balance'}</h4><b style="font-size:20px">₹${num(Math.abs(b))}</b><div>as on ${fmtDate(today())}</div></div></div>
+    <table class="i-lines" style="margin-top:12px"><thead><tr><th>Date</th><th>Particulars</th><th class="r">Debit</th><th class="r">Credit</th><th class="r">Balance</th></tr></thead><tbody>
+    ${rows.map(r => `<tr><td>${r.date ? fmtDate(r.date) : ''}</td><td>${esc(r.text)}</td><td class="r">${r.dr ? num(r.dr) : ''}</td><td class="r">${r.cr ? num(r.cr) : ''}</td><td class="r">${num(Math.abs(r.bal))} ${r.bal > 0.5 ? 'Dr' : r.bal < -0.5 ? 'Cr' : ''}</td></tr>`).join('')}</tbody></table>
+    ${f.upi && b > 0.5 ? `<div class="i-qr" style="margin-top:14px">${qrSVG(upiLink(f.upi, f.name, b, 'Statement'))}Scan to pay ₹${num(b)}<br>${esc(f.upi)}</div>` : ''}
+    <div class="i-bottom"><div></div><div></div><div class="i-sign">For ${esc(f.name)}<div style="height:30px"></div>${esc(f.signLabel || 'Authorised Signatory')}</div></div>`;
+  toast('Making the statement…');
+  const r = await htmlPdf(html, `Statement-${p.name.replace(/[^\w-]+/g, '-')}-${today()}.pdf`);
+  const text = `*${f.name}*\nStatement for ${p.name} as on ${fmtDate(today())}.\n*${b > 0.5 ? 'Amount due' : b < -0.5 ? 'Advance with us' : 'Balance'}: ₹${num(Math.abs(b))}*` + (f.upi && b > 0.5 ? `\nPay by UPI: ${f.upi}` : '');
+  return sendPdfWhatsApp(r, p.phone || '', text);
+}
+const _showLedger = showLedger;
+showLedger = function (id) {
+  _showLedger(id);
+  const m = modalStack[modalStack.length - 1]?.el; const ft = m && m.querySelector('footer'); if (!ft) return;
+  const b = document.createElement('button'); b.className = 'btn wa'; b.textContent = 'Statement PDF'; b.onclick = () => statementPdf(id); ft.appendChild(b);
+};
+
+/* ---- hooks into existing screens ---- */
+// Bill viewer: thank-you and e-way / e-invoice buttons.
+const _showVoucher = showVoucher;
+showVoucher = function (v, o) {
+  _showVoucher(v, o);
+  if (!v || v.type !== 'sale' || v.status === 'cancelled') return;
+  const m = modalStack[modalStack.length - 1]?.el; const ref = m && m.querySelector('[data-y="pdf"]'); if (!ref) return;
+  const ph = String(v.party?.phone || get('parties', v.partyId)?.phone || '').replace(/\D/g, '');
+  if (ph.length >= 10) { const t = document.createElement('button'); t.className = 'btn'; t.textContent = 'Say thanks'; t.onclick = () => sendThanks(v); ref.before(t); }
+  const e = document.createElement('button'); e.className = 'btn'; e.textContent = 'E-way / e-invoice'; e.onclick = () => gstDocsDialog(v); ref.before(e);
+};
+// Counter: after a bill with a mobile number, offer the thank-you message.
+const _successPop = successPop;
+successPop = function (title, sub) {
+  _successPop(title, sub);
+  if (!firm()?.thanksOn || ROUTE.name !== 'counter') return;
+  setTimeout(() => { const v = col('vouchers').filter(x => x.type === 'sale' && x.source === 'counter').sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))[0]; if (v && String(v.party?.phone || '').replace(/\D/g, '').length >= 10) toast('Send a thank-you on WhatsApp?', 'ok', { label: 'Send', fn: () => sendThanks(v) }); }, 400);
+};
+// Reports: dead stock tab and "Send to CA" on the GST tab.
+REPORT_TABS.splice(REPORT_TABS.findIndex(([k]) => k === 'catbrand') + 1, 0, ['dead', 'Dead stock']);
+const _reportBody2 = reportBody;
+reportBody = function () {
+  if (RF.tab === 'dead') {
+    const el = $('#rf-body'); const list = deadStock(DEAD.days); const cost = can('cost');
+    el.innerHTML = `<div class="row" style="margin-bottom:12px">${[30, 60, 90, 180].map(d => `<button class="btn ${DEAD.days === d ? 'primary' : ''}" data-act="dead-days" data-k="${d}">No sale in ${d} days</button>`).join(' ')}</div>
+      <div class="kpis">${kpiHTML([['Items not selling', list.length], ['Pieces', qtyFmt(list.reduce((a, x) => a + x.s, 0))], ...(cost ? [['Money stuck', inr0(list.reduce((a, x) => a + x.value, 0)), 'at purchase price', 'neg']] : [])])}</div>
+      <div class="card"><div class="tbl-wrap"><table class="tbl" id="dead-tbl"><thead><tr><th>Item</th><th>Brand</th><th>Category</th><th class="num">In stock</th>${cost ? '<th class="num">Value</th>' : ''}<th>Last sold</th><th class="num">Days idle</th></tr></thead><tbody>
+      ${list.map(x => `<tr><td><b>${esc(x.it.name)}</b><div class="muted small mono">${esc(x.it.code)}</div></td><td data-l="Brand">${esc(x.it.brand || '')}</td><td data-l="Category">${esc(x.it.category || '')}</td><td class="num" data-l="In stock">${qtyFmt(x.s)}</td>${cost ? `<td class="num" data-l="Value">${inr0(x.value)}</td>` : ''}<td data-l="Last sold">${x.ls ? fmtDate(x.ls) : '<span class="muted">Never</span>'}</td><td class="num" data-l="Days idle">${x.idle != null ? x.idle : '–'}</td></tr>`).join('') || `<tr><td colspan="7" class="muted">Every item in stock sold in the last ${DEAD.days} days.</td></tr>`}</tbody></table></div></div>
+      <p class="muted small">Put these on offer, or send a price list to customers. Items never sold are counted from the day they were added.</p>`;
+    REPORT_CSV = ['dead-stock-' + DEAD.days, [['item', 'code', 'brand', 'category', 'in stock', ...(cost ? ['value'] : []), 'last sold', 'days idle'], ...list.map(x => [x.it.name, x.it.code, x.it.brand || '', x.it.category || '', x.s, ...(cost ? [r2(x.value)] : []), x.ls, x.idle != null ? x.idle : ''])]];
+    return;
+  }
+  _reportBody2();
+  if (RF.tab === 'gst') { const el = $('#rf-body'); el.insertAdjacentHTML('afterbegin', `<div class="row" style="margin-bottom:12px"><button class="btn wa" data-act="gst-ca">Send GST file to CA on WhatsApp</button></div>`); }
+};
+// Settings › Firm details: CA number, Google review link, thank-you message.
+const _stFirm = stFirm;
+stFirm = function () {
+  _stFirm();
+  const f = firm(); const first = $('#st-body .cols > .card'); if (!first) return;
+  first.insertAdjacentHTML('afterend', `<div class="card pad stack"><h2>Customers and CA</h2>
+    <label class="f"><span>Google review link <span class="muted">printed as a QR on bills</span></span><input type="url" id="st-review" value="${esc(f.reviewUrl || '')}" placeholder="https://g.page/r/..."></label>
+    <label class="chip" style="justify-self:start"><input type="checkbox" id="st-thx" ${f.thanksOn ? 'checked' : ''}> Offer a thank-you WhatsApp after each counter bill</label>
+    <label class="f"><span>Thank-you message <span class="muted">{name} {shop} {bill} {total}</span></span><textarea id="st-thxmsg" rows="2" placeholder="Thank you {name} for shopping at {shop}!">${esc(f.thanksMsg || '')}</textarea></label>
+    <label class="f"><span>CA's WhatsApp number <span class="muted">for the monthly GST file</span></span><input type="tel" id="st-ca" value="${esc(f.caPhone || '')}"></label></div>`);
+  const save = () => { f.reviewUrl = $('#st-review').value.trim(); f.thanksOn = $('#st-thx').checked; f.thanksMsg = $('#st-thxmsg').value; f.caPhone = $('#st-ca').value.replace(/\D/g, ''); saveFirmSoon(); };
+  ['#st-review', '#st-thxmsg', '#st-ca'].forEach(s => $(s).addEventListener('input', save)); $('#st-thx').addEventListener('change', save);
+};
+
+/* ---------------- 26. offline banner ---------------- */
+// Billing keeps working without internet; this says so plainly and shows how many bills are waiting to go to the other devices.
+function netBanner() {
+  let el = $('#net-banner');
+  if (!el) { el = document.createElement('div'); el.id = 'net-banner'; el.className = 'net-banner'; el.setAttribute('role', 'status'); el.hidden = true; document.body.appendChild(el); }
+  const keys = SYNC && SYNC.outbox ? Array.from(SYNC.outbox) : [];
+  const bills = keys.filter(k => String(k).includes('|vouchers|')).length;
+  const off = !navigator.onLine && SYNC && SYNC.cfg;
+  el.hidden = !off;
+  if (off) el.innerHTML = `<b>No internet.</b> Keep billing, everything is saved on this phone.${keys.length ? ` <span>${bills ? bills + ' bill' + (bills === 1 ? '' : 's') : keys.length + ' change' + (keys.length === 1 ? '' : 's')} waiting to sync</span>` : ''}`;
+  document.documentElement.classList.toggle('net-off', !!off);
+}
+let WAS_OFF = !navigator.onLine;
+window.addEventListener('offline', () => { WAS_OFF = true; netBanner(); });
+window.addEventListener('online', () => { netBanner(); if (WAS_OFF && SYNC && SYNC.cfg) { WAS_OFF = false; const n = SYNC.outbox ? SYNC.outbox.size : 0; toast(n ? `Back online · sending ${n} change${n === 1 ? '' : 's'}` : 'Back online · all synced', 'ok'); } });
+setInterval(netBanner, 3000); setTimeout(netBanner, 1200);
 
 </script>
 
