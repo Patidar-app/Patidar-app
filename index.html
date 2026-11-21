@@ -770,6 +770,8 @@ textarea { border-radius: var(--r-ctl); font-size: 15px; }
 .gs-row .r { font-variant-numeric: tabular-nums; }
 .sc-btns .btn:not(.primary) { background: rgba(255,255,255,.14); color: #fff; border-color: rgba(255,255,255,.45); }
 @media (min-width: 641px) { .grid4.if-filters { grid-template-columns: minmax(0, 2fr) repeat(4, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .topbar { gap: 8px; } .user-pill { font-size: 0; padding: 3px; gap: 0; } .user-pill i { font-size: 12px; } .top-search { width: 34px; height: 34px; } }
+@media (max-width: 385px) { .topbar .brand > div { display: none; } }
 
 </style>
 </head>
@@ -826,6 +828,7 @@ textarea { border-radius: var(--r-ctl); font-size: 15px; }
     <button data-go="cashbook">Cash &amp; bank</button>
     <div class="grp">Stock</div>
     <button data-go="items">Items &amp; stock <kbd>F3</kbd></button>
+    <button data-go="stockcount">Stock count (scan)</button>
     <button data-go="godowns">Godowns</button>
     <button data-go="labels">Barcode labels <kbd>F6</kbd></button>
     <button data-act="sup-order">Order from supplier</button>
@@ -4406,7 +4409,7 @@ function counterRefresh() {
   tb.innerHTML = !BILL.lines.length ? emptyRow('Bill is empty', `Scan a barcode or type an item name above. Type <span class="mono">3*code</span> to add 3 at once.`) :
     `<thead><tr><th>#</th><th>Item</th><th>Qty</th><th class="num">Rate</th><th class="num">Disc ₹</th><th class="num">Amount</th><th></th></tr></thead><tbody>` +
     c.lines.map((l, i) => `<tr data-item="${l.itemId || ''}"><td class="muted num c-no">${i + 1}</td>
-      <td class="c-it" style="min-width:190px"><div class="it-name">${esc(l.name)}</div><div class="it-sub"><span class="mono">${esc(l.code || '')}</span>${l.mrp > l.rate ? `<span>MRP <s>${inr0(l.mrp)}</s></span>` : ''}<span>GST ${l.gst}%</span>
+      <td class="c-it" style="min-width:190px"><div class="it-name">${esc(l.name)}</div><div class="it-sub"><span class="mono">${esc(l.code || '')}</span>${l.mrp > l.rate ? `<span>MRP <s>${inr0(l.mrp)}</s></span>` : ''}<span>GST ${l.gst}%</span>${lossTag(l)}
         ${l.category === 'Electronics' || l.serial || l.warranty ? `<input type="text" data-f="serial" data-i="${i}" value="${esc(l.serial)}" placeholder="Serial / IMEI no." aria-label="Serial number">` : ''}
         ${l.warranty ? `<span class="pill gold">${l.warranty} mo warranty</span>` : ''}</div></td>
       <td class="c-q" data-l="Qty"><span class="qty"><button data-act="c-qty" data-i="${i}" data-d="-1" aria-label="Less">−</button><input type="number" data-f="qty" data-i="${i}" value="${l.qty}" min="1" aria-label="Quantity"><button data-act="c-qty" data-i="${i}" data-d="1" aria-label="More">+</button></span></td>
@@ -4475,6 +4478,7 @@ async function counterSave(btn) {
   if (unpaid > 0 && (!BILL.name.trim() || !BILL.phone.trim())) { toast('Udhaar needs the customer name and mobile', 'bad'); $('#c-phone').focus(); return; }
   const short = BILL.lines.filter(l => l.itemId && BILL.lines.filter(x => x.itemId === l.itemId).reduce((a, x) => a + x.qty, 0) > stockOf(l.itemId, BILL.godown));
   if (short.length && !(await ask('Stock is short', `Stock will go below zero for <b>${[...new Set(short.map(l => esc(l.name)))].join(', ')}</b>. Save the bill anyway?`, 'Save bill'))) return;
+  if (!(await lossCheck(c))) return;
   const p = counterParty();
   const doc = Object.assign(v, {
     no: nextNo('sale'), date: today(), time: new Date().toISOString(), partyId: p?.id || null, party: p ? { name: p.name, phone: p.phone, gstin: p.gstin || '', state: p.state || '', addr: p.addr || '' } : { name: BILL.name.trim(), phone: BILL.phone },
@@ -4721,7 +4725,7 @@ function tradeLinesRender() {
   tb.innerHTML = v.lines.length ? `<thead><tr><th>Item</th><th>HSN</th><th class="num">Qty</th><th class="num">Rate</th><th class="num">Disc %</th><th class="num">GST %</th><th class="num">Amount</th><th></th></tr></thead><tbody>` +
     c.lines.map((l, i) => `<tr>
       <td style="min-width:200px"><input type="text" data-f="name" data-i="${i}" value="${esc(l.name)}" aria-label="Item name" style="font-weight:600">
-        <div class="it-sub">${l.code ? `<span class="mono">${esc(l.code)}</span>` : ''}${l.itemId && VT[v.type].stock ? `<span>Stock ${qtyFmt(stockOf(l.itemId, v.godown))}</span>` : ''}<input type="text" data-f="serial" data-i="${i}" value="${esc(l.serial || '')}" placeholder="Serial / IMEI / note" aria-label="Serial"></div></td>
+        <div class="it-sub">${l.code ? `<span class="mono">${esc(l.code)}</span>` : ''}${l.itemId && VT[v.type].stock ? `<span>Stock ${qtyFmt(stockOf(l.itemId, v.godown))}</span>` : ''}${['sale', 'quotation'].includes(v.type) ? lossTag(l) : ''}<input type="text" data-f="serial" data-i="${i}" value="${esc(l.serial || '')}" placeholder="Serial / IMEI / note" aria-label="Serial"></div></td>
       <td data-l="HSN"><input type="text" data-f="hsn" data-i="${i}" value="${esc(l.hsn || '')}" style="width:76px" aria-label="HSN"></td>
       <td class="num" data-l="Qty"><input class="in-num in-qty" type="number" data-f="qty" data-i="${i}" value="${l.qty}" aria-label="Quantity"> <span class="muted small">${esc(l.unit || '')}</span></td>
       <td class="num" data-l="Rate"><input class="in-num" type="number" data-f="rate" data-i="${i}" value="${l.rate}" aria-label="Rate"></td>
@@ -4821,6 +4825,7 @@ async function editorSave(then) {
     if (!v.lines.length) return toast('Add at least one item', 'bad');
     if (v.lines.some(l => !String(l.name).trim())) return toast('Every line needs an item name', 'bad');
     const total = calcVoucher(v).total;
+    if (v.type === 'sale' && !(await lossCheck(calcVoucher(v)))) return;
     if (t.party && r2(total - paidTotal(v)) > 0.5 && !v.partyId) return toast('Pick the party: part of this bill is unpaid', 'bad');
     if (v.partyId) v.party = partySnap(get('parties', v.partyId));
     v.interstate = isInterstate(v.pos || firm().state);
@@ -6017,6 +6022,7 @@ function routeOK(name, arg) {
   if (name === 'list') return canType(arg);
   if (name === 'cashbook') return can('cash');
   if (name === 'labels') return can('labels');
+  if (name === 'stockcount') return can('items');
   if (name === 'warranty' || name === 'delivery') return can('sale') || can('counter');
   if (name === 'finance') return can('payin');
   if (name === 'settings') return isOwner();
@@ -6649,6 +6655,7 @@ ACT.entry = () => {
     <button class="btn" data-close data-act="q-item">Add item</button>
     <button class="btn" data-close data-act="entry-party">Add party</button>
     <button class="btn" data-close data-act="gsearch">Search</button>
+    <button class="btn" data-close data-go="stockcount">Stock count</button>
     ${CAN_CAM ? '<button class="btn" data-close data-act="cam">Camera scan</button>' : ''}
   </div></div>`);
   m.classList.add('sheet-wrap');
@@ -7282,6 +7289,199 @@ reportBody = function () {
     </tbody><tfoot><tr><td>Total</td><td></td><td class="num">${qtyFmt(tot.qty)}</td><td class="num">${inr0(tot.sales)}</td>${showCost ? `<td class="num">${inr0(tot.sales - tot.cost)}</td><td class="num">${tot.sales ? Math.round((tot.sales - tot.cost) / tot.sales * 100) + '%' : ''}</td>` : ''}<td class="num">${tot.items}</td><td class="num">${qtyFmt(tot.stock)}</td>${showCost ? `<td class="num">${inr0(tot.value)}</td>` : ''}</tr></tfoot></table></div></div>`;
   REPORT_CSV = ['sales-by-' + CB.by, [[label.toLowerCase(), 'bills', 'qty sold', 'sales excl gst', ...(showCost ? ['profit'] : []), 'items', 'in stock', ...(showCost ? ['stock value'] : [])],
     ...list.map(x => [x.k, x.bills.size, x.qty, r2(x.sales), ...(showCost ? [r2(x.sales - x.cost)] : []), x.items, x.stock, ...(showCost ? [r2(x.value)] : [])])]];
+};
+
+/* =========================================================
+   Shop tools: loss warning, stock count by scanning, backup to Google Drive,
+   Bluetooth bill printer (Android app 2.18+).
+   ========================================================= */
+
+/* ---------------- loss warning: selling below purchase price ---------------- */
+// Rate per piece after discounts, without GST, compared with the item's purchase price (also without GST).
+function lineBelowCost(l) {
+  const it = l.itemId ? get('items', l.itemId) : null; const cost = +(it?.purchase || l.cost || 0);
+  if (!cost || !(+l.qty > 0) || l.taxable == null) return 0;
+  const per = l.taxable / l.qty; return per < cost - 0.5 ? cost - per : 0;
+}
+const lossTag = l => lineBelowCost(l) ? `<span class="pill bad" title="Rate is below purchase price">Below cost${can('cost') ? ' · −' + inr0(lineBelowCost(l) * l.qty) : ''}</span>` : '';
+async function lossCheck(c) {
+  const bad = c.lines.filter(lineBelowCost); if (!bad.length) return true;
+  const loss = bad.reduce((a, l) => a + lineBelowCost(l) * l.qty, 0);
+  return ask('Selling below purchase price', `<b>${bad.map(l => esc(l.name)).join(', ')}</b> ${bad.length === 1 ? 'is' : 'are'} priced below what you paid${can('cost') ? ` (loss about <b>${inr0(loss)}</b>, before GST)` : ''}. Save the bill anyway?`, 'Save anyway', true);
+}
+
+/* ---------------- stock count by scanning ---------------- */
+// Walk the shop scanning every box. The app shows what is missing or extra against its stock and makes the adjustment entry.
+const SC_KEY = () => 'stockcount-' + S.firmId;
+let SC = null;
+function scLoad() { SC = LS.get(SC_KEY(), null) || { godown: LS.get('godown-' + S.firmId, 'main'), counts: {}, zeroRest: false }; if (!godowns().some(g => g.id === SC.godown)) SC.godown = godowns()[0]?.id || 'main'; }
+function scSave() { LS.set(SC_KEY(), SC); }
+VIEWS.stockcount = () => {
+  scLoad();
+  view().innerHTML = `<div class="view-head"><h1>Stock count</h1><button class="btn" data-act="sc-clear">Start again</button><button class="btn primary" data-act="sc-apply">Make adjustment</button></div>
+    <div class="card pad stack" style="max-width:980px">
+      <p class="muted small" style="margin:0">Scan every box on the shelf (or type the name). Each scan counts one piece. Then tap <b>Make adjustment</b> to correct the stock. Your count is kept on this device if you stop halfway.</p>
+      <div class="grid2"><label class="f"><span>Godown</span><select id="sc-gd">${gdOptions(SC.godown)}</select></label>
+        <label class="chip" style="align-self:end"><input type="checkbox" id="sc-zero" ${SC.zeroRest ? 'checked' : ''}> Items I did not scan are not in this godown (set to 0)</label></div>
+      <div class="scan-box ${CAN_CAM ? 'has-cam' : ''}"><span class="scan-ico" aria-hidden="true"><i style="width:2px"></i><i style="width:1px"></i><i style="width:3px"></i></span><input type="search" id="sc-scan" placeholder="Scan barcode or search item" autocomplete="off">${CAN_CAM ? '<button class="btn sm primary cam-btn" data-act="cam" type="button">Camera scan</button>' : ''}</div>
+      <div class="kpis" id="sc-kpis"></div>
+      <div class="tbl-wrap lines"><table class="tbl" id="sc-tbl"></table></div></div>`;
+  $('#sc-gd').onchange = e => { SC.godown = e.target.value; scSave(); scBody(); };
+  $('#sc-zero').onchange = e => { SC.zeroRest = e.target.checked; scSave(); scBody(); };
+  const inp = $('#sc-scan');
+  attachPicker(inp, { search: q => searchItems(q, 8), row: itemRow, onPick: it => { scAdd(it); inp.value = ''; },
+    onEnterRaw: (raw, none) => { if (!raw) return true; const it = col('items').find(i => i.code === raw); if (it) { scAdd(it); inp.value = ''; return true; } if (none) { toast(`No item with barcode ${raw}`, 'bad', { label: 'Add it', fn: () => editItem(null, { code: raw }) }); inp.value = ''; return true; } return false; } });
+  $('#sc-tbl').addEventListener('change', e => { const i = e.target.dataset.sc; if (i) { const n = Math.max(0, +e.target.value || 0); SC.counts[i] = n; scSave(); scBody(); } });
+  scBody(); focusScan('#sc-scan');
+};
+function scAdd(it, n = 1) { SC.counts[it.id] = (SC.counts[it.id] || 0) + n; scSave(); scBody(); setTimeout(() => focusScan('#sc-scan'), 0); return SC.counts[it.id]; }
+function scRows() {
+  const gd = SC.godown; const ids = new Set(Object.keys(SC.counts));
+  if (SC.zeroRest) col('items').forEach(i => { if (stockOf(i.id, gd) > 0) ids.add(i.id); });
+  return [...ids].map(id => get('items', id)).filter(Boolean).map(it => { const have = stockOf(it.id, gd), cnt = SC.counts[it.id] || 0; return { it, have, cnt, diff: cnt - have }; })
+    .sort((a, b) => (Math.abs(b.diff) > 0) - (Math.abs(a.diff) > 0) || a.it.name.localeCompare(b.it.name));
+}
+function scBody() {
+  const rows = scRows(); const off = rows.filter(r => r.diff);
+  $('#sc-kpis').innerHTML = kpiHTML([['Items counted', Object.keys(SC.counts).length], ['Pieces counted', qtyFmt(Object.values(SC.counts).reduce((a, x) => a + x, 0))], ['Short', off.filter(r => r.diff < 0).length, 'fewer than the app shows', off.some(r => r.diff < 0) ? 'neg' : ''], ['Extra', off.filter(r => r.diff > 0).length, 'more than the app shows']]);
+  $('#sc-tbl').innerHTML = rows.length ? `<thead><tr><th>Item</th><th class="num">In app</th><th class="num">Counted</th><th class="num">Difference</th></tr></thead><tbody>` + rows.map(r => `<tr><td><b>${esc(r.it.name)}</b><div class="it-sub"><span class="mono">${esc(r.it.code)}</span></div></td>
+      <td class="num" data-l="In app">${qtyFmt(r.have)}</td><td class="num" data-l="Counted"><input class="in-num in-qty" type="number" min="0" data-sc="${r.it.id}" value="${r.cnt}" aria-label="Counted"></td>
+      <td class="num ${r.diff < 0 ? 'neg' : r.diff > 0 ? 'pos' : 'muted'}" data-l="Difference"><b>${r.diff > 0 ? '+' : ''}${qtyFmt(r.diff)}</b></td></tr>`).join('') + '</tbody>'
+    : emptyRow('Nothing counted yet', 'Scan the first box to start.', 4);
+}
+Object.assign(ACT, {
+  'sc-open': () => go('stockcount'),
+  'sc-clear': async () => { if (Object.keys(SC.counts).length && !(await ask('Start the count again?', 'The pieces counted so far on this device will be cleared.', 'Start again', true))) return; SC.counts = {}; scSave(); scBody(); },
+  'sc-apply': () => {
+    const off = scRows().filter(r => r.diff); if (!off.length) return toast(Object.keys(SC.counts).length ? 'Stock matches your count. Nothing to adjust.' : 'Scan some items first', Object.keys(SC.counts).length ? 'ok' : 'bad');
+    if (!canType('adjust')) return denyToast('adjust stock');
+    const gd = SC.godown; SC.counts = {}; scSave();
+    openEditor('adjust', null, { godown: gd, note: 'Stock count ' + fmtDate(today()), lines: off.map(r => ({ itemId: r.it.id, name: r.it.name, code: r.it.code, qty: r.diff })) });
+    toast('Check the changes and tap Save', 'ok');
+  }
+});
+// Camera scans while on the Stock count screen add one piece each and keep the scanner open.
+const _onCameraScanSC = window.onCameraScan;
+window.onCameraScan = code => {
+  if (ROUTE.name === 'stockcount' && SC && !modalStack.length) {
+    code = String(code || '').trim(); if (!code || code.startsWith('PATIDAR-SYNC:')) return _onCameraScanSC(code);
+    const it = col('items').find(i => i.code === code);
+    if (!it) { setTimeout(() => toast(`No item with barcode ${code}`, 'bad', { label: 'Add it', fn: () => editItem(null, { code }) }), 50); return 'CLOSE:Not in your items: ' + code; }
+    const n = scAdd(it); return `${it.name} · counted ${qtyFmt(n)} (app ${qtyFmt(stockOf(it.id, SC.godown))})`;
+  }
+  return _onCameraScanSC(code);
+};
+
+/* ---------------- backup to Google Drive ---------------- */
+// Uses the phone's share sheet (pick "Drive" → Save), or on a PC downloads the file and opens Google Drive to drop it in.
+async function driveBackup() {
+  const name = `patidar-backup-${today()}.json`; const json = backupJSON();
+  const done = () => { LS.set('driveBackupAt', Date.now()); };
+  if (IS_ANDROID && typeof AndroidPOS.shareFile === 'function') {
+    const b64 = btoa(unescape(encodeURIComponent(json)));
+    AndroidPOS.shareFile(b64, name, 'application/json', '', ''); done(); toast('Pick "Drive" and tap Save', 'ok'); return;
+  }
+  const file = (() => { try { return new File([json], name, { type: 'application/json' }); } catch (e) { return null; } })();
+  if (IS_MOBILE && file && navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: name }); done(); return; } catch (e) { if (e.name === 'AbortError') return; }
+  }
+  download(name, json, 'application/json'); done();
+  openLink('https://drive.google.com/drive/my-drive');
+  toast('Backup downloaded. Drag it into the Google Drive tab that opened.', 'ok');
+}
+ACT['bk-drive'] = driveBackup;
+// Settings › Data gets a "Save to Google Drive" button; a gentle weekly reminder for the owner.
+const _stData = stData;
+stData = function () {
+  _stData();
+  const row = $('#st-body [data-act="bk-save"]')?.parentElement; if (!row) return;
+  const at = LS.get('driveBackupAt', 0);
+  row.insertAdjacentHTML('afterend', `<div class="row"><button class="btn wa" data-act="bk-drive">Save backup to Google Drive</button><span class="muted small">${at ? 'Last sent ' + fmtDate(new Date(at).toISOString()) : 'Not sent from this device yet'}</span></div>`);
+};
+setTimeout(() => {
+  try {
+    if (!S.ready || !firm() || !isOwner() || needLogin()) return;
+    const at = LS.get('driveBackupAt', 0); if (Date.now() - at < 7 * 864e5) return;
+    if (LS.get('driveNagAt', 0) > Date.now() - 864e5) return; LS.set('driveNagAt', Date.now());
+    toast('Keep a copy of your shop data in Google Drive', '', { label: 'Back up', fn: driveBackup });
+  } catch (e) { }
+}, 20000);
+
+/* ---------------- Bluetooth bill printer (Android app 2.18+) ---------------- */
+// The receipt is drawn exactly as it looks on screen (₹, Hindi/Gujarati text, logo, UPI QR) and sent as a picture (ESC/POS raster).
+const BT_OK = () => IS_ANDROID && typeof AndroidPOS.btPrint === 'function';
+const btPrinter = () => LS.get('btPrinter', null);
+function btPrinters() {
+  let r = ''; try { r = AndroidPOS.btList(); } catch (e) { r = 'ERR:' + e.message; }
+  if (r === 'PERM') { toast('Allow "Nearby devices" for Patidar, then tap again', 'bad'); return null; }
+  if (r === 'OFF') { toast('Turn on Bluetooth, then tap again', 'bad'); return null; }
+  if (String(r).startsWith('ERR')) { toast('Bluetooth error: ' + String(r).slice(4), 'bad'); return null; }
+  try { return JSON.parse(r); } catch (e) { return []; }
+}
+function btPick() {
+  const list = btPrinters(); if (!list) return;
+  if (!list.length) return toast('No paired printer. Pair the printer in phone Settings › Bluetooth first (PIN is usually 0000 or 1234).', 'bad');
+  const cur = btPrinter();
+  const m = openModal(`${mHead('Choose Bluetooth printer')}<div class="body stack">${list.map(d => `<button class="btn ${cur && cur.address === d.address ? 'primary' : ''}" data-bt="${esc(d.address)}" data-name="${esc(d.name || d.address)}" style="justify-content:space-between"><span>${esc(d.name || 'Printer')}</span><span class="mono small">${esc(d.address)}</span></button>`).join('')}
+    <label class="f"><span>Paper width</span><select id="bt-w"><option value="58" ${cur?.w == 58 ? 'selected' : ''}>58 mm (2 inch)</option><option value="80" ${cur?.w == 80 ? 'selected' : ''}>80 mm (3 inch)</option></select></label></div>
+    <footer>${cur ? '<button class="btn danger" data-btoff style="margin-right:auto">Stop using it</button>' : ''}<button class="btn" data-close>Close</button></footer>`);
+  $$('[data-bt]', m).forEach(b => b.onclick = () => { LS.set('btPrinter', { address: b.dataset.bt, name: b.dataset.name, w: +m.querySelector('#bt-w').value }); closeModal(); toast('Bills will print on ' + b.dataset.name, 'ok'); if (ROUTE.name === 'settings') VIEWS.settings(); });
+  const off = m.querySelector('[data-btoff]'); if (off) off.onclick = () => { LS.set('btPrinter', null); closeModal(); if (ROUTE.name === 'settings') VIEWS.settings(); };
+}
+async function btPrintVoucher(v, copies = 1) {
+  const pr = btPrinter(); const dots = pr.w == 80 ? 576 : 384;
+  if (!window.html2canvas) return false;
+  const root = $('#pdf-root'); root.innerHTML = docHTML(v, 'counter'); root.classList.add('on');
+  const el = root.firstElementChild;
+  try {
+    el.style.width = (pr.w == 80 ? 72 : 48) + 'mm'; // printable width of the head
+    await new Promise(r => setTimeout(r, 60));
+    const canvas = await html2canvas(el, { scale: dots / el.offsetWidth, backgroundColor: '#ffffff', logging: false });
+    const bytes = escposRaster(canvas, dots);
+    const all = []; for (let i = 0; i < copies; i++) all.push(...bytes);
+    let s = ''; const u = new Uint8Array(all); for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000));
+    toast('Printing on ' + pr.name + '…');
+    AndroidPOS.btPrint(pr.address, btoa(s));
+    return true;
+  } catch (e) { toast('Could not make the receipt: ' + e.message, 'bad'); return false; }
+  finally { root.classList.remove('on'); root.innerHTML = ''; }
+}
+function escposRaster(canvas, dots) {
+  const w = Math.min(dots, canvas.width), h = canvas.height, bw = Math.ceil(w / 8);
+  const px = canvas.getContext('2d').getImageData(0, 0, w, h).data;
+  const out = [0x1b, 0x40]; // reset
+  for (let y0 = 0; y0 < h; y0 += 128) { // bands keep cheap printers from overflowing
+    const bh = Math.min(128, h - y0);
+    out.push(0x1d, 0x76, 0x30, 0x00, bw & 255, bw >> 8, bh & 255, bh >> 8);
+    for (let y = y0; y < y0 + bh; y++) for (let bx = 0; bx < bw; bx++) {
+      let byte = 0;
+      for (let k = 0; k < 8; k++) { const x = bx * 8 + k; if (x >= w) continue; const i = (y * canvas.width + x) * 4; const lum = px[i] * 0.299 + px[i + 1] * 0.587 + px[i + 2] * 0.114; if (lum < 150) byte |= 0x80 >> k; }
+      out.push(byte);
+    }
+  }
+  out.push(0x1b, 0x64, 0x04, 0x1d, 0x56, 0x42, 0x00); // feed and cut
+  return out;
+}
+window.onBtPrint = (ok, msg) => { if (ok) toast('Printed', 'ok'); else toast('Printer: ' + (msg || 'not reachable') + '. Is it on and near?', 'bad', { label: 'Normal print', fn: () => { if (LAST_BT) { const v = LAST_BT; LAST_BT = null; printVoucherSystem(v.v, v.mode); } } }); };
+let LAST_BT = null;
+// Counter receipts go to the Bluetooth printer when one is chosen on this phone; everything else uses normal printing.
+const printVoucherSystem = printVoucher;
+printVoucher = function (v, mode) {
+  const thermal = mode === 'counter' && firm().counter.paper !== 'A4';
+  if (thermal && BT_OK() && btPrinter()) { LAST_BT = { v, mode }; btPrintVoucher(v, +firm().counter.copies || 1).then(ok => { if (!ok) printVoucherSystem(v, mode); }); return; }
+  printVoucherSystem(v, mode);
+};
+ACT['bt-pick'] = btPick;
+ACT['bt-test'] = () => { const v = sampleInvoice(); printVoucher(Object.assign({}, v, { no: 'TEST-PRINT', source: 'counter' }), 'counter'); };
+const _stPrinting = stPrinting;
+stPrinting = function () {
+  _stPrinting();
+  const pr = btPrinter();
+  const card = `<div class="card pad stack"><h2>Bluetooth bill printer</h2>
+    ${BT_OK() ? `<p class="muted small" style="margin:0">Counter bills print straight to a Bluetooth thermal printer on this phone, without the print screen. Pair the printer in phone Settings › Bluetooth first.</p>
+      <div class="row">${pr ? `<span class="pill ok">${esc(pr.name)} · ${pr.w} mm</span>` : '<span class="muted">No printer chosen</span>'}<button class="btn ${pr ? '' : 'primary'}" data-act="bt-pick">${pr ? 'Change' : 'Choose printer'}</button>${pr ? '<button class="btn" data-act="bt-test">Test print</button>' : ''}</div>`
+      : `<p class="muted small" style="margin:0">${IS_ANDROID ? 'Install the latest Patidar app (2.18 or newer) to print straight to a Bluetooth printer.' : 'Available in the Patidar Android app. On a PC, install the printer in Windows and use Print.'}</p>`}</div>`;
+  const cols = $('#st-body .cols'); if (cols) cols.insertAdjacentHTML('beforeend', card);
 };
 
 </script>
