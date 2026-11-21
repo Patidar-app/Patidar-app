@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Patidar Counter</title>
-<meta name="theme-color" content="#6e1428">
+<meta name="theme-color" content="#1d3f78">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Patidar">
@@ -348,7 +348,7 @@ html.android kbd { display: none; }
 .user-pill i { width: 22px; height: 22px; border-radius: 50%; background: var(--gold-soft); color: var(--gold-ink); display: grid; place-items: center; font-style: normal; font-size: 12px; }
 .locked .rail, .locked #firm-pick, .locked .top-stat, .locked #sample-flag { visibility: hidden; }
 /* login page: full screen, brand side + sign-in card, gentle motion */
-.login-page { position: fixed; inset: 0; z-index: 45; overflow-y: auto; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); align-items: center; gap: 4vw; padding: 32px max(24px, 5vw); background: radial-gradient(120% 90% at 0% 0%, #8c1d36 0%, #6e1428 45%, #3d0a17 100%); color: var(--on-maroon); isolation: isolate; }
+.login-page { position: fixed; inset: 0; z-index: 45; overflow-y: auto; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); align-items: center; gap: 4vw; padding: 32px max(24px, 5vw); background: radial-gradient(120% 90% at 0% 0%, var(--g-hi, #8c1d36) 0%, var(--chrome, #6e1428) 45%, var(--g-lo, #3d0a17) 100%); color: var(--on-maroon); isolation: isolate; }
 .lg-bg { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
 .lg-bg i { position: absolute; border-radius: 50%; filter: blur(60px); opacity: .45; animation: lg-float 18s ease-in-out infinite alternate; }
 .lg-bg i:nth-child(1) { width: 46vmax; height: 46vmax; left: -12vmax; top: -14vmax; background: #c79a3a; opacity: .28; }
@@ -599,7 +599,7 @@ input.ro { background: var(--sunken); color: var(--muted); }
 
 /* ---------- today at a glance (dashboard) ---------- */
 :root { --m-cash: #2f9e5b; --m-upi: #6c4fd1; --m-card: #d08a1e; --m-bank: #1f8aa8; --m-udhaar: #d0453a; }
-.today-card { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.2fr) minmax(0, 1.3fr); gap: 18px; align-items: stretch; margin-bottom: 14px; padding: 18px; border-radius: 16px; color: var(--on-maroon); background: radial-gradient(140% 120% at 0% 0%, #8c1d36 0%, var(--chrome) 55%, #3d0a17 100%); box-shadow: 0 10px 30px rgba(60, 8, 22, .25); position: relative; overflow: hidden; }
+.today-card { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.2fr) minmax(0, 1.3fr); gap: 18px; align-items: stretch; margin-bottom: 14px; padding: 18px; border-radius: 16px; color: var(--on-maroon); background: radial-gradient(140% 120% at 0% 0%, var(--g-hi, #8c1d36) 0%, var(--chrome) 55%, var(--g-lo, #3d0a17) 100%); box-shadow: 0 10px 30px rgba(60, 8, 22, .25); position: relative; overflow: hidden; }
 .today-card::after { content: ""; position: absolute; inset: 0 0 auto; height: 3px; background: linear-gradient(90deg, #a87f22, #e2bf62, #a87f22); }
 .today-card small { display: block; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; font-weight: 700; color: rgba(255,247,234,.7); }
 .tc-main b { display: block; font-size: clamp(30px, 2.4vw + 14px, 44px); line-height: 1.1; margin: 4px 0 2px; font-weight: 700; white-space: nowrap; }
@@ -825,21 +825,21 @@ textarea { border-radius: var(--r-ctl); font-size: 15px; }
 
 /* 3. bill lists on phones: two tidy lines per bill (party + amount, then number · date · items + status) */
 @media (max-width: 640px) {
-  #lf-tbl.cardify tbody tr { display: grid; grid-template-columns: auto auto auto minmax(0, 1fr) auto; gap: 3px 10px; padding: 11px 14px; align-items: center; }
-  #lf-tbl.cardify td::before { display: none !important; }
-  #lf-tbl.cardify td { grid-row: 2; font-size: 12.5px; color: var(--muted); text-align: left; font-weight: 400; }
-  #lf-tbl.cardify td:nth-child(1) { grid-column: 1; grid-row: 2; font-weight: 400; }
-  #lf-tbl.cardify td:nth-child(1) b { font-weight: 600; color: var(--ink); }
-  #lf-tbl.cardify td:nth-child(1) div { display: none; }
-  #lf-tbl.cardify td:nth-child(2) { grid-column: 2 / 5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  #lf-tbl.cardify td:nth-child(2) div { display: inline; font-size: inherit; }
-  #lf-tbl.cardify td:nth-child(2) div::before { content: ' '; }
-  #lf-tbl.cardify td:nth-child(3) { grid-column: 1 / 5; grid-row: 1; font-size: 15.5px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  #lf-tbl.cardify td:nth-child(3) div { display: none; }
-  #lf-tbl.cardify td:nth-child(4) { display: none; }
-  #lf-tbl.cardify td:nth-child(5) { grid-column: 5; grid-row: 1; text-align: right; font-size: 15.5px; color: var(--ink); }
-  #lf-tbl.cardify td:nth-child(6) { grid-column: 5; text-align: right; white-space: nowrap; }
-  #lf-tbl.cardify td:nth-child(6) .pill { font-size: 11px; padding: 1px 8px; }
+  #lf-tbl.cardify tbody tr[data-id] { display: grid; grid-template-columns: auto auto auto minmax(0, 1fr) auto; gap: 3px 10px; padding: 11px 14px; align-items: center; }
+  #lf-tbl.cardify tr[data-id] td::before { display: none !important; }
+  #lf-tbl.cardify tr[data-id] td { grid-row: 2; font-size: 12.5px; color: var(--muted); text-align: left; font-weight: 400; }
+  #lf-tbl.cardify tr[data-id] td:nth-child(1) { grid-column: 1; grid-row: 2; font-weight: 400; }
+  #lf-tbl.cardify tr[data-id] td:nth-child(1) b { font-weight: 600; color: var(--ink); }
+  #lf-tbl.cardify tr[data-id] td:nth-child(1) div { display: none; }
+  #lf-tbl.cardify tr[data-id] td:nth-child(2) { grid-column: 2 / 5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #lf-tbl.cardify tr[data-id] td:nth-child(2) div { display: inline; font-size: inherit; }
+  #lf-tbl.cardify tr[data-id] td:nth-child(2) div::before { content: ' '; }
+  #lf-tbl.cardify tr[data-id] td:nth-child(3) { grid-column: 1 / 5; grid-row: 1; font-size: 15.5px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #lf-tbl.cardify tr[data-id] td:nth-child(3) div { display: none; }
+  #lf-tbl.cardify tr[data-id] td:nth-child(4) { display: none; }
+  #lf-tbl.cardify tr[data-id] td:nth-child(5) { grid-column: 5; grid-row: 1; text-align: right; font-size: 15.5px; color: var(--ink); }
+  #lf-tbl.cardify tr[data-id] td:nth-child(6) { grid-column: 5; text-align: right; white-space: nowrap; }
+  #lf-tbl.cardify tr[data-id] td:nth-child(6) .pill { font-size: 11px; padding: 1px 8px; }
   /* list filters on one line, the numbers as a slim strip that scrolls sideways */
   #lf-kpis, .kpis.strip { display: flex; overflow-x: auto; scrollbar-width: none; gap: 8px; margin-left: -12px; margin-right: -12px; padding: 0 12px 2px; }
   #lf-kpis::-webkit-scrollbar { display: none; }
@@ -874,24 +874,24 @@ textarea { border-radius: var(--r-ctl); font-size: 15px; }
 
 /* 5 + 6. items and parties on phones: two lines each */
 @media (max-width: 640px) {
-  #if-tbl.cardify tbody tr, #pf-tbl.cardify tbody tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 10px; padding: 10px 14px; align-items: center; }
-  #if-tbl.cardify td, #pf-tbl.cardify td { display: none; }
-  #if-tbl.cardify td::before, #pf-tbl.cardify td::before { display: none !important; }
-  #if-tbl.cardify td:first-child { display: block; grid-column: 1; grid-row: 1 / 3; font-weight: 400; }
-  #if-tbl.cardify td:first-child b { display: block; font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  #if-tbl.cardify td:first-child .small { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  #if-tbl.cardify td:nth-child(3) { display: block; grid-column: 2; grid-row: 1; text-align: right; font-size: 15px; }
-  #if-tbl.cardify td:nth-child(3) .small { display: none; }
-  #if-tbl.cardify td:nth-last-child(2) { display: block; grid-column: 2; grid-row: 2; text-align: right; }
-  #if-tbl.cardify td:nth-last-child(2) .pill { font-size: 11.5px; padding: 1px 8px; }
-  #pf-tbl.cardify td:first-child { display: block; grid-column: 1; grid-row: 1; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  #pf-tbl.cardify td:first-child .small { display: none; }
-  #pf-tbl.cardify td:nth-child(2) { display: block; grid-column: 1; grid-row: 2; font-size: 12.5px; color: var(--muted); }
-  #pf-tbl.cardify td:nth-child(5) { display: block; grid-column: 2; grid-row: 1; text-align: right; }
-  #pf-tbl.cardify td:nth-child(5) .pill { font-size: 12px; padding: 1px 8px; }
-  #pf-tbl.cardify td:nth-child(5) .small { display: none; }
-  #pf-tbl.cardify td:nth-child(6) { display: flex; gap: 6px; grid-column: 2; grid-row: 2; justify-content: flex-end; }
-  #pf-tbl.cardify td:nth-child(6) .btn { min-height: 30px; padding: 0 10px; font-size: 13px; }
+  #if-tbl.cardify tbody tr[data-id], #pf-tbl.cardify tbody tr[data-id] { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 10px; padding: 10px 14px; align-items: center; }
+  #if-tbl.cardify tr[data-id] td, #pf-tbl.cardify tr[data-id] td { display: none; }
+  #if-tbl.cardify tr[data-id] td::before, #pf-tbl.cardify tr[data-id] td::before { display: none !important; }
+  #if-tbl.cardify tr[data-id] td:first-child { display: block; grid-column: 1; grid-row: 1 / 3; font-weight: 400; }
+  #if-tbl.cardify tr[data-id] td:first-child b { display: block; font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #if-tbl.cardify tr[data-id] td:first-child .small { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #if-tbl.cardify tr[data-id] td:nth-child(3) { display: block; grid-column: 2; grid-row: 1; text-align: right; font-size: 15px; }
+  #if-tbl.cardify tr[data-id] td:nth-child(3) .small { display: none; }
+  #if-tbl.cardify tr[data-id] td:nth-last-child(2) { display: block; grid-column: 2; grid-row: 2; text-align: right; }
+  #if-tbl.cardify tr[data-id] td:nth-last-child(2) .pill { font-size: 11.5px; padding: 1px 8px; }
+  #pf-tbl.cardify tr[data-id] td:first-child { display: block; grid-column: 1; grid-row: 1; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #pf-tbl.cardify tr[data-id] td:first-child .small { display: none; }
+  #pf-tbl.cardify tr[data-id] td:nth-child(2) { display: block; grid-column: 1; grid-row: 2; font-size: 12.5px; color: var(--muted); }
+  #pf-tbl.cardify tr[data-id] td:nth-child(5) { display: block; grid-column: 2; grid-row: 1; text-align: right; }
+  #pf-tbl.cardify tr[data-id] td:nth-child(5) .pill { font-size: 12px; padding: 1px 8px; }
+  #pf-tbl.cardify tr[data-id] td:nth-child(5) .small { display: none; }
+  #pf-tbl.cardify tr[data-id] td:nth-child(6) { display: flex; gap: 6px; grid-column: 2; grid-row: 2; justify-content: flex-end; }
+  #pf-tbl.cardify tr[data-id] td:nth-child(6) .btn { min-height: 30px; padding: 0 10px; font-size: 13px; }
   #pf-kpis, #if-kpis { display: flex; overflow-x: auto; scrollbar-width: none; gap: 8px; margin-left: -12px; margin-right: -12px; padding: 0 12px 2px; }
   #pf-kpis::-webkit-scrollbar, #if-kpis::-webkit-scrollbar { display: none; }
   #pf-kpis .kpi, #if-kpis .kpi { flex: none; min-width: 120px; padding: 8px 12px; }
@@ -955,6 +955,133 @@ html.lang-hi * { letter-spacing: 0 !important; }
 .rail-ver { margin-top: auto; padding: 14px 12px 6px; font-size: 11.5px; color: var(--muted); line-height: 1.4; }
 .rail .rail-ver { color: rgba(255,247,234,.7); }
 .lg-ver { margin-top: 12px; text-align: center; font-size: 12px; color: var(--muted); }
+
+/* price check (v2.20) */
+.pc-wrap { max-width: 720px; display: grid; gap: 12px; }
+.pc-card { padding: 18px 20px; display: grid; gap: 6px; }
+.pc-name { font-size: 22px; font-weight: 700; line-height: 1.2; }
+.pc-sub { display: flex; flex-wrap: wrap; gap: 4px 12px; color: var(--muted); font-size: 13.5px; }
+.pc-price { font-size: 52px; font-weight: 800; color: var(--maroon); line-height: 1.05; margin-top: 6px; font-variant-numeric: tabular-nums; }
+:root[data-theme="dark"] .pc-price { color: var(--gold); }
+.pc-mrp { font-size: 16px; color: var(--muted); } .pc-mrp b { color: var(--ok); margin-left: 6px; }
+.pc-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
+.pc-facts > div { background: var(--sunken); border-radius: 12px; padding: 10px 12px; display: grid; gap: 2px; }
+.pc-facts small { font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+.pc-facts b { font-size: 19px; } .pc-facts span { font-size: 12px; color: var(--muted); }
+.warn-t { color: var(--warn); }
+.pc-acts { display: flex; gap: 8px; margin-top: 10px; } .pc-acts .btn { min-height: 46px; flex: 1; font-size: 15.5px; }
+.pc-empty { text-align: center; padding: 28px 16px; } .pc-empty b { font-size: 17px; }
+@media (max-width: 640px) { .pc-price { font-size: 46px; } .pc-facts { grid-template-columns: 1fr 1fr; } .pc-facts > div:last-child { grid-column: 1 / -1; } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .pc-price { color: var(--gold); } }
+
+/* ===== app colour themes (v2.20), per firm/device: html[data-color]; maroon is the default ===== */
+:root[data-color="blue"] { --g-hi: #2d5aa6; --g-lo: #0d1f40; }
+:root[data-color="blue"]:not([data-theme="dark"]) { --maroon: #1d3f78; --maroon-2: #2a5299; --chrome: #1d3f78; --bg: #eff2f7; --sunken: #e3e8f1; --line: #d3dbe8; --muted: #56627a; --ink: #151d2c; }
+@media (prefers-color-scheme: dark) { :root[data-color="blue"]:not([data-theme="light"]) { --maroon: #4f7fd0; --maroon-2: #6390dc; --chrome: #16305c; --bg: #0b1220; --surface: #121b2d; --sunken: #0e1626; --line: #24314a; --ink: #e8eef8; --muted: #9fb0c9; } }
+:root[data-theme="dark"][data-color="blue"] { --maroon: #4f7fd0; --maroon-2: #6390dc; --chrome: #16305c; --bg: #0b1220; --surface: #121b2d; --sunken: #0e1626; --line: #24314a; --ink: #e8eef8; --muted: #9fb0c9; }
+:root[data-color="green"] { --g-hi: #1c7a5b; --g-lo: #062b20; }
+:root[data-color="green"]:not([data-theme="dark"]) { --maroon: #0f5a43; --maroon-2: #177556; --chrome: #0f5a43; --bg: #eef4f1; --sunken: #e1ebe6; --line: #d0ded7; --muted: #546a61; --ink: #13221c; }
+@media (prefers-color-scheme: dark) { :root[data-color="green"]:not([data-theme="light"]) { --maroon: #3aa57f; --maroon-2: #4bb88f; --chrome: #0c4433; --bg: #08130f; --surface: #0f1d18; --sunken: #0b1712; --line: #1f3a30; --ink: #e5f2ec; --muted: #9dbcaf; } }
+:root[data-theme="dark"][data-color="green"] { --maroon: #3aa57f; --maroon-2: #4bb88f; --chrome: #0c4433; --bg: #08130f; --surface: #0f1d18; --sunken: #0b1712; --line: #1f3a30; --ink: #e5f2ec; --muted: #9dbcaf; }
+:root[data-color="charcoal"] { --g-hi: #3a4862; --g-lo: #10151f; }
+:root[data-color="charcoal"]:not([data-theme="dark"]) { --maroon: #263042; --maroon-2: #344157; --chrome: #263042; --gold: #c96a1f; --gold-soft: #fbe6d4; --gold-ink: #8a4310; --bg: #f1f2f4; --sunken: #e6e8ec; --line: #d8dbe1; --muted: #5d6573; --ink: #161a22; }
+@media (prefers-color-scheme: dark) { :root[data-color="charcoal"]:not([data-theme="light"]) { --maroon: #e08a45; --maroon-2: #ea9a58; --chrome: #1b2230; --gold: #e8954f; --gold-soft: #3a2614; --gold-ink: #f3c39a; --bg: #0d1016; --surface: #151a23; --sunken: #10141b; --line: #283041; --ink: #eceff4; --muted: #a3abba; } }
+:root[data-theme="dark"][data-color="charcoal"] { --maroon: #e08a45; --maroon-2: #ea9a58; --chrome: #1b2230; --gold: #e8954f; --gold-soft: #3a2614; --gold-ink: #f3c39a; --bg: #0d1016; --surface: #151a23; --sunken: #10141b; --line: #283041; --ink: #eceff4; --muted: #a3abba; }
+:root[data-color="purple"] { --g-hi: #6a44ad; --g-lo: #231140; }
+:root[data-color="purple"]:not([data-theme="dark"]) { --maroon: #4c2a85; --maroon-2: #6038a3; --chrome: #4c2a85; --bg: #f3f0f7; --sunken: #e9e4f1; --line: #dcd4e8; --muted: #635a72; --ink: #1d1626; }
+@media (prefers-color-scheme: dark) { :root[data-color="purple"]:not([data-theme="light"]) { --maroon: #9a78d8; --maroon-2: #ab8ae2; --chrome: #371e63; --bg: #0f0b17; --surface: #181224; --sunken: #130e1d; --line: #2e2440; --ink: #efe9f8; --muted: #b1a5c6; } }
+:root[data-theme="dark"][data-color="purple"] { --maroon: #9a78d8; --maroon-2: #ab8ae2; --chrome: #371e63; --bg: #0f0b17; --surface: #181224; --sunken: #130e1d; --line: #2e2440; --ink: #efe9f8; --muted: #b1a5c6; }
+.col-pick { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.col-pick button { display: grid; justify-items: center; gap: 4px; border: 2px solid transparent; background: none; border-radius: 12px; padding: 6px 2px; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--ink); }
+.col-pick button i { width: 34px; height: 34px; border-radius: 50%; display: block; box-shadow: inset 0 0 0 3px rgba(255,255,255,.35); }
+.col-pick button[aria-checked="true"] { border-color: var(--gold); background: var(--sunken); }
+
+/* v2.20: cash book and day book on phones, two lines per entry */
+@media (max-width: 640px) {
+  #cb-tbl.cardify tbody tr[data-id], #db-tbl.cardify tbody tr[data-id] { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; gap: 3px 10px; padding: 10px 14px; align-items: center; }
+  #cb-tbl.cardify tr[data-id] td::before, #db-tbl.cardify tr[data-id] td::before { display: none !important; }
+  #cb-tbl.cardify tr[data-id] td, #db-tbl.cardify tr[data-id] td { grid-row: 2; font-size: 12.5px; color: var(--muted); font-weight: 400; text-align: left; white-space: nowrap; }
+  #cb-tbl.cardify tr[data-id] td .small, #db-tbl.cardify tr[data-id] td .small { display: none; }
+  #cb-tbl.cardify tr[data-id] td:nth-child(1) { grid-column: 1; }
+  #cb-tbl.cardify tr[data-id] td:nth-child(2) { grid-column: 1 / 4; grid-row: 1; font-size: 15px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #cb-tbl.cardify tr[data-id] td:nth-child(3) { grid-column: 2; }
+  #cb-tbl.cardify tr[data-id] td:nth-child(4), #cb-tbl.cardify tr[data-id] td:nth-child(5) { grid-column: 4; grid-row: 1 / 3; text-align: right; font-size: 15.5px; font-weight: 700; }
+  #cb-tbl.cardify tr[data-id] td:nth-child(5):not(.blank)::after { content: ' out'; font-size: 11px; font-weight: 600; }
+  #cb-tbl.cardify tr[data-id] td:nth-child(4):not(.blank)::after { content: ' in'; font-size: 11px; font-weight: 600; }
+  #db-tbl.cardify tr[data-id] td:nth-child(4) { grid-column: 1 / 4; grid-row: 1; font-size: 15px; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; }
+  #db-tbl.cardify tr[data-id] td:nth-child(5) { grid-column: 4; grid-row: 1; text-align: right; font-size: 15.5px; font-weight: 700; color: var(--ink); }
+  #db-tbl.cardify tr[data-id] td:nth-child(3) { grid-column: 1; }
+  #db-tbl.cardify tr[data-id] td:nth-child(2) { grid-column: 2; }
+  #db-tbl.cardify tr[data-id] td:nth-child(1) { grid-column: 3; overflow: hidden; text-overflow: ellipsis; }
+  #db-tbl.cardify tr[data-id] td:nth-child(6) { grid-column: 4; text-align: right; }
+  #db-tbl.cardify tr[data-id] td:nth-child(6) b { font-weight: 500; }
+  #db-tbl.cardify tr[data-id] td:nth-child(7) { display: none; }
+  #db-tbl.cardify tr[data-id] td.blank { display: block; }
+}
+@media (max-width: 640px) { #db-tbl.cardify tr[data-id] td:nth-child(4).blank::after { content: "Walk-in"; } }
+
+/* v2.20 phone header merge: screen title in the top bar, more-menu for extra buttons, one filter row */
+.tb-title, .tb-more { display: none; }
+@media (max-width: 640px) {
+  html.hm .topbar .brand > div { display: none; }
+  html.hm .topbar .sample-flag { display: none; }
+  html.hm .tb-title { display: block; flex: 1 1 auto; min-width: 0; font-size: 17px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--on-maroon); }
+  html.hm .topbar .spacer { display: none; }
+  .tb-more:not([hidden]) { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(255,255,255,.3); background: rgba(255,255,255,.12); color: var(--on-maroon); cursor: pointer; flex: none; }
+  html.hm #view > .view-head { display: none; }
+  html.hm #view > .view-head:not(.hm-moved):has(> .btn.primary), html.hm #view > .view-head:not(.hm-moved):has(> select) { display: flex; justify-content: flex-end; }
+  html.hm #view > .view-head:not(.hm-moved) > h1, html.hm #view > .view-head:not(.hm-moved) > .btn:not(.primary), html.hm #view > .view-head > .vh-more { display: none !important; }
+  .hm-row { display: flex !important; gap: 8px; align-items: center; margin-bottom: 10px !important; }
+  .hm-row > select { display: none !important; }
+  .hm-row > input[type=search] { flex: 1 1 auto; min-width: 0; }
+  .hm-filter { flex: none; gap: 6px; padding: 0 12px; position: relative; }
+  .hm-filter i { font-style: normal; min-width: 18px; height: 18px; border-radius: 99px; background: var(--maroon); color: var(--on-maroon); font-size: 11px; display: inline-grid; place-items: center; padding: 0 5px; }
+  .hm-filter i[hidden] { display: none; }
+  .hm-prim { flex: none; padding: 0 14px; }
+  .hm-sheet { display: grid; gap: 12px; }
+  #view > .tabs { position: sticky; top: -12px; z-index: 6; background: var(--bg); padding-top: 6px; padding-bottom: 6px; }
+}
+
+/* ===== v2.20 polish ===== */
+/* 29. side menu icons + folding sections */
+.rail > button .r-ico { flex: none; opacity: .85; }
+.rail > button { justify-content: flex-start; }
+.rail > button .r-lab { flex: 1 1 auto; min-width: 0; text-align: left; }
+.rail > .grp[data-fold] { cursor: pointer; display: flex; align-items: center; justify-content: space-between; user-select: none; }
+.rail > .grp[data-fold]::after { content: ''; width: 7px; height: 7px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg); margin-right: 4px; transition: transform .15s ease; opacity: .7; }
+.rail > .grp.folded::after { transform: rotate(-45deg); }
+.rail > .fold-hide { display: none !important; }
+/* 30. date chips */
+.date-chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 0 0 12px; padding-bottom: 2px; }
+.date-chips::-webkit-scrollbar { display: none; }
+.date-chips button { flex: none; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 99px; padding: 6px 13px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.date-chips button[aria-checked="true"] { background: var(--maroon); border-color: var(--maroon); color: var(--on-maroon); }
+@media (max-width: 640px) { .date-chips { margin-left: -12px; margin-right: -12px; padding-left: 12px; padding-right: 12px; } }
+/* 31. save always in reach */
+.modal:has(> footer) { max-height: calc(100dvh - 8vh); display: flex; flex-direction: column; }
+.modal:has(> footer) > .body { overflow-y: auto; min-height: 0; flex: 1 1 auto; }
+.modal:has(> footer) > header, .modal:has(> footer) > footer { flex: none; }
+.sheet-wrap .modal:has(> footer) { max-height: 92dvh; }
+.edbar { display: none; }
+@media (max-width: 1100px) {
+  html.has-edbar .edbar { display: flex; gap: 8px; align-items: center; position: fixed; left: 8px; right: 8px; z-index: 34; bottom: calc(66px + env(safe-area-inset-bottom, 0px)); padding: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 6px 22px rgba(20, 20, 40, .18); }
+  html.typing.has-edbar .edbar { bottom: 8px; }
+  .eb-sum { flex: 1 1 auto; min-width: 0; display: grid; line-height: 1.15; padding: 0 4px; }
+  .eb-sum small { font-size: 11.5px; color: var(--muted); font-weight: 600; }
+  .eb-sum strong { font-size: 20px; color: var(--maroon); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .edbar .btn { min-height: 44px; flex: none; }
+  html.has-edbar main { padding-bottom: calc(150px + env(safe-area-inset-bottom, 0px)); }
+}
+/* 33. empty screens */
+div.empty.ep { display: grid; justify-items: center; gap: 4px; }
+.ep-ico { display: grid; place-items: center; width: 54px; height: 54px; border-radius: 50%; background: var(--sunken); color: var(--maroon); margin-bottom: 6px; }
+.ep-ico .r-ico { width: 26px; height: 26px; }
+.ep-acts { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 10px; }
+/* 34. page slide */
+@keyframes v-slide { from { opacity: 0; transform: translateX(18px); } to { opacity: 1; transform: none; } }
+.view-in > * { animation-name: v-slide; }
+.view-in > .paybar, .view-in > .edbar { animation: none; }
+@media (max-width: 1100px) { html.has-edbar .toasts { bottom: calc(146px + env(safe-area-inset-bottom, 0px)); } }
 
 </style>
 </head>
@@ -5905,7 +6032,7 @@ function reportBody() {
   if (RF.tab === 'daybook') {
     const vs = col('vouchers').filter(v => inRange(v.date, r) && (!RF.user || v.user === RF.user || (v.log || []).some(l => l.u === RF.user))).sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt);
     const lastCh = v => { const l = (v.log || []).slice(-1)[0]; return l && l.a !== 'created' ? `${ACT_LABEL[l.a] || l.a} · ${esc(l.u || 'Device ' + (l.d || '?'))}<div class="muted small">${fmtDate(l.t)} ${fmtTime(l.t)}</div>` : '<span class="muted">–</span>'; };
-    el.innerHTML = `<div class="card"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Date</th><th>Number</th><th>Type</th><th>Party</th><th class="num">Amount</th><th>Made by</th><th>Last change</th></tr></thead><tbody>
+    el.innerHTML = `<div class="card"><div class="tbl-wrap"><table class="tbl" id="db-tbl"><thead><tr><th>Date</th><th>Number</th><th>Type</th><th>Party</th><th class="num">Amount</th><th>Made by</th><th>Last change</th></tr></thead><tbody>
       ${vs.map(v => `<tr class="click ${v.status === 'cancelled' ? 'void' : ''}" data-act="v-show" data-id="${v.id}"><td>${fmtDate(v.date)}<div class="muted small">${fmtTime(v.createdAt)}</div></td><td class="mono">${esc(v.no)}</td><td>${VT[v.type].label}</td><td>${esc(vParty(v) || v.note || '')}</td><td class="num">${vTotal(v) ? inr(vTotal(v)) : ''}</td><td><b>${esc(v.user || 'Device ' + (v.by || '?'))}</b><div class="muted small">${fmtDate(v.createdAt)} ${fmtTime(v.createdAt)}</div></td><td>${lastCh(v)}</td></tr>`).join('') || '<tr><td colspan="7" class="muted">No entries in this range</td></tr>'}</tbody></table></div></div>`;
     REPORT_CSV = ['day-book', [['date', 'number', 'type', 'party', 'amount', 'status', 'made by', 'made at', 'last change', 'changed by', 'changed at', 'device'], ...vs.map(v => { const l = (v.log || []).slice(-1)[0] || {}; return [v.date, v.no, VT[v.type].label, vParty(v), vTotal(v), v.status, v.user || '', stamp(v.createdAt), l.a || '', l.u || '', l.t ? stamp(l.t) : '', v.by]; })]];
   }
@@ -6215,6 +6342,7 @@ function routeOK(name, arg) {
   if (name === 'cashbook') return can('cash');
   if (name === 'labels') return can('labels');
   if (name === 'stockcount') return can('items');
+  if (name === 'pricecheck') return can('counter') || can('items') || can('sale');
   if (name === 'sdues') return canType('payment') || canType('purchase');
   if (name === 'warranty' || name === 'delivery') return can('sale') || can('counter');
   if (name === 'finance') return can('payin');
@@ -6775,7 +6903,7 @@ window.onAppCrash = text => {
    Updates: every copy of the app checks one fixed address for a newer build.
    Online (PC / iPhone): reload picks it up. Android app: downloads it in the background.
    ========================================================= */
-const APP_BUILD = +'16' || 0, APP_VERSION = '2.19';
+const APP_BUILD = +'17' || 0, APP_VERSION = '2.20';
 const SITE_URL = 'https://patidar-app.github.io/Patidar-app/';
 const HOSTED = (location.protocol === 'https:' || location.hostname === 'localhost') && !IN_FRAME;
 const UPDATE_BASE = HOSTED ? new URL('./', location.href).href : SITE_URL;
@@ -8230,7 +8358,7 @@ ACT['hs-low'] = () => { IF.stock = 'low'; IF.q = ''; IF.cat = ''; IF.brand = '';
    that a phone or PC has the latest update. Shown in the side menu, on the sign-in screen and in Settings,
    plus a one-time note the first time a new update opens on this device.
    ========================================================= */
-const APP_BUILT = '21 Nov 2026, 4:33 PM';
+const APP_BUILT = '21 Nov 2026, 6:08 PM';
 const verText = () => `Version ${APP_VERSION} · updated ${APP_BUILT}`;
 (function () {
   const rail = $('#rail');
@@ -8241,6 +8369,337 @@ const verText = () => `Version ${APP_VERSION} · updated ${APP_BUILT}`;
   const seen = +LS.get('seenBuild', 0);
   if (seen !== APP_BUILD) { LS.set('seenBuild', APP_BUILD); if (seen && seen < APP_BUILD) setTimeout(() => toast(`App updated to version ${APP_VERSION} (${APP_BUILT})`, 'ok'), 1500); }
 })();
+
+/* =========================================================
+   Price check (v2.20): scan or type an item and see its price big, without making a bill.
+   Shows sale price, MRP and saving, stock in each godown, warranty and brand care number.
+   ========================================================= */
+let PC_ID = null;
+VIEWS.pricecheck = () => {
+  view().innerHTML = `<div class="view-head"><h1>Price check</h1></div>
+    <div class="pc-wrap">
+      <div class="scan-box ${CAN_CAM ? 'has-cam' : ''}"><span class="scan-ico" aria-hidden="true"><i style="width:2px"></i><i style="width:1px"></i><i style="width:3px"></i><i style="width:1px"></i><i style="width:2px"></i></span>
+        <input type="search" id="pc-scan" placeholder="Scan barcode or type item name" autocomplete="off" aria-label="Scan barcode or search item">
+        ${CAN_CAM ? '<button class="btn sm primary cam-btn" data-act="cam" type="button">Camera scan</button>' : ''}</div>
+      <div id="pc-card"></div>
+    </div>`;
+  const inp = $('#pc-scan');
+  attachPicker(inp, {
+    search: q => searchItems(q, 8), row: itemRow,
+    onPick: it => { pcShow(it); inp.value = ''; focusScan('#pc-scan'); },
+    onEnterRaw: (raw, none) => {
+      if (!raw) return true;
+      const it = col('items').find(i => i.code === raw);
+      if (it) { pcShow(it); inp.value = ''; return true; }
+      if (none) { pcNotFound(raw); inp.value = ''; return true; }
+      return false;
+    }
+  });
+  const last = PC_ID && get('items', PC_ID);
+  if (last) pcShow(last, true); else $('#pc-card').innerHTML = `<div class="card pad pc-empty"><b>Scan any item</b><p class="muted">The price, MRP, stock and warranty show here in big text. Nothing is billed.</p></div>`;
+  focusScan('#pc-scan');
+};
+function pcShow(it, quiet) {
+  PC_ID = it.id; const el = $('#pc-card'); if (!el) return;
+  if (!quiet && typeof scanBeep === 'function') scanBeep();
+  const gds = godowns(), total = stockOf(it.id), u = esc(it.unit || 'pcs');
+  const save = +it.mrp > +it.sale ? +it.mrp - +it.sale : 0;
+  const care = typeof brandInfo === 'function' ? brandInfo(it.brand || '') : null;
+  el.innerHTML = `<div class="card pc-card">
+      <div class="pc-name">${esc(it.name)}</div>
+      <div class="pc-sub">${esc([it.brand, it.category].filter(Boolean).join(' · '))}<span class="mono">${esc(it.code)}</span></div>
+      <div class="pc-price">${inr0(it.sale)}</div>
+      ${save ? `<div class="pc-mrp">MRP <s>${inr0(it.mrp)}</s> <b>Save ${inr0(save)} (${Math.round(save / it.mrp * 100)}%)</b></div>` : `<div class="pc-mrp">MRP ${inr0(it.mrp || it.sale)}</div>`}
+      <div class="pc-facts">
+        <div><small>In stock</small><b class="${total <= 0 ? 'neg' : total <= (+it.min || 0) ? 'warn-t' : 'pos'}">${qtyFmt(total)} ${u}</b>${gds.length > 1 ? `<span>${gds.map(g => `${esc(g.name)} ${qtyFmt(stockOf(it.id, g.id))}`).join(' · ')}</span>` : ''}</div>
+        <div><small>Warranty</small><b>${it.warranty ? it.warranty + ' months' : 'None'}</b>${care && care.care ? `<span>Care ${esc(care.care)}</span>` : ''}</div>
+        <div><small>GST</small><b>${it.gst}%</b><span>price includes GST</span></div>
+      </div>
+      <div class="pc-acts"><button class="btn primary" data-act="pc-bill" data-id="${it.id}">Add to bill</button><button class="btn" data-act="i-label" data-id="${it.id}">Label</button></div>
+    </div>`;
+  el.firstChild.animate([{ opacity: .4, transform: 'scale(.98)' }, { opacity: 1, transform: 'none' }], { duration: 180 });
+}
+function pcNotFound(code) {
+  PC_ID = null; const el = $('#pc-card'); if (!el) return;
+  el.innerHTML = `<div class="card pad pc-empty"><b class="neg">No item with barcode ${esc(code)}</b><p class="muted">It is not in your items yet.</p>${can('items') ? `<button class="btn primary" data-act="pc-add" data-code="${esc(code)}">Add this item</button>` : ''}</div>`;
+}
+ACT['pc-bill'] = b => { const it = get('items', b.dataset.id); if (!it) return; go('counter'); setTimeout(() => counterAdd(it), 0); };
+ACT['pc-add'] = b => editItem(null, { code: b.dataset.code });
+ACT['pricecheck'] = () => go('pricecheck');
+const _onCameraScanPC = window.onCameraScan;
+window.onCameraScan = code => {
+  if (ROUTE.name === 'pricecheck' && !modalStack.length) {
+    code = String(code || '').trim(); if (!code || code.startsWith('PATIDAR-SYNC:')) return _onCameraScanPC(code);
+    const it = col('items').find(i => i.code === code);
+    if (it) { pcShow(it, true); return 'CLOSE:'; }
+    pcNotFound(code); return 'CLOSE:';
+  }
+  return _onCameraScanPC(code);
+};
+// entry points: + Entry sheet, side menu quick buttons, Hindi label
+(function () {
+  const q = $('#rail .quick [data-act="gsearch"]');
+  if (q) { const b = document.createElement('button'); b.dataset.act = 'pricecheck'; b.textContent = 'Price check'; q.after(b); }
+  const st = $('#rail [data-go="stockcount"]');
+  if (st) { const b = document.createElement('button'); b.dataset.go = 'pricecheck'; b.textContent = 'Price check'; st.before(b); }
+  if (typeof EI !== 'undefined') EI.price = '<path d="M3 12V4h8l10 10-8 8zM7.5 7.5h.01"/><path d="M11 14h4"/>';
+  if (typeof HI !== 'undefined') Object.assign(HI, { 'Price check': 'रेट देखें', 'In stock': 'स्टॉक में', 'Warranty': 'वारंटी', 'Add to bill': 'बिल में जोड़ें', 'Scan any item': 'कोई भी सामान स्कैन करें', 'Scan barcode or type item name': 'बारकोड स्कैन करें या सामान का नाम लिखें', 'price includes GST': 'रेट में GST शामिल' });
+  const _entry = ACT.entry;
+  ACT.entry = () => {
+    _entry();
+    const g = [...document.querySelectorAll('#modal-root .eg-grid')].pop();
+    if (g && !g.querySelector('[data-go="pricecheck"]')) g.insertAdjacentHTML('afterbegin', `<button class="eg-btn" data-close data-go="pricecheck">${eIco('price')}<span>Price check</span></button>`);
+  };
+})();
+
+/* =========================================================
+   App colour (v2.20): Royal blue (default since v2.20), Maroon, Emerald green, Charcoal + orange, Purple.
+   Saved on the firm, so every phone and PC of the shop shows the same colour after sync.
+   Printed bills keep their own colour (Settings › Invoice design).
+   ========================================================= */
+const APP_COLORS = [['maroon', 'Maroon', '#6e1428'], ['blue', 'Royal blue', '#1d3f78'], ['green', 'Emerald', '#0f5a43'], ['charcoal', 'Charcoal', '#263042'], ['purple', 'Purple', '#4c2a85']];
+function appColor() { const f = typeof firm === 'function' && firm(); return (f && f.appColor) || LS.get('appColor', 'blue'); }
+function applyColor() {
+  const c = appColor(), root = document.documentElement;
+  if (c === 'maroon') delete root.dataset.color; else root.dataset.color = c;
+  const m = document.querySelector('meta[name="theme-color"]'); if (m) m.content = (APP_COLORS.find(x => x[0] === c) || APP_COLORS[0])[2];
+}
+function setAppColor(c) {
+  LS.set('appColor', c);
+  const f = firm(); if (f && (!me() || me().role === 'owner')) { f.appColor = c; put('firms', f); }
+  applyColor();
+}
+const _renderCol = render;
+render = function () { const r = _renderCol.apply(this, arguments); applyColor(); return r; };
+const _uiPrefsCol = ACT['ui-prefs'];
+ACT['ui-prefs'] = () => {
+  _uiPrefsCol();
+  const body = $('#modal-root .scrim:last-child .body'); if (!body) return;
+  const owner = !me() || me().role === 'owner';
+  const d = document.createElement('div');
+  d.innerHTML = `<div class="eg-h" style="margin:0 0 6px">App colour</div><div class="col-pick" role="radiogroup">${APP_COLORS.map(([k, l, hex]) => `<button type="button" role="radio" data-col="${k}" aria-checked="${k === appColor()}" ${owner ? '' : 'disabled'}><i style="background:${hex}"></i>${l}</button>`).join('')}</div>${owner ? '' : '<p class="muted small" style="margin:6px 0 0">Only the owner can change the colour.</p>'}`;
+  body.insertBefore(d, body.firstChild);
+  d.querySelectorAll('[data-col]').forEach(b => b.onclick = () => { setAppColor(b.dataset.col); d.querySelectorAll('[data-col]').forEach(x => x.setAttribute('aria-checked', x === b)); });
+};
+if (typeof HI !== 'undefined') Object.assign(HI, { 'App colour': 'ऐप का रंग', 'Royal blue': 'नीला', 'Emerald': 'हरा', 'Charcoal': 'स्लेटी', 'Purple': 'बैंगनी', 'Maroon': 'मैरून', 'Language & text size': 'भाषा, रंग और अक्षर' });
+(function () {
+  const b = $('#rail [data-act="ui-prefs"]'); if (b) b.textContent = 'Colour, language & text size';
+  if (typeof HI !== 'undefined') HI['Colour, language & text size'] = 'रंग, भाषा और अक्षर';
+  applyColor();
+})();
+
+/* =========================================================
+   Phone header merge (v2.20). On phones (<= 640px) each screen's title moves into the blue top bar,
+   extra buttons (Export CSV, Import…) go into a ⋯ menu in the top bar, drop-down filters fold into one
+   "Filter" button next to the search box (with a count of active filters), and the main button
+   (+ New …) sits on the same row. Tabs stay pinned under the top bar while scrolling.
+   PC is unchanged.
+   ========================================================= */
+const PH_MQ = matchMedia('(max-width: 640px)');
+(function () {
+  const brand = $('.topbar .brand');
+  if (brand && !$('#tb-title')) { const t = document.createElement('b'); t.id = 'tb-title'; t.className = 'tb-title'; brand.after(t); }
+  const s = $('#top-search');
+  if (s && !$('#tb-more')) {
+    const m = document.createElement('button'); m.id = 'tb-more'; m.className = 'tb-more'; m.hidden = true; m.setAttribute('aria-label', 'More actions');
+    m.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="5" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="19" cy="12" r="1.8" fill="currentColor"/></svg>';
+    s.before(m);
+  }
+})();
+let HM_EXTRA = [];
+function headMerge() {
+  const root = document.documentElement, title = $('#tb-title'), more = $('#tb-more');
+  if (!title || !more) return;
+  const head = $('#view > .view-head');
+  if (!PH_MQ.matches || !head || ROUTE.name === 'home' || ROUTE.name === 'counter' || $('#view .login-page')) {
+    root.classList.remove('hm'); title.textContent = ''; more.hidden = true; HM_EXTRA = []; return;
+  }
+  root.classList.add('hm');
+  const h1 = head.querySelector('h1');
+  title.textContent = h1 ? (h1.childNodes[0]?.textContent || h1.textContent).trim() : '';
+  HM_EXTRA = $$(':scope > .btn:not(.primary):not(.vh-more), :scope > a.btn:not(.primary)', head).filter(b => !b.hidden);
+  more.hidden = !HM_EXTRA.length;
+  // filter row: search + Filter + main button on one line
+  const row = head.nextElementSibling;
+  if (row && /\bgrid[234]\b/.test(row.className) && row.querySelector('input[type=search]') && row.querySelector('select') && !row.classList.contains('hm-row')) {
+    row.classList.add('hm-row');
+    const fb = document.createElement('button'); fb.type = 'button'; fb.className = 'btn hm-filter';
+    fb.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>Filter</span><i></i>';
+    fb.onclick = () => hmFilter(row);
+    row.querySelector('input[type=search]').after(fb);
+    row.addEventListener('input', () => hmCount(row));
+    hmCount(row);
+  }
+  const prim = head.querySelector(':scope > .btn.primary');
+  if (prim && row && row.classList.contains('hm-row') && !row.querySelector('.hm-prim')) {
+    const c = document.createElement('button'); c.type = 'button'; c.className = 'btn primary hm-prim'; c.textContent = '+ New'; c.title = prim.textContent.trim();
+    c.onclick = () => prim.click(); row.appendChild(c);
+    head.classList.add('hm-moved');
+  }
+}
+function hmCount(row) {
+  const n = $$('select', row).filter(s => s.selectedIndex > 0 && !(s.id === 'lf-range' && s.value === '30')).length;
+  const i = row.querySelector('.hm-filter i'); if (i) { i.textContent = n || ''; i.hidden = !n; }
+}
+function hmFilter(row) {
+  const sels = $$('select', row);
+  const m = openModal(`${mHead('Filter')}<div class="body hm-sheet"></div><footer><button class="btn" data-hm-clear>Clear</button><button class="btn primary" data-close>Show results</button></footer>`, {
+    onClose: () => { sels.forEach((s, i) => { const ph = row.querySelector(`[data-hm-ph="${i}"]`); if (ph) { ph.replaceWith(s); } }); hmCount(row); }
+  });
+  m.classList.add('sheet-wrap');
+  const body = m.querySelector('.hm-sheet');
+  sels.forEach((s, i) => {
+    const ph = document.createElement('span'); ph.dataset.hmPh = i; ph.hidden = true; s.replaceWith(ph);
+    const lab = document.createElement('label'); lab.className = 'f';
+    lab.innerHTML = `<span>${esc(s.getAttribute('aria-label') || s.options[0]?.textContent.replace(/^All /, '').replace(/^\w/, c => c.toUpperCase()) || 'Filter')}</span>`;
+    lab.appendChild(s); body.appendChild(lab);
+  });
+  m.querySelector('[data-hm-clear]').onclick = () => { sels.forEach(s => { s.selectedIndex = s.id === 'lf-range' ? [...s.options].findIndex(o => o.value === '30') : 0; s.dispatchEvent(new Event('input', { bubbles: true })); s.dispatchEvent(new Event('change', { bubbles: true })); }); };
+}
+$('#tb-more') && ($('#tb-more').onclick = () => {
+  const list = HM_EXTRA.slice(); if (!list.length) return;
+  const md = openModal(`${mHead('More actions')}<div class="body vh-menu">${list.map((b, i) => `<button class="btn ${b.classList.contains('wa') ? 'wa' : ''}" data-i="${i}">${esc(b.textContent.trim())}</button>`).join('')}</div>`);
+  md.classList.add('sheet-wrap');
+  md.querySelectorAll('[data-i]').forEach(x => x.onclick = () => { closeModal(); list[+x.dataset.i].click(); });
+});
+let hmQueued = false;
+new MutationObserver(() => { if (!hmQueued) { hmQueued = true; requestAnimationFrame(() => { hmQueued = false; headMerge(); }); } }).observe($('#view'), { childList: true });
+PH_MQ.addEventListener && PH_MQ.addEventListener('change', () => { if (!PH_MQ.matches) { document.documentElement.classList.remove('hm'); } go(ROUTE.name, ROUTE.arg, { force: true }); });
+if (typeof HI !== 'undefined') Object.assign(HI, { 'Filter': 'फ़िल्टर', 'Show results': 'नतीजे देखें', 'Clear': 'साफ़ करें', '+ New': '+ नया', 'More actions': 'और विकल्प' });
+
+/* =========================================================
+   Polish (v2.20)
+   29. Side menu: an icon on every item, and sections that fold (remembered on this device).
+   30. Date chips (Today, Yesterday, 7 days, This month…) above lists, cash book and reports.
+   31. Long forms keep Save in reach: invoice / purchase editor gets a bottom bar on phones,
+       and pop-up forms keep their Save / Cancel row visible while the form scrolls (CSS).
+   32. Lists show ₹3,648 instead of ₹3,648.00 (paise stay when there are any; bills unchanged).
+   33. Empty screens get an icon and a button to make the first entry.
+   34. Pages slide in sideways (CSS), switched off when the phone asks for less motion.
+   ========================================================= */
+const RI = {
+  home: '<path d="M3 11l9-7 9 7v8.5a1.5 1.5 0 0 1-1.5 1.5H15v-6H9v6H4.5A1.5 1.5 0 0 1 3 19.5z"/>',
+  counter: '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9.5 8h5M9.5 12h5M9.5 16h3"/>',
+  sale: '<path d="M7 3h7l4 4v14H7zM14 3v4h4M10 12h5M10 16h5"/>',
+  quotation: '<path d="M5 4h14v12H9l-4 4zM9 9h6M9 12h4"/>',
+  ret: '<path d="M9 7H5V3M5.5 7A8 8 0 1 1 4 13"/>',
+  in: '<path d="M12 4v12M6 10l6 6 6-6M5 20h14"/>',
+  out: '<path d="M12 20V8M6 14l6-6 6 6M5 4h14"/>',
+  shield: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/>',
+  card: '<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h3"/>',
+  truck: '<path d="M3 6h11v10H3zM14 10h4l3 3v3h-7M7 19a2 2 0 1 0 0-.01M17 19a2 2 0 1 0 0-.01"/>',
+  cart: '<path d="M3 4h2l2.5 11h10L20 8H6.5M9 20h.01M17 20h.01"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  book: '<path d="M5 4h10a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM5 17a3 3 0 0 1 3-3h10"/>',
+  users: '<path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21a7 7 0 0 1 14 0M16 3.5a4 4 0 0 1 0 7.5M22 21a7 7 0 0 0-4-6.3"/>',
+  wallet: '<path d="M3 7h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM3 7l12-4v4M16 13h.01"/>',
+  box: '<path d="M3 7l9-4 9 4-9 4zM3 7v10l9 4 9-4V7M12 11v10"/>',
+  count: '<path d="M9 5h10M9 12h10M9 19h10M4 5h.01M4 12h.01M4 19h.01"/>',
+  price: '<path d="M3 12V4h8l10 10-8 8zM7.5 7.5h.01"/>',
+  store: '<path d="M3 9l2-5h14l2 5M4 9v11h16V9M9 20v-6h6v6M3 9h18"/>',
+  barcode: '<path d="M4 5v14M7 5v14M11 5v14M14 5v14M18 5v14M20 5v14"/>',
+  chart: '<path d="M5 20v-8M12 20V5M19 20v-5M3 20h18"/>',
+  gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+  key: '<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M15 8l2 2"/>',
+  inbox: '<path d="M3 13l3-8h12l3 8v6H3zM3 13h5l1 3h6l1-3h5"/>',
+  sync: '<path d="M20 11a8 8 0 0 0-14.3-4.9L4 8M4 4v4h4M4 13a8 8 0 0 0 14.3 4.9L20 16M20 20v-4h-4"/>',
+  user: '<path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0"/>',
+  logout: '<path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H4"/>',
+  download: '<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>',
+  palette: '<path d="M12 3a9 9 0 1 0 0 18c1 0 1.5-.7 1.5-1.5 0-.4-.2-.8-.4-1.1-.3-.3-.4-.6-.4-1 0-.8.7-1.5 1.5-1.5H16a5 5 0 0 0 5-5c0-4.4-4-7.9-9-7.9z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10.5" cy="7.5" r="1"/><circle cx="15" cy="8" r="1"/>',
+  moon: '<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>'
+};
+const rIco = k => `<svg class="r-ico" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${RI[k]}</svg>`;
+const RAIL_ICON = {
+  'go:home': 'home', 'go:counter': 'counter', 'go:list:sale': 'sale', 'go:list:quotation': 'quotation', 'go:list:saleReturn': 'ret', 'go:list:receipt': 'in',
+  'go:warranty': 'shield', 'go:finance': 'card', 'go:delivery': 'truck', 'go:list:purchase': 'cart', 'go:list:purchaseReturn': 'ret', 'go:list:payment': 'out',
+  'go:sdues': 'clock', 'go:list:journal': 'book', 'go:parties': 'users', 'go:cashbook': 'wallet', 'go:items': 'box', 'go:pricecheck': 'price', 'go:stockcount': 'count',
+  'go:godowns': 'store', 'go:labels': 'barcode', 'act:sup-order': 'truck', 'go:reports': 'chart', 'go:settings': 'gear', 'go:settings:users': 'key', 'act:u-review': 'inbox',
+  'go:settings:sync': 'sync', 'act:u-switch': 'user', 'act:u-logout': 'logout', 'act:bk-save': 'download', 'act:ui-prefs': 'palette', 'act:dt-theme': 'moon'
+};
+function railIcons() {
+  $$('#rail > button').forEach(b => {
+    if (b.querySelector('.r-ico')) return;
+    const k = b.dataset.go ? 'go:' + b.dataset.go + (b.dataset.arg ? ':' + b.dataset.arg : '') : 'act:' + b.dataset.act;
+    const ico = RAIL_ICON[k]; if (!ico) return;
+    const lab = document.createElement('span'); lab.className = 'r-lab';
+    while (b.firstChild && !(b.firstChild.nodeType === 1 && b.firstChild.matches('kbd,.badge,.muted'))) lab.appendChild(b.firstChild);
+    b.insertBefore(lab, b.firstChild); b.insertAdjacentHTML('afterbegin', rIco(ico));
+  });
+  // foldable sections
+  let open = LS.get('railFold', {});
+  $$('#rail > .grp').forEach(g => {
+    if (g.dataset.fold || /^(Quick|This device)$/i.test(g.textContent.trim())) return;
+    g.dataset.fold = g.textContent.trim(); g.setAttribute('role', 'button'); g.tabIndex = 0;
+    const set = closed => { g.classList.toggle('folded', closed); let n = g.nextElementSibling; while (n && !n.classList.contains('grp')) { n.classList.toggle('fold-hide', closed); n = n.nextElementSibling; } };
+    set(!!open[g.dataset.fold]);
+    const tog = () => { open = LS.get('railFold', {}); open[g.dataset.fold] = !open[g.dataset.fold]; LS.set('railFold', open); set(open[g.dataset.fold]); };
+    g.onclick = tog; g.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tog(); } };
+  });
+}
+
+/* ---- 30. date chips ---- */
+const DCHIPS = [['today', 'Today'], ['yesterday', 'Yesterday'], ['7', '7 days'], ['30', '30 days'], ['month', 'This month'], ['lastmonth', 'Last month'], ['fy', 'This year']];
+function dateChips() {
+  for (const id of ['lf-range', 'cb-range', 'rf-range']) {
+    const sel = document.getElementById(id); if (!sel || $('#dc-' + id)) continue;
+    const row = document.createElement('div'); row.className = 'date-chips'; row.id = 'dc-' + id; row.setAttribute('role', 'radiogroup'); row.setAttribute('aria-label', 'Date range');
+    const paint = () => row.querySelectorAll('button').forEach(b => b.setAttribute('aria-checked', b.dataset.r === sel.value));
+    row.innerHTML = DCHIPS.map(([v, l]) => `<button type="button" role="radio" data-r="${v}">${l}</button>`).join('');
+    row.querySelectorAll('button').forEach(b => b.onclick = () => { sel.value = b.dataset.r; sel.dispatchEvent(new Event('input', { bubbles: true })); sel.dispatchEvent(new Event('change', { bubbles: true })); paint(); const nb = $('#dc-' + id); nb && nb.querySelectorAll('button').forEach(x => x.setAttribute('aria-checked', x.dataset.r === b.dataset.r)); });
+    sel.addEventListener('change', paint); sel.addEventListener('input', paint);
+    const host = sel.closest('.grid2, .grid3, .grid4, .view-head, .hm-row') || sel.parentElement;
+    host.after(row); paint();
+    if (id === 'rf-range' && !PH_MQ.matches) row.classList.add('pc');
+  }
+}
+
+/* ---- 31. editor bottom bar (phones) ---- */
+function editorBar() {
+  if (ROUTE.name !== 'edit' || !CURRENT_EDIT || !$('#e-grand')) { document.documentElement.classList.remove('has-edbar'); return; }
+  let bar = $('#edbar');
+  if (!bar) {
+    bar = document.createElement('div'); bar.id = 'edbar'; bar.className = 'edbar';
+    bar.innerHTML = `<div class="eb-sum"><small>Total</small><strong id="eb-t"></strong></div><button class="btn" data-act="e-save">Save</button><button class="btn primary" data-act="e-save" data-then="print">Save &amp; print</button>`;
+    view().appendChild(bar);
+    new MutationObserver(() => { const t = $('#eb-t'), g = $('#e-grand'); if (t && g) t.textContent = g.textContent; }).observe($('#e-grand'), { childList: true, characterData: true, subtree: true });
+  }
+  $('#eb-t').textContent = $('#e-grand').textContent;
+  document.documentElement.classList.add('has-edbar');
+}
+
+/* ---- 32. amounts without .00 in lists ---- */
+function trimPaise() {
+  for (const t of $$('#lf-tbl, #cb-tbl, #db-tbl, #pf-tbl, #if-tbl')) for (const td of t.querySelectorAll('tbody td.num')) {
+    const w = document.createTreeWalker(td, NodeFilter.SHOW_TEXT); let n;
+    while ((n = w.nextNode())) if (/\d\.00\b/.test(n.nodeValue)) n.nodeValue = n.nodeValue.replace(/(\d)\.00\b/g, '$1');
+  }
+}
+
+/* ---- 33. friendlier empty screens ---- */
+const EMPTY_ACT = () => {
+  const r = ROUTE.name, a = ROUTE.arg;
+  if (r === 'list' && VT[a] && canType(a)) return [VT[a].trade ? 'sale' : 'in', `<button class="btn primary" data-act="v-new" data-type="${a}">+ New ${esc(VT[a].label.toLowerCase())}</button>${a === 'sale' && can('counter') ? '<button class="btn" data-go="counter">Counter bill</button>' : ''}`];
+  if (r === 'items' && can('items')) return ['box', '<button class="btn primary" data-act="i-new">+ Add item</button>'];
+  if (r === 'parties' && can('parties')) return ['users', '<button class="btn primary" data-act="p-new">+ Add party</button>'];
+  if (r === 'cashbook') return ['wallet', canType('receipt') ? '<button class="btn primary" data-act="v-new" data-type="receipt">+ Payment in</button>' : ''];
+  if (r === 'reports') return ['chart', ''];
+  return ['inbox', ''];
+};
+function emptyPolish() {
+  for (const e of $$('#view div.empty:not(.ep)')) {
+    e.classList.add('ep');
+    const [ico, btns] = EMPTY_ACT();
+    e.insertAdjacentHTML('afterbegin', `<span class="ep-ico">${rIco(ico in RI ? ico : 'inbox')}</span>`);
+    if (btns && e.closest('table') && !e.querySelector('.btn')) e.insertAdjacentHTML('beforeend', `<div class="ep-acts">${btns}</div>`);
+  }
+}
+
+let POL_Q = false;
+function polish() { POL_Q = false; railIcons(); dateChips(); editorBar(); trimPaise(); emptyPolish(); }
+new MutationObserver(() => { if (!POL_Q) { POL_Q = true; requestAnimationFrame(polish); } }).observe($('#view'), { childList: true, subtree: true });
+polish();
+if (typeof HI !== 'undefined') Object.assign(HI, { '7 days': '7 दिन', '30 days': '30 दिन', 'This year': 'इस साल', 'Last month': 'पिछला महीना', 'Total': 'कुल', 'Price check': 'रेट देखें' });
 
 </script>
 
