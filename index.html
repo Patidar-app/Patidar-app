@@ -6884,8 +6884,13 @@ ACT.menu = () => {
 };
 ACT['menu-close'] = () => { document.documentElement.classList.remove('rail-open'); menuSync(); };
 ACT['q-item'] = () => { go('items'); setTimeout(() => editItem(null), 0); };
-// On phones and tablets the drawer closes once something in it is tapped.
-document.addEventListener('click', e => { if (!wideScreen() && e.target.closest('#rail [data-go], #rail [data-act]')) ACT['menu-close'](); }, true);
+// The menu closes once something in it is tapped: the drawer on phones and tablets, and on PC the
+// docked menu folds away too (the three-line button brings it back).
+document.addEventListener('click', e => {
+  if (!e.target.closest('#rail [data-go], #rail [data-act]')) return;
+  if (!wideScreen()) return ACT['menu-close']();
+  setTimeout(() => { document.documentElement.classList.add('rail-closed'); LS.set('rail-closed', true); menuSync(); }, 0);
+}, true);
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.documentElement.classList.contains('rail-open') && !modalStack.length) ACT['menu-close'](); });
 $('#firm-pick2').addEventListener('change', e => { const v = e.target.value; ACT['menu-close'](); $('#firm-pick').value = v; $('#firm-pick').dispatchEvent(new Event('change')); });
 // Swipe from the left edge to slide the menu in, swipe left to slide it out (phones and tablets).
@@ -8387,7 +8392,7 @@ ACT['hs-low'] = () => { IF.stock = 'low'; IF.q = ''; IF.cat = ''; IF.brand = '';
    that a phone or PC has the latest update. Shown in the side menu, on the sign-in screen and in Settings,
    plus a one-time note the first time a new update opens on this device.
    ========================================================= */
-const APP_BUILT = '21 Nov 2026, 8:06 PM';
+const APP_BUILT = '22 Nov 2026, 2:21 PM';
 const verText = () => `Version ${APP_VERSION} · updated ${APP_BUILT}`;
 (function () {
   const rail = $('#rail');
