@@ -1128,6 +1128,17 @@ div.empty.ep { display: grid; justify-items: center; gap: 4px; }
   .dash2 .dash-latest tr:nth-child(n+6) { display: none; }
 }
 
+/* ===== v2.23 ===== */
+.dc-notes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.dc-notes input { text-align: right; }
+.exch-box { margin-top: 10px; border: 1px dashed var(--line); border-radius: 10px; padding: 8px 10px; }
+.exch-box summary { cursor: pointer; font-weight: 600; font-size: 14px; }
+.ex-row { color: var(--pos, #13804b); }
+.bk-acts { white-space: nowrap; text-align: right; }
+.bk-acts .btn + .btn { margin-left: 6px; }
+@media (max-width: 640px) { .bk-acts { text-align: left; white-space: normal; } .bk-acts .btn { margin: 4px 6px 0 0 !important; } }
+.i-wt { white-space: pre-line; }
+
 </style>
 </head>
 <body>
@@ -1174,6 +1185,9 @@ div.empty.ep { display: grid; justify-items: center; gap: 4px; }
     <button data-go="finance">Finance / EMI</button>
     <button data-go="delivery">Delivery &amp; fitting <b class="badge" id="rail-dlv" hidden>0</b></button>
     <button data-go="service">Service due <b class="badge" id="rail-svc" hidden>0</b></button>
+    <button data-go="repairs">Repair jobs <b class="badge" id="rail-job" hidden>0</b></button>
+    <button data-go="bookings">Advance bookings</button>
+    <button data-go="kist">Kist (installments) <b class="badge" id="rail-kist" hidden>0</b></button>
     <button data-go="salesmen">Salesmen &amp; commission</button>
     <div class="grp">Purchase</div>
     <button data-go="list" data-arg="purchase">Purchase bills</button>
@@ -1184,6 +1198,7 @@ div.empty.ep { display: grid; justify-items: center; gap: 4px; }
     <button data-go="list" data-arg="journal">Journal</button>
     <button data-go="parties">Parties</button>
     <button data-go="cashbook">Cash &amp; bank</button>
+    <button data-go="dayclose">Day closing</button>
     <button data-go="cheques">Cheques <b class="badge" id="rail-chq" hidden>0</b></button>
     <button data-act="tally">Export to Tally</button>
     <div class="grp">Stock</div>
@@ -1192,6 +1207,7 @@ div.empty.ep { display: grid; justify-items: center; gap: 4px; }
     <button data-go="godowns">Godowns</button>
     <button data-go="labels">Barcode labels <kbd>F6</kbd></button>
     <button data-act="sup-order">Order from supplier</button>
+    <button data-go="settings" data-arg="brands">Brand customer care</button>
     <div class="grp">More</div>
     <button data-go="reports">Reports &amp; GST</button>
     <button data-go="settings">Settings</button>
@@ -4426,7 +4442,7 @@ function D() {
   money.cash = +f.openingCash || 0;
   const addStock = (item, gd, q) => { const s = stock[item] || (stock[item] = {}); s[gd] = (s[gd] || 0) + q; };
   const addBal = (pid, x) => { if (pid) bal[pid] = (bal[pid] || 0) + x; };
-  const addMoney = (mode, x) => { const m = mode === 'credit' ? null : (mode in money ? mode : 'cash'); if (m) money[m] += x; };
+  const addMoney = (mode, x) => { if (mode === 'exchange') return; const m = mode === 'credit' ? null : (mode in money ? mode : 'cash'); if (m) money[m] += x; };
   for (const it of col('items')) for (const [gd, q] of Object.entries(it.opening || {})) addStock(it.id, gd, +q || 0);
   for (const p of col('parties')) bal[p.id] = (bal[p.id] || 0) + (+p.opening || 0);
   for (const v of col('vouchers')) {
@@ -4660,7 +4676,7 @@ function counterVoucher() {
 }
 function lineFromItem(it, qty = 1, type = 'sale') {
   const buy = type === 'purchase' || type === 'purchaseReturn';
-  return { itemId: it.id, name: it.name, code: it.code, hsn: it.hsn || '', unit: it.unit || 'pcs', qty, rate: +(buy ? it.purchase : it.sale) || 0, disc: 0, gst: +it.gst || 0, mrp: +it.mrp || 0, cost: +it.purchase || 0, serial: '', warranty: +it.warranty || 0, category: it.category || '', brand: it.brand || '' };
+  return { itemId: it.id, name: it.name, code: it.code, hsn: it.hsn || '', unit: it.unit || 'pcs', qty, rate: +(buy ? it.purchase : it.sale) || 0, disc: 0, gst: +it.gst || 0, mrp: +it.mrp || 0, cost: +it.purchase || 0, serial: '', warranty: +it.warranty || 0, wterms: it.wterms || '', category: it.category || '', brand: it.brand || '' };
 }
 
 VIEWS.counter = () => {
@@ -4825,19 +4841,22 @@ async function counterSave(btn) {
   const v = counterVoucher(); const c = calcVoucher(v);
   if (BILL.phone && !/^\+?\d{10,13}$/.test(BILL.phone.replace(/\s/g, ''))) { toast('Mobile number should be 10 digits', 'bad'); return; }
   const paid = { cash: 0, upi: 0, card: 0 };
-  if (BILL.mode === 'cash') { if (+BILL.tendered && +BILL.tendered < c.total) { toast(`Cash received is less than ${inr(c.total)}`, 'bad'); return; } paid.cash = c.total; }
-  else if (BILL.mode === 'upi' || BILL.mode === 'card') paid[BILL.mode] = c.total;
-  else if (BILL.mode === 'split') { const s = Object.values(BILL.split).reduce((a, x) => a + (+x || 0), 0); if (r2(s) !== c.total) { toast(`Split adds up to ${inr(s)}, bill is ${inr(c.total)}`, 'bad'); return; } paid.cash = +BILL.split.cash || 0; paid.upi = +BILL.split.upi || 0; paid.card = +BILL.split.card || 0; }
+  const ex = Math.min(c.total, Math.max(0, +(BILL.exch?.amt) || 0)), pay = r2(c.total - ex);
+  if (ex && !String(BILL.exch.desc || '').trim()) { toast('Write which old item is taken in exchange', 'bad'); $('#ex-desc')?.focus(); return; }
+  if (BILL.mode === 'cash') { if (+BILL.tendered && +BILL.tendered < pay) { toast(`Cash received is less than ${inr(pay)}`, 'bad'); return; } paid.cash = pay; }
+  else if (BILL.mode === 'upi' || BILL.mode === 'card') paid[BILL.mode] = pay;
+  else if (BILL.mode === 'split') { const s = Object.values(BILL.split).reduce((a, x) => a + (+x || 0), 0); if (r2(s) !== pay) { toast(`Split adds up to ${inr(s)}, ${ex ? 'balance' : 'bill'} is ${inr(pay)}`, 'bad'); return; } paid.cash = +BILL.split.cash || 0; paid.upi = +BILL.split.upi || 0; paid.card = +BILL.split.card || 0; }
   let fin = null;
   if (BILL.mode === 'finance') {
     const down = +BILL.fin.down || 0;
     if (!BILL.fin.co.trim()) { toast('Enter the finance company', 'bad'); return; }
-    if (down > c.total) { toast(`Down payment is more than ${inr(c.total)}`, 'bad'); return; }
+    if (down > pay) { toast(`Down payment is more than ${inr(pay)}`, 'bad'); return; }
     paid[BILL.fin.downMode || 'cash'] = down;
-    fin = { co: BILL.fin.co.trim(), amount: r2(c.total - down), ref: BILL.fin.ref.trim() };
+    fin = { co: BILL.fin.co.trim(), amount: r2(pay - down), ref: BILL.fin.ref.trim() };
     if (!BILL.name.trim() || !BILL.phone.trim()) { toast('Finance bills need the customer name and mobile', 'bad'); $('#c-phone').focus(); return; }
   }
-  const unpaid = r2(c.total - paid.cash - paid.upi - paid.card - (fin ? fin.amount : 0));
+  if (ex) paid.exchange = ex;
+  const unpaid = r2(c.total - ex - paid.cash - paid.upi - paid.card - (fin ? fin.amount : 0));
   if (unpaid > 0 && (!BILL.name.trim() || !BILL.phone.trim())) { toast('Udhaar needs the customer name and mobile', 'bad'); $('#c-phone').focus(); return; }
   const short = BILL.lines.filter(l => l.itemId && BILL.lines.filter(x => x.itemId === l.itemId).reduce((a, x) => a + x.qty, 0) > stockOf(l.itemId, BILL.godown));
   if (short.length && !(await ask('Stock is short', `Stock will go below zero for <b>${[...new Set(short.map(l => esc(l.name)))].join(', ')}</b>. Save the bill anyway?`, 'Save bill'))) return;
@@ -4847,7 +4866,7 @@ async function counterSave(btn) {
   const p = counterParty();
   const doc = Object.assign(v, {
     no: nextNo('sale'), date: today(), time: new Date().toISOString(), partyId: p?.id || null, party: p ? { name: p.name, phone: p.phone, gstin: p.gstin || '', state: p.state || '', addr: p.addr || '' } : { name: BILL.name.trim(), phone: BILL.phone },
-    godown: BILL.godown, paid, ...(fin ? { fin } : {}), tendered: BILL.mode === 'cash' && +BILL.tendered ? +BILL.tendered : 0, ref: BILL.ref, ...(BILL.sm ? { sm: BILL.sm } : {}), source: 'counter', status: 'active'
+    godown: BILL.godown, paid, ...(fin ? { fin } : {}), tendered: BILL.mode === 'cash' && +BILL.tendered ? +BILL.tendered : 0, ref: BILL.ref, ...(BILL.sm ? { sm: BILL.sm } : {}), ...(ex ? { exchDesc: String(BILL.exch.desc).trim() } : {}), source: 'counter', status: 'active'
   });
   const saved = saveTrade(doc);
   resetCounter(); VIEWS.counter();
@@ -4890,7 +4909,7 @@ let CURRENT_EDIT = null;
 
 function saveTrade(doc) {
   const c = calcVoucher(doc);
-  doc.lines = c.lines.map(l => ({ itemId: l.itemId || null, name: l.name, code: l.code || '', hsn: l.hsn || '', unit: l.unit || 'pcs', qty: l.qty, rate: l.rate, disc: +l.disc || 0, gst: l.gst, mrp: +l.mrp || 0, cost: +l.cost || 0, serial: l.serial || '', warranty: +l.warranty || 0, category: l.category || '', brand: l.brand || get('items', l.itemId)?.brand || '', taxable: r2(l.taxable), tax: r2(l.tax), amount: r2(l.amount) }));
+  doc.lines = c.lines.map(l => ({ itemId: l.itemId || null, name: l.name, code: l.code || '', hsn: l.hsn || '', unit: l.unit || 'pcs', qty: l.qty, rate: l.rate, disc: +l.disc || 0, gst: l.gst, mrp: +l.mrp || 0, cost: +l.cost || 0, serial: l.serial || '', warranty: +l.warranty || 0, wterms: l.wterms || (l.itemId ? get('items', l.itemId)?.wterms || '' : ''), category: l.category || '', brand: l.brand || get('items', l.itemId)?.brand || '', taxable: r2(l.taxable), tax: r2(l.tax), amount: r2(l.amount) }));
   Object.assign(doc, { total: c.total, taxable: c.taxable, tax: c.tax, cgst: c.cgst, sgst: c.sgst, igst: c.igst, roundOff: c.roundOff, saved: c.saved, cost: c.cost, items: c.items, gross: r2(c.gross), lineDisc: r2(c.lineDisc), billDisc: r2(c.billDisc) });
   doc.paid = doc.paid || {};
   doc.change = doc.tendered ? r2(doc.tendered - paidTotal(doc)) : 0;
@@ -5042,6 +5061,7 @@ function renderTradeEditor(head) {
         <div class="sum-total"><span>Total</span><strong id="e-grand"></strong></div></div>
       ${t.party ? `<div class="card"><h2>${v.type === 'sale' || v.type === 'purchaseReturn' ? 'Received now' : 'Paid now'}</h2>
         <div class="grid2">${Object.entries(MODES).map(([m, l]) => `<label class="f"><span>${l}</span><input type="number" min="0" data-paid="${m}" value="${v.paid?.[m] || ''}" placeholder="0"></label>`).join('')}</div>
+        ${v.type === 'sale' ? `<details class="exch-box" ${+v.paid?.exchange ? 'open' : ''}><summary>Old item exchange</summary><div class="grid2" style="margin-top:8px"><label class="f"><span>Old item</span><input type="text" id="e-exdesc" value="${esc(v.exchDesc || '')}" placeholder="e.g. Old 32&quot; TV"></label><label class="f"><span>Value ₹</span><input type="number" min="0" data-paid="exchange" value="${v.paid?.exchange || ''}" placeholder="0"></label></div></details>` : ''}
         <div class="chips" style="margin-top:8px"><button class="btn sm" data-act="e-fullpaid" data-mode="cash" type="button">Full in cash</button><button class="btn sm" data-act="e-fullpaid" data-mode="upi" type="button">Full by UPI</button><button class="btn sm ghost" data-act="e-fullpaid" data-mode="" type="button">Unpaid</button></div>
         ${v.type === 'sale' ? `<details class="fin-box" ${finAmt(v) ? 'open' : ''}><summary>Finance / EMI</summary><div class="grid2" id="e-fin">${finFields(v.fin || {}, true)}</div></details>` : ''}
         <div id="e-due"></div></div>` : ''}
@@ -5066,6 +5086,7 @@ function renderTradeEditor(head) {
   on('#e-godown', 'change', e => { v.godown = e.value; LS.set('godown-' + S.firmId, e.value); });
   on('#e-taxmode', 'change', e => { v.taxMode = e.value; tradeLinesRender(); });
   on('#e-notes', 'input', e => v.notes = e.value);
+  on('#e-exdesc', 'input', e => v.exchDesc = e.value.trim());
   on('#e-billdisc', 'input', e => { v.billDisc = +e.value || 0; tradeTotals(); });
   on('#e-noround', 'change', e => { v.noRound = e.checked; tradeTotals(); });
   $$('[data-paid]').forEach(i => i.addEventListener('input', () => { v.paid[i.dataset.paid] = +i.value || 0; dirty(); tradeDue(); }));
@@ -5491,6 +5512,7 @@ function editItem(id, preset = {}) {
     <div class="grid4"><label class="f"><span>GST %</span><select name="gst">${GST_RATES.map(g => `<option ${+it.gst === g ? 'selected' : ''}>${g}</option>`).join('')}</select></label><label class="f"><span>HSN</span><input type="text" name="hsn" value="${esc(it.hsn)}"></label>
       <label class="f"><span>Unit</span><select name="unit">${UNITS.map(u => `<option ${it.unit === u ? 'selected' : ''}>${u}</option>`).join('')}</select></label><label class="f"><span>Warranty (months)</span><input type="number" name="warranty" value="${it.warranty || ''}"></label></div>
     <div class="grid${Math.min(4, gds.length + 1)}">${gds.map(g => `<label class="f"><span>Opening stock · ${esc(g.name)}</span><input type="number" data-open="${g.id}" value="${it.opening?.[g.id] || ''}"></label>`).join('')}<label class="f"><span>Low-stock alert at</span><input type="number" name="min" value="${it.min}"></label></div>
+    <label class="f"><span>Warranty conditions <span class="muted">printed on the bill under this item</span></span><textarea name="wterms" rows="2" placeholder="e.g. 1 year complete · 5 years on motor · 2 years on armature">${esc(it.wterms || '')}</textarea></label>
     <label class="f"><span>Service reminder every (months) <span class="muted">e.g. 6 for AC, empty = use the category rule</span></span><input type="number" name="svc" min="0" value="${it.svc || ''}" placeholder="${svcRule(it.category) || 'No reminder'}"></label>
     ${id ? `<div class="note">Current stock: ${gds.map(g => `${esc(g.name)} <b>${qtyFmt(stockOf(id, g.id))}</b>`).join(' · ')}. Opening stock is the count before your first bill in this app; for later changes use a purchase bill or stock adjustment.</div>` : ''}
     <div id="it-err" class="neg"></div></form>
@@ -5506,7 +5528,7 @@ function editItem(id, preset = {}) {
     const code = v.code.trim() || newBarcode();
     const dup = col('items').find(x => x.code === code && x.id !== id); if (dup) return err.textContent = `Barcode already used by ${dup.name}.`;
     const opening = {}; $$('[data-open]', m).forEach(i => { if (+i.value) opening[i.dataset.open] = +i.value; });
-    const doc = Object.assign(id ? it : {}, { name: v.name.trim(), code, category: optValue(v, 'category') || 'Other', brand: optValue(v, 'brand'), hsn: v.hsn.trim(), unit: v.unit, mrp: +v.mrp || +v.sale, sale: +v.sale, purchase: +v.purchase || 0, gst: +v.gst, min: +v.min || 0, warranty: +v.warranty || 0, svc: Math.max(0, +v.svc || 0), opening });
+    const doc = Object.assign(id ? it : {}, { name: v.name.trim(), code, category: optValue(v, 'category') || 'Other', brand: optValue(v, 'brand'), hsn: v.hsn.trim(), unit: v.unit, mrp: +v.mrp || +v.sale, sale: +v.sale, purchase: +v.purchase || 0, gst: +v.gst, min: +v.min || 0, warranty: +v.warranty || 0, wterms: (v.wterms || '').trim(), svc: Math.max(0, +v.svc || 0), opening });
     delete doc.sample;
     put('items', doc); closeModal(); toast(id ? 'Item updated' : 'Item added', 'ok');
     if (!id && preset.code && ROUTE.name === 'counter') counterAdd(doc); else if (!id && preset.code && ROUTE.name === 'edit' && CURRENT_EDIT) { if (VT[CURRENT_EDIT.v.type].trade) addEditorItem(doc); else stockAdd(doc); } else render();
@@ -5575,7 +5597,7 @@ function moneyRows() {
   const rows = [];
   for (const v of col('vouchers')) {
     if (v.status === 'cancelled' || v.legacy) continue; const t = VT[v.type];
-    if (t.trade && t.cash) for (const [mo, x] of Object.entries(v.paid || {})) if (+x) rows.push({ v, mode: mo, amt: t.cash * x, text: `${t.label} ${v.no} · ${vParty(v) || 'Walk-in'}` });
+    if (t.trade && t.cash) for (const [mo, x] of Object.entries(v.paid || {})) if (+x && mo !== 'exchange') rows.push({ v, mode: mo, amt: t.cash * x, text: `${t.label} ${v.no} · ${vParty(v) || 'Walk-in'}` });
     if (finAmt(v) && v.fin.gotOn && +v.fin.got) rows.push({ v, date: v.fin.gotOn, mode: v.fin.gotMode || 'bank', amt: +v.fin.got, text: `Finance from ${v.fin.co || 'finance company'} · ${v.no}` });
     if (v.type === 'receipt') rows.push({ v, mode: v.mode, amt: +v.amount, text: `Received from ${vParty(v)}` });
     if (v.type === 'payment') rows.push({ v, mode: v.mode, amt: -v.amount, text: v.head ? `Expense: ${v.head}` : `Paid to ${vParty(v)}` });
@@ -5621,7 +5643,7 @@ function invoiceHTML(v, th, paper) {
   const p = v.party || {};
   const paid = paidTotal(v); const due = r2(c.total - paid);
   const showDisc = c.lines.some(l => +l.disc);
-  const lines = c.lines.map((l, i) => `<tr><td class="c">${i + 1}</td><td><b>${esc(l.name)}</b>${l.serial ? `<div class="i-sub">S/N: ${esc(l.serial)}</div>` : ''}${l.warranty && isSale ? `<div class="i-sub">Warranty ${l.warranty} months${v.type === 'sale' ? ' (till ' + fmtDate(addMonths(v.date, l.warranty)) + ')' : ''}</div>` : ''}${show.mrp && l.mrp > l.rate && isSale ? `<div class="i-sub">MRP ₹${num(l.mrp)}</div>` : ''}</td>
+  const lines = c.lines.map((l, i) => `<tr><td class="c">${i + 1}</td><td><b>${esc(l.name)}</b>${l.serial ? `<div class="i-sub">S/N: ${esc(l.serial)}</div>` : ''}${l.warranty && isSale ? `<div class="i-sub">Warranty ${l.warranty} months${v.type === 'sale' ? ' (till ' + fmtDate(addMonths(v.date, l.warranty)) + ')' : ''}</div>` : ''}${l.wterms && isSale ? `<div class="i-sub i-wt">${esc(l.wterms)}</div>` : ''}${show.mrp && l.mrp > l.rate && isSale ? `<div class="i-sub">MRP ₹${num(l.mrp)}</div>` : ''}</td>
     <td>${esc(l.hsn || '')}</td><td class="r">${qtyFmt(l.qty)} ${esc(l.unit || '')}</td><td class="r">${num(l.rate)}</td>${showDisc ? `<td class="r">${l.disc ? r2(l.disc) + '%' : ''}</td>` : ''}<td class="r">${l.gst}%</td><td class="r">${num(l.amount)}</td></tr>`).join('');
   const hsn = show.hsn && c.tax ? `<table class="i-hsn"><thead><tr><th>HSN</th><th class="r">Taxable</th>${v.interstate ? '<th class="r">IGST</th>' : '<th class="r">CGST</th><th class="r">SGST</th>'}<th class="r">Total tax</th></tr></thead><tbody>
     ${c.hsn.map(h => `<tr><td>${esc(h.hsn)} @ ${h.gst}%</td><td class="r">${num(h.taxable)}</td>${v.interstate ? `<td class="r">${num(h.tax)}</td>` : `<td class="r">${num(h.tax / 2)}</td><td class="r">${num(h.tax / 2)}</td>`}<td class="r">${num(h.tax)}</td></tr>`).join('')}</tbody></table>` : '';
@@ -5653,12 +5675,12 @@ function receiptHTML(v, paper, opt) {
   const f = firm(); const c = calcVoucher(v); const cls = paper === '58' ? 'p58' : '';
   const isSale = v.type === 'sale';
   const rows = c.lines.map(l => {
-    const extra = []; if (l.serial) extra.push('S/N: ' + esc(l.serial)); if (l.warranty) extra.push('Warranty ' + l.warranty + ' mo' + (isSale ? ' till ' + fmtDate(addMonths(v.date, l.warranty)) : '')); if (l.discAmt) extra.push('Disc ' + num(l.discAmt));
+    const extra = []; if (l.serial) extra.push('S/N: ' + esc(l.serial)); if (l.warranty) extra.push('Warranty ' + l.warranty + ' mo' + (isSale ? ' till ' + fmtDate(addMonths(v.date, l.warranty)) : '')); if (l.wterms && isSale) extra.push(esc(l.wterms)); if (l.discAmt) extra.push('Disc ' + num(l.discAmt));
     return `<tr><td colspan="2"><b>${esc(l.name)}</b></td></tr><tr class="sub"><td>&nbsp;&nbsp;${qtyFmt(l.qty)} × ${num(l.rate)}${extra.length ? '<br>&nbsp;&nbsp;' + extra.join(' · ') : ''}</td><td class="r">${num(l.net)}</td></tr>`;
   }).join('');
   const taxRows = c.hsn.length && c.tax ? Object.values(c.lines.reduce((a, l) => { const k = l.gst; a[k] = a[k] || { g: k, t: 0, x: 0 }; a[k].t += l.taxable; a[k].x += l.tax; return a; }, {})).filter(r => r.g > 0)
     .map(r => `<tr><td>${r.g}%</td><td class="r">${num(r.t)}</td><td class="r">${num(r.x / 2)}</td><td class="r">${num(r.x / 2)}</td></tr>`).join('') : '';
-  const pays = Object.entries(v.paid || {}).filter(([, x]) => +x).map(([k, x]) => `<div class="row"><span>Paid by ${MODES[k] || k}</span><span>${num(x)}</span></div>`).join('')
+  const pays = Object.entries(v.paid || {}).filter(([, x]) => +x).map(([k, x]) => `<div class="row"><span>${k === 'exchange' ? 'Old item exchange' + (v.exchDesc ? ' (' + esc(v.exchDesc) + ')' : '') : 'Paid by ' + (MODES[k] || k)}</span><span>${num(x)}</span></div>`).join('')
     + (finAmt(v) ? `<div class="row"><span>Finance · ${esc(v.fin.co || '')}</span><span>${num(finAmt(v))}</span></div>${v.fin.ref ? `<div>Loan no: ${esc(v.fin.ref)}</div>` : ''}` : '');
   const due = r2(c.total - paidTotal(v));
   const logo = opt?.logo !== false ? (f.logo || (f === firms()[0] ? LOGO_MONO : '')) : '';
@@ -5970,7 +5992,7 @@ function todayCard(sales, lowCount) {
   const unpaid = col('vouchers').filter(v => v.type === 'sale' && v.status !== 'cancelled' && voucherDue(v) > 0.5).length;
   const pct = yTotal ? Math.round((total - yTotal) / yTotal * 100) : null;
   const cmp = !n && !yTotal ? '' : pct === null ? 'First sales after a quiet day' : `${pct >= 0 ? '▲' : '▼'} ${Math.abs(pct)}% vs yesterday (${inr0(yTotal)})`;
-  const label = m => m === 'udhaar' ? 'Udhaar' : MODES[m] || m;
+  const label = m => m === 'udhaar' ? 'Udhaar' : m === 'exchange' ? 'Old item' : MODES[m] || m;
   return `<section class="today-card" aria-label="Today at a glance">
     <div class="tc-main"><small>Today's sales</small><b data-count>${inr0(total)}</b>
       <span>${n ? `${n} bill${n === 1 ? '' : 's'} · average ${inr0(total / n)}` : 'No bills yet today'}</span>${cmp ? `<span class="tc-cmp ${pct === null ? '' : pct >= 0 ? 'up' : 'down'}">${cmp}</span>` : ''}</div>
@@ -6972,7 +6994,7 @@ window.onAppCrash = text => {
    Updates: every copy of the app checks one fixed address for a newer build.
    Online (PC / iPhone): reload picks it up. Android app: downloads it in the background.
    ========================================================= */
-const APP_BUILD = +'19' || 0, APP_VERSION = '2.22';
+const APP_BUILD = +'20' || 0, APP_VERSION = '2.23';
 const SITE_URL = 'https://patidar-app.github.io/Patidar-app/';
 const HOSTED = (location.protocol === 'https:' || location.hostname === 'localhost') && !IN_FRAME;
 const UPDATE_BASE = HOSTED ? new URL('./', location.href).href : SITE_URL;
@@ -7172,11 +7194,11 @@ const brandOf = l => l.brand || (l.itemId ? get('items', l.itemId)?.brand : '') 
 const brandInfo = b => (firm()?.brands || {})[brandKey(b)] || null;
 function brandCareHTML(v, receipt) {
   const seen = new Map();
-  for (const l of v.lines || []) { const b = brandOf(l), i = brandInfo(b); if (i && (i.care || i.terms) && !seen.has(brandKey(b))) seen.set(brandKey(b), { name: i.name || b, care: i.care || '', terms: i.terms || '' }); }
+  for (const l of v.lines || []) { const b = brandOf(l), i = brandInfo(b); if (i && (i.care || i.terms || i.email) && !seen.has(brandKey(b))) seen.set(brandKey(b), { name: i.name || b, care: i.care || '', email: i.email || '', terms: i.terms || '' }); }
   if (!seen.size) return '';
   const list = [...seen.values()];
-  if (receipt) return `<hr><div class="c"><b>Service &amp; warranty</b></div>${list.map(x => `<div><b>${esc(x.name)}</b>${x.care ? ': Care ' + esc(x.care) : ''}</div>${x.terms ? `<div style="font-size:.85em;white-space:pre-line">${esc(x.terms)}</div>` : ''}`).join('')}`;
-  return `<div class="i-care"><b>Service &amp; warranty</b>${list.map(x => `<div><b>${esc(x.name)}</b>${x.care ? ` · Customer care <b>${esc(x.care)}</b>` : ''}${x.terms ? `<div class="i-care-t">${esc(x.terms)}</div>` : ''}</div>`).join('')}</div>`;
+  if (receipt) return `<hr><div class="c"><b>Service &amp; warranty</b></div>${list.map(x => `<div><b>${esc(x.name)}</b>${x.care ? ': Care ' + esc(x.care) : ''}${x.email ? ' · ' + esc(x.email) : ''}</div>${x.terms ? `<div style="font-size:.85em;white-space:pre-line">${esc(x.terms)}</div>` : ''}`).join('')}`;
+  return `<div class="i-care"><b>Service &amp; warranty</b>${list.map(x => `<div><b>${esc(x.name)}</b>${x.care ? ` · Customer care <b>${esc(x.care)}</b>` : ''}${x.email ? ` · ${esc(x.email)}` : ''}${x.terms ? `<div class="i-care-t">${esc(x.terms)}</div>` : ''}</div>`).join('')}</div>`;
 }
 function brandNames() {
   const m = new Map();
@@ -7188,10 +7210,10 @@ function stBrands() {
   const f = firm(); f.brands = f.brands || {};
   const list = brandNames();
   $('#st-body').innerHTML = `<div class="card pad stack"><h2>Brands &amp; warranty</h2>
-    <p class="muted small" style="margin:0">Fill in each brand's customer care (toll-free) number and warranty conditions once. They print on every bill that has that brand's items. Brands come from your items; add more below.</p>
+    <p class="muted small" style="margin:0">Fill in each brand's customer care (toll-free) number, support email and warranty conditions once. They print on every bill that has that brand's items. Brands come from your items; add more below.</p>
     <div class="brand-list">${list.length ? list.map(([k, n]) => { const x = f.brands[k] || {}; return `<div class="brand-row" data-b="${esc(k)}">
       <b class="brand-name">${esc(n)}</b>
-      <label class="f"><span>Customer care / toll-free no.</span><input type="tel" data-bf="care" value="${esc(x.care || '')}" placeholder="e.g. 1800 000 0000"></label>
+      <div class="grid2"><label class="f"><span>Customer care / toll-free no.</span><input type="tel" data-bf="care" value="${esc(x.care || '')}" placeholder="e.g. 1800 000 0000"></label><label class="f"><span>Support email</span><input type="email" data-bf="email" value="${esc(x.email || '')}" placeholder="e.g. care@brand.com"></label></div>
       <label class="f"><span>Warranty conditions</span><textarea rows="2" data-bf="terms" placeholder="e.g. 2 years on product, 10 years on motor. Bill copy needed for service.">${esc(x.terms || '')}</textarea></label></div>`; }).join('') : '<p class="muted">No brands yet. Add the brand on each item, or add one here.</p>'}</div>
     <form class="row" id="br-add"><input type="text" placeholder="Brand name, e.g. Havells" style="max-width:260px" aria-label="New brand"><button class="btn">+ Add brand</button></form></div>`;
   $$('.brand-row').forEach(r => $$('[data-bf]', r).forEach(i => i.addEventListener('input', () => {
@@ -8427,7 +8449,7 @@ ACT['hs-low'] = () => { IF.stock = 'low'; IF.q = ''; IF.cat = ''; IF.brand = '';
    that a phone or PC has the latest update. Shown in the side menu, on the sign-in screen and in Settings,
    plus a one-time note the first time a new update opens on this device.
    ========================================================= */
-const APP_BUILT = '22 Nov 2026, 2:39 PM';
+const APP_BUILT = '22 Nov 2026, 3:07 PM';
 const verText = () => `Version ${APP_VERSION} · updated ${APP_BUILT}`;
 (function () {
   const rail = $('#rail');
@@ -8705,7 +8727,13 @@ function railIcons() {
     g.dataset.fold = g.textContent.trim(); g.setAttribute('role', 'button'); g.tabIndex = 0;
     const set = closed => { g.classList.toggle('folded', closed); let n = g.nextElementSibling; while (n && !n.classList.contains('grp')) { n.classList.toggle('fold-hide', closed); n = n.nextElementSibling; } };
     set(!!open[g.dataset.fold]);
-    const tog = () => { open = LS.get('railFold', {}); open[g.dataset.fold] = !open[g.dataset.fold]; LS.set('railFold', open); set(open[g.dataset.fold]); };
+    g._set = set;
+    // Opening one section folds the others (v2.23), so the menu stays short.
+    const tog = () => {
+      open = LS.get('railFold', {}); const closing = !open[g.dataset.fold];
+      if (!closing) document.querySelectorAll('#rail > .grp[data-fold]').forEach(o => { if (o !== g) { open[o.dataset.fold] = true; o._set && o._set(true); } });
+      open[g.dataset.fold] = closing; LS.set('railFold', open); set(closing);
+    };
     g.onclick = tog; g.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tog(); } };
   });
 }
@@ -8974,7 +9002,7 @@ function tallyXML(range) {
     pname.set(id, n); use(n, p?.kind === 'supplier' ? 'Sundry Creditors' : 'Sundry Debtors', { gstin: p?.gstin || '', state: p?.state || '', phone: p?.phone || '' });
     return n;
   };
-  const modeLed = m => m === 'cash' || !TL[m] ? 'Cash' : use(TL[m], 'Bank Accounts');
+  const modeLed = m => m === 'exchange' ? use('Old Goods Exchange', 'Purchase Accounts') : m === 'cash' || !TL[m] ? 'Cash' : use(TL[m], 'Bank Accounts');
   const taxLed = (side, h) => use(`${side === 'o' ? 'Output' : 'Input'} ${h}`, 'Duties & Taxes', { duty: { CGST: 'Central Tax', SGST: 'State Tax', IGST: 'Integrated Tax' }[h] });
   const vchs = [];
   // entries: [ledger, amount]; amount > 0 is a debit. Any paisa difference goes to Round Off so Tally sees it balanced.
@@ -9243,6 +9271,324 @@ ACT['dk-rec'] = () => { PF.due = 'rec'; PF.kind = ''; PF.q = ''; go('parties'); 
 ACT['dk-pay'] = () => { PF.due = 'pay'; PF.kind = ''; PF.q = ''; go('parties'); };
 ACT['dk-cash'] = () => go('cashbook');
 if (typeof HI !== 'undefined') Object.assign(HI, { 'Udhaar': 'उधार', 'Low stock': 'कम स्टॉक' });
+
+/* =========================================================
+   v2.23 big update
+   17. Day closing: count the cash drawer at night; the app shows short / extra against what it expects.
+   18. Old item exchange: an old item taken as part payment on a new bill (counter and invoice).
+   19. Repair job card: items brought in for repair, their status, WhatsApp when ready, bill on delivery.
+   42. Shop's own kist: monthly installments on an udhaar bill, with due list, collect and reminders.
+   48. Advance booking: an advance for an item to be bought; the advance comes off the final bill.
+   ========================================================= */
+VT.repair = { label: 'Repair job', plural: 'Repair jobs', prefix: 'JOB', title: 'REPAIR JOB CARD' };
+VT.booking = { label: 'Advance booking', plural: 'Advance bookings', prefix: 'BK', title: 'ADVANCE BOOKING' };
+TYPE_PERM.repair = 'sale'; TYPE_PERM.booking = 'sale';
+const _routeOK223 = routeOK;
+routeOK = function (name, arg) {
+  if (name === 'dayclose') return can('cash');
+  if (name === 'repairs' || name === 'bookings') return can('sale') || can('counter');
+  if (name === 'kist') return can('payin') || can('sale');
+  return _routeOK223(name, arg);
+};
+// Find a customer by mobile, or add them.
+function custFind(phone, name) {
+  phone = String(phone || '').trim(); name = String(name || '').trim();
+  let p = phone ? col('parties').find(x => x.phone === phone) : null;
+  if (!p && name && !phone) p = col('parties').find(x => x.name.toLowerCase() === name.toLowerCase());
+  if (!p && (phone || name)) p = put('parties', { name: name || 'Customer ' + phone, phone, kind: 'customer', state: firm().state, gstin: '', addr: '', opening: 0 });
+  return p;
+}
+const plural = (n, w, ws) => `${n} ${n === 1 ? w : (ws || w + 's')}`;
+const custFields = (v, focus) => `<div class="grid2"><label class="f"><span>Customer mobile</span><input type="tel" name="phone" inputmode="numeric" value="${esc(v.party?.phone || '')}" ${focus ? 'autofocus' : ''}></label><label class="f"><span>Customer name</span><input type="text" name="cname" value="${esc(v.party?.name || '')}"></label></div>`;
+
+/* ---------------- 17. day closing ---------------- */
+const NOTES = [500, 200, 100, 50, 20, 10, 5, 2, 1];
+function dayCash(day) {
+  const rows = moneyRows().filter(r => (r.date || r.v.date) === day && r.mode === 'cash');
+  const inn = rows.filter(r => r.amt > 0).reduce((a, r) => a + r.amt, 0), out = rows.filter(r => r.amt < 0).reduce((a, r) => a - r.amt, 0);
+  const sales = rows.filter(r => r.amt > 0 && VT[r.v.type]?.trade).reduce((a, r) => a + r.amt, 0);
+  const expected = D().money.cash; const later = moneyRows().filter(r => (r.date || r.v.date) > day && r.mode === 'cash').reduce((a, r) => a + r.amt, 0);
+  const close = r2(expected - later), open = r2(close - inn + out);
+  const other = {}; for (const r of moneyRows()) if ((r.date || r.v.date) === day && r.mode !== 'cash') other[r.mode] = (other[r.mode] || 0) + r.amt;
+  return { open, inn: r2(inn), out: r2(out), sales: r2(sales), close, other };
+}
+VIEWS.dayclose = () => {
+  const day = today(); const c = dayCash(day); const f = firm(); const hist = (f.closings || []).slice().reverse().slice(0, 15);
+  const done = (f.closings || []).find(x => x.date === day);
+  view().innerHTML = `<div class="view-head"><h1>Day closing</h1></div>
+    <div class="kpis">${kpiHTML([['Opening cash', inr0(c.open), 'start of today'], ['Cash in today', inr0(c.inn), `sales ${inr0(c.sales)}`], ['Cash out today', inr0(c.out), 'payments, expenses'], ['Should be in drawer', inr0(c.close), done ? 'closed at ' + fmtTime(done.t) : 'now']])}</div>
+    <div class="cols">
+      <div class="card pad"><h2>Count the cash</h2><p class="muted small" style="margin:0 0 10px">Type how many of each note and coin are in the drawer.</p>
+        <div class="dc-notes">${NOTES.map(n => `<label class="f"><span>₹${n} ×</span><input type="number" min="0" inputmode="numeric" data-note="${n}" placeholder="0"></label>`).join('')}</div>
+        <label class="f" style="margin-top:8px"><span>Or type the total counted ₹</span><input type="number" min="0" id="dc-total" placeholder="0"></label>
+        <div id="dc-diff" style="margin-top:10px"></div>
+        <label class="f" style="margin-top:8px"><span>Note (optional)</span><input type="text" id="dc-note" placeholder="e.g. ₹500 given to Ramesh for tea"></label>
+        <label class="chip" style="margin-top:8px"><input type="checkbox" id="dc-adj"> Set cash in hand to the counted amount</label>
+        <div class="row" style="margin-top:12px"><button class="btn primary" data-act="dc-save">${done ? 'Close the day again' : 'Close the day'}</button></div></div>
+      <div class="card pad"><h2>Other money today</h2>${Object.keys(c.other).length ? Object.entries(c.other).map(([m, x]) => `<div class="sum-row"><span>${MODES[m] || m}</span><b class="${x < 0 ? 'neg' : ''}">${inr0(x)}</b></div>`).join('') : '<div class="muted">No UPI, card or bank money today.</div>'}
+        <h2 style="margin-top:14px">Last closings</h2>${hist.length ? hist.map(x => `<div class="sum-row"><span>${fmtDate(x.date)}<span class="muted small"> · ${esc(x.user || '')}</span></span><b class="${Math.abs(x.diff) < 1 ? 'pos' : 'neg'}">${Math.abs(x.diff) < 1 ? 'Matched' : (x.diff < 0 ? 'Short ' : 'Extra ') + inr0(Math.abs(x.diff))}</b></div>`).join('') : '<div class="muted">No closings yet.</div>'}</div>
+    </div>`;
+  const calc = () => {
+    let t = 0, any = false; $$('[data-note]').forEach(i => { if (+i.value) { any = true; t += +i.value * +i.dataset.note; } });
+    if (any) $('#dc-total').value = t; else t = +$('#dc-total').value || 0;
+    const diff = r2(t - c.close);
+    $('#dc-diff').innerHTML = `<div class="change ${Math.abs(diff) >= 1 ? 'due' : ''}"><span>${Math.abs(diff) < 1 ? 'Cash matches' : diff < 0 ? 'Cash short' : 'Cash extra'}</span><span>${inr(Math.abs(diff))}</span></div>`;
+    return { t, diff };
+  };
+  $$('[data-note]').forEach(i => i.addEventListener('input', calc)); $('#dc-total').addEventListener('input', () => { $$('[data-note]').forEach(i => i.value = ''); calc(); }); calc();
+  ACT['dc-save'] = async () => {
+    const { t, diff } = calc(); const f2 = firm(); const note = $('#dc-note').value.trim();
+    if (!t && !(await ask('Close with ₹0?', 'You have not counted any cash. Close the day with ₹0 in the drawer?', 'Close the day'))) return;
+    if ($('#dc-adj').checked && Math.abs(diff) >= 1) {
+      const jl = diff < 0 ? [{ acc: 'exp:Cash short', dr: -diff, cr: 0 }, { acc: 'cash', dr: 0, cr: -diff }] : [{ acc: 'cash', dr: diff, cr: 0 }, { acc: 'inc:Cash extra', dr: 0, cr: diff }];
+      put('vouchers', { type: 'journal', no: nextNo('journal'), date: day, status: 'active', jlines: jl, amount: Math.abs(diff), note: 'Day closing ' + fmtDate(day) + (note ? ' · ' + note : '') });
+    }
+    const list = (f2.closings || []).filter(x => x.date !== day); list.push({ date: day, expected: c.close, counted: t, diff, note, user: me()?.name || '', t: Date.now() });
+    f2.closings = list.slice(-90); put('firms', f2);
+    const msg = `*${f2.name}* · Day closing ${fmtDate(day)}\nOpening cash ${inr0(c.open)}\nCash in ${inr0(c.inn)} (sales ${inr0(c.sales)})\nCash out ${inr0(c.out)}\nShould be ${inr0(c.close)}\nCounted ${inr0(t)}\n${Math.abs(diff) < 1 ? 'Cash matches ✓' : (diff < 0 ? 'SHORT ' : 'Extra ') + inr0(Math.abs(diff))}${note ? '\nNote: ' + note : ''}${Object.keys(c.other).length ? '\n' + Object.entries(c.other).map(([m, x]) => `${MODES[m] || m} ${inr0(x)}`).join(' · ') : ''}`;
+    const ph = f2.report?.phone || '';
+    toast('Day closed', 'ok', { label: 'Send on WhatsApp', fn: () => openWA(ph, msg) }); render();
+  };
+};
+
+/* ---------------- 18. old item exchange ---------------- */
+// Stored as paid.exchange (goods, not money): it settles part of the bill but never adds to cash or bank.
+const EXCH_LABEL = 'Old item exchange';
+function exchBox() {
+  const ex = BILL.exch || (BILL.exch = { desc: '', amt: '' });
+  return `<details class="exch-box" ${+ex.amt ? 'open' : ''}><summary>${EXCH_LABEL}</summary><div class="grid2" style="margin-top:8px"><label class="f"><span>Old item</span><input type="text" id="ex-desc" value="${esc(ex.desc)}" placeholder="e.g. Old 32&quot; TV"></label><label class="f"><span>Value ₹</span><input type="number" min="0" id="ex-amt" value="${esc(ex.amt)}" placeholder="0"></label></div></details>`;
+}
+const exchAmt = () => Math.max(0, +(BILL.exch?.amt) || 0);
+const _vCounter223 = VIEWS.counter;
+VIEWS.counter = function () {
+  const r = _vCounter223.apply(this, arguments);
+  const modes = $('#pay-modes'); if (modes && !$('#ex-amt')) {
+    modes.insertAdjacentHTML('afterend', exchBox());
+    $('#ex-desc').addEventListener('input', e => BILL.exch.desc = e.target.value);
+    $('#ex-amt').addEventListener('input', e => { BILL.exch.amt = e.target.value; counterTotals(); });
+    counterTotals();
+  }
+  return r;
+};
+const _counterTotals223 = counterTotals;
+counterTotals = function (c) {
+  const r = _counterTotals223.apply(this, arguments); const ex = exchAmt(); const el = $('#totals');
+  if (el && ex) { const tot = calcVoucher(counterVoucher()).total; el.insertAdjacentHTML('beforeend', `<div class="sum-row ex-row"><span>${EXCH_LABEL}${BILL.exch.desc ? ' · ' + esc(BILL.exch.desc) : ''}</span><span>−${inr(Math.min(ex, tot))}</span></div><div class="sum-row"><b>Balance to pay</b><b>${inr(Math.max(0, tot - ex))}</b></div>`); }
+  return r;
+};
+
+/* ---------------- 19. repair job card ---------------- */
+const JOB_ST = [['received', 'Received'], ['repair', 'In repair'], ['ready', 'Ready'], ['delivered', 'Delivered']];
+const RJF = { st: 'open', q: '' };
+VIEWS.repairs = () => {
+  const all = col('vouchers').filter(v => v.type === 'repair' && v.status !== 'cancelled');
+  const cnt = s => all.filter(v => (v.js || 'received') === s).length;
+  const q = RJF.q.toLowerCase();
+  const list = all.filter(v => (RJF.st === 'open' ? (v.js || 'received') !== 'delivered' : RJF.st === 'all' || (v.js || 'received') === RJF.st) && (!q || [v.no, v.item, v.serial, v.party?.name, v.party?.phone].join(' ').toLowerCase().includes(q)))
+    .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  view().innerHTML = `<div class="view-head"><h1>Repair jobs</h1><button class="btn primary" data-act="job-edit">+ New job</button></div>
+    <div class="kpis">${kpiHTML([['Received', cnt('received')], ['In repair', cnt('repair')], ['Ready to give', cnt('ready'), cnt('ready') ? 'tell the customer' : '', cnt('ready') ? 'neg' : ''], ['Delivered', cnt('delivered')]])}</div>
+    <div class="tabs" role="tablist">${[['open', 'Open'], ...JOB_ST, ['all', 'All']].map(([k, l]) => `<button role="tab" aria-selected="${RJF.st === k}" data-act="job-tab" data-k="${k}">${l}</button>`).join('')}</div>
+    <input type="search" id="job-q" placeholder="Search job no., item, serial, customer" value="${esc(RJF.q)}" style="margin-bottom:12px">
+    ${list.length ? `<div class="card"><div class="tbl-wrap"><table class="tbl" id="job-tbl"><thead><tr><th>Job</th><th>Customer</th><th>Item</th><th>Status</th><th class="num">Charges</th><th></th></tr></thead><tbody>
+      ${list.map(v => `<tr class="click" data-act="job-edit" data-id="${v.id}"><td><b class="mono">${esc(v.no)}</b><div class="muted small">${fmtDate(v.date)}</div></td><td data-l="Customer"><b>${esc(v.party?.name || '')}</b><div class="muted small">${esc(v.party?.phone || '')}</div></td>
+        <td data-l="Item">${esc(v.item || '')}${v.serial ? `<div class="muted small mono">${esc(v.serial)}</div>` : ''}<div class="muted small">${esc(v.problem || '')}</div></td>
+        <td data-l="Status"><span class="pill ${v.js === 'ready' ? 'warn' : v.js === 'delivered' ? 'ok' : ''}">${(JOB_ST.find(s => s[0] === (v.js || 'received')) || [])[1]}</span>${v.promise ? `<div class="muted small">by ${fmtDate(v.promise)}</div>` : ''}</td>
+        <td class="num" data-l="Charges">${+v.charges ? inr0(v.charges) : v.est ? '<span class="muted">~' + inr0(v.est) + '</span>' : ''}</td>
+        <td>${v.js === 'ready' && v.party?.phone ? `<button class="btn sm wa" data-act="job-wa" data-id="${v.id}">Tell ready</button>` : ''}</td></tr>`).join('')}</tbody></table></div></div>`
+      : `<div class="card pad"><div class="empty"><b>No repair jobs here</b>When a customer brings an item for repair, add a job: the app gives a job number, keeps the status and tells the customer when it is ready.</div></div>`}`;
+  $('#job-q').addEventListener('input', e => { RJF.q = e.target.value; clearTimeout(RJF.t); RJF.t = setTimeout(() => { VIEWS.repairs(); const i = $('#job-q'); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }, 250); });
+};
+ACT['job-tab'] = b => { RJF.st = b.dataset.k; VIEWS.repairs(); };
+ACT['job-edit'] = (b, e) => {
+  if (e && e.target.closest('[data-act="job-wa"]')) return;
+  const id = b.dataset.id; const v = id ? JSON.parse(JSON.stringify(get('vouchers', id))) : { type: 'repair', js: 'received', date: today(), status: 'active' };
+  const m = openModal(`${mHead(id ? 'Repair job ' + esc(v.no) : 'New repair job')}<form class="body stack">
+    ${custFields(v, !id)}
+    <div class="grid2"><label class="f"><span>Item *</span><input type="text" name="item" value="${esc(v.item || '')}" placeholder="e.g. LG washing machine"></label><label class="f"><span>Serial / model</span><input type="text" name="serial" value="${esc(v.serial || '')}"></label></div>
+    <label class="f"><span>Problem</span><input type="text" name="problem" value="${esc(v.problem || '')}" placeholder="e.g. not spinning"></label>
+    <label class="f"><span>Things given with it</span><input type="text" name="acc" value="${esc(v.acc || '')}" placeholder="e.g. remote, stand"></label>
+    <div class="grid3"><label class="f"><span>Estimate ₹</span><input type="number" min="0" name="est" value="${v.est || ''}"></label><label class="f"><span>Ready by</span><input type="date" name="promise" value="${esc(v.promise || '')}"></label>
+      <label class="f"><span>Status</span><select name="js">${JOB_ST.map(([k, l]) => `<option value="${k}" ${(v.js || 'received') === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label></div>
+    <div class="grid2"><label class="f"><span>Final charges ₹</span><input type="number" min="0" name="charges" value="${v.charges || ''}"></label><label class="f"><span>Work done / note</span><input type="text" name="work" value="${esc(v.work || '')}"></label></div>
+    <div class="neg" data-err></div></form>
+    <footer>${id && can('cancel') ? '<button class="btn danger" data-del style="margin-right:auto">Cancel job</button>' : ''}${id && v.party?.phone ? '<button class="btn wa" data-wa>WhatsApp</button>' : ''}${id && +v.charges && !v.billId && can('sale') ? '<button class="btn" data-bill>Make bill</button>' : ''}<button class="btn" data-close>Close</button><button class="btn primary" data-ok>Save</button></footer>`, { wide: true });
+  const fm = m.querySelector('form');
+  const save = () => {
+    const d = Object.fromEntries(new FormData(fm).entries());
+    if (!d.item.trim()) { m.querySelector('[data-err]').textContent = 'Enter the item.'; return null; }
+    if (!d.phone.trim() && !d.cname.trim()) { m.querySelector('[data-err]').textContent = 'Enter the customer mobile or name.'; return null; }
+    const p = custFind(d.phone, d.cname); const was = v.js;
+    Object.assign(v, { partyId: p.id, party: partySnap(p), item: d.item.trim(), serial: d.serial.trim(), problem: d.problem.trim(), acc: d.acc.trim(), est: +d.est || 0, promise: d.promise, js: d.js, charges: +d.charges || 0, work: d.work.trim(), amount: +d.charges || 0 });
+    if (!v.no) v.no = nextNo('repair');
+    if (d.js === 'delivered' && was !== 'delivered') v.deliveredOn = today();
+    const s = put('vouchers', v); return { s, becameReady: d.js === 'ready' && was !== 'ready', isNew: !id };
+  };
+  m.querySelector('[data-ok]').onclick = () => { const r = save(); if (!r) return; closeModal(); render(); toast(r.isNew ? `Job ${r.s.no} saved` : 'Job saved', 'ok', r.s.party?.phone ? { label: r.becameReady ? 'Tell ready' : r.isNew ? 'Send job slip' : 'WhatsApp', fn: () => jobWA(r.s) } : undefined); };
+  fm.onsubmit = e => { e.preventDefault(); m.querySelector('[data-ok]').click(); };
+  const wa = m.querySelector('[data-wa]'); if (wa) wa.onclick = () => { const r = save(); if (r) jobWA(r.s); };
+  const bl = m.querySelector('[data-bill]'); if (bl) bl.onclick = () => { const r = save(); if (!r) return; closeModal(); const j = r.s;
+    openEditor('sale', null, { partyId: j.partyId, party: j.party, fromJob: j.id, lines: [{ itemId: null, name: `Repair: ${j.item}${j.work ? ' (' + j.work + ')' : ''}`, code: '', hsn: '998729', unit: 'job', qty: 1, rate: +j.charges, disc: 0, gst: 18, mrp: 0, cost: 0, serial: j.serial || '', warranty: 0, category: 'Service', brand: '' }] }); };
+  const dl = m.querySelector('[data-del]'); if (dl) dl.onclick = async () => { if (!(await ask('Cancel this job?', `Job ${esc(v.no)} will be cancelled.`, 'Cancel job', true))) return; v.status = 'cancelled'; v._act = 'cancelled'; put('vouchers', v); closeModal(); render(); };
+};
+function jobWA(j) {
+  const f = firm(); const st = j.js || 'received';
+  const txt = st === 'ready' ? `Namaste ${j.party.name} ji,\nYour ${j.item} (job ${j.no}) is repaired and ready to collect.${+j.charges ? '\nCharges: ' + inr0(j.charges) : ''}\n\n${f.name}${f.phone ? '\n' + f.phone : ''}`
+    : st === 'delivered' ? `Namaste ${j.party.name} ji,\nThank you for collecting your ${j.item} (job ${j.no}).\n\n${f.name}`
+    : `Namaste ${j.party.name} ji,\nWe have received your ${j.item} for repair.\nJob no: *${j.no}*${j.problem ? '\nProblem: ' + j.problem : ''}${j.acc ? '\nGiven with it: ' + j.acc : ''}${j.est ? '\nEstimate: ' + inr0(j.est) : ''}${j.promise ? '\nReady by: ' + fmtDate(j.promise) : ''}\nPlease keep this message to collect the item.\n\n${f.name}${f.phone ? '\n' + f.phone : ''}`;
+  openWA(j.party.phone, txt);
+}
+ACT['job-wa'] = b => { const j = get('vouchers', b.dataset.id); if (j) jobWA(j); };
+
+/* ---------------- 48. advance booking ---------------- */
+const BKF = { st: 'open' };
+VIEWS.bookings = () => {
+  const all = col('vouchers').filter(v => v.type === 'booking' && v.status !== 'cancelled');
+  const list = all.filter(v => BKF.st === 'all' || (BKF.st === 'open' ? !v.billId : !!v.billId)).sort((a, b) => (a.want || '9').localeCompare(b.want || '9'));
+  const open = all.filter(v => !v.billId);
+  view().innerHTML = `<div class="view-head"><h1>Advance bookings</h1>${canType('receipt') ? '<button class="btn primary" data-act="bk-edit">+ New booking</button>' : ''}</div>
+    <div class="kpis">${kpiHTML([['Open bookings', open.length], ['Advance held', inr0(open.reduce((a, v) => a + (+v.adv || 0), 0))], ['Items not in stock', open.filter(v => v.itemId && stockOf(v.itemId) <= 0).length, 'order these', open.some(v => v.itemId && stockOf(v.itemId) <= 0) ? 'neg' : '']])}</div>
+    <div class="tabs" role="tablist">${[['open', 'Open'], ['done', 'Billed'], ['all', 'All']].map(([k, l]) => `<button role="tab" aria-selected="${BKF.st === k}" data-act="bk-tab" data-k="${k}">${l}</button>`).join('')}</div>
+    ${list.length ? `<div class="card"><div class="tbl-wrap"><table class="tbl" id="bk-tbl"><thead><tr><th>Booking</th><th>Customer</th><th>Item</th><th class="num">Price</th><th class="num">Advance</th><th></th></tr></thead><tbody>
+      ${list.map(v => { const s = v.itemId ? stockOf(v.itemId) : null; return `<tr><td><b class="mono">${esc(v.no)}</b><div class="muted small">${fmtDate(v.date)}${v.want ? ' · want by ' + fmtDate(v.want) : ''}</div></td><td data-l="Customer"><b>${esc(v.party?.name || '')}</b><div class="muted small">${esc(v.party?.phone || '')}</div></td>
+        <td data-l="Item">${esc(v.item)}${s != null ? `<div class="small ${s > 0 ? 'pos' : 'neg'}">${s > 0 ? 'In stock ' + qtyFmt(s) : 'Not in stock'}</div>` : ''}</td><td class="num" data-l="Price">${inr0(v.price)}</td><td class="num" data-l="Advance"><b>${inr0(v.adv)}</b></td>
+        <td class="bk-acts">${v.billId ? `<a href="#" data-act="v-show" data-id="${v.billId}">Bill</a>` : `${can('sale') ? `<button class="btn sm primary" data-act="bk-bill" data-id="${v.id}">Make bill</button>` : ''}<button class="btn sm" data-act="bk-edit" data-id="${v.id}">Edit</button>`}</td></tr>`; }).join('')}</tbody></table></div></div>`
+      : `<div class="card pad"><div class="empty"><b>No bookings here</b>When a customer pays an advance for an item you will get later, add a booking. The advance is kept on their account and comes off the bill.</div></div>`}`;
+};
+ACT['bk-tab'] = b => { BKF.st = b.dataset.k; VIEWS.bookings(); };
+ACT['bk-edit'] = b => {
+  const id = b.dataset.id; const v = id ? JSON.parse(JSON.stringify(get('vouchers', id))) : { type: 'booking', date: today(), status: 'active', mode: 'cash' };
+  const m = openModal(`${mHead(id ? 'Booking ' + esc(v.no) : 'New advance booking')}<form class="body stack">
+    ${custFields(v, !id)}
+    <label class="f pick"><span>Item *</span><input type="search" name="item" id="bk-item" value="${esc(v.item || '')}" placeholder="Search item or type what they want" autocomplete="off"></label>
+    <div class="grid3"><label class="f"><span>Agreed price ₹</span><input type="number" min="0" name="price" value="${v.price || ''}"></label><label class="f"><span>Advance ₹ *</span><input type="number" min="0" name="adv" value="${v.adv || ''}" ${id ? 'readonly' : ''}></label>
+      <label class="f"><span>Paid by</span><select name="mode" ${id ? 'disabled' : ''}>${Object.entries(MODES).map(([k, l]) => `<option value="${k}" ${k === v.mode ? 'selected' : ''}>${l}</option>`).join('')}</select></label></div>
+    <label class="f"><span>Wanted by</span><input type="date" name="want" value="${esc(v.want || '')}"></label>
+    <div class="neg" data-err></div>${id ? '<p class="muted small" style="margin:0">The advance is saved as a payment in. To change it, edit that payment.</p>' : ''}</form>
+    <footer>${id && can('cancel') ? '<button class="btn danger" data-del style="margin-right:auto">Cancel booking</button>' : ''}<button class="btn" data-close>Close</button><button class="btn primary" data-ok>Save</button></footer>`, { wide: true });
+  const fm = m.querySelector('form'); const inp = m.querySelector('#bk-item');
+  attachPicker(inp, { search: q => searchItems(q, 8), row: itemRow, onPick: it => { v.itemId = it.id; inp.value = it.name; if (!fm.price.value) fm.price.value = it.sale; } });
+  inp.addEventListener('input', () => { v.itemId = null; });
+  m.querySelector('[data-ok]').onclick = () => {
+    const d = Object.fromEntries(new FormData(fm).entries()); const err = m.querySelector('[data-err]');
+    if (!d.item.trim()) return err.textContent = 'Enter the item.';
+    if (!d.phone.trim() && !d.cname.trim()) return err.textContent = 'Enter the customer mobile or name.';
+    if (!id && !(+d.adv > 0)) return err.textContent = 'Enter the advance.';
+    const p = custFind(d.phone, d.cname);
+    Object.assign(v, { partyId: p.id, party: partySnap(p), item: d.item.trim(), price: +d.price || 0, want: d.want });
+    if (!id) {
+      v.no = nextNo('booking'); v.adv = +d.adv; v.mode = d.mode; v.amount = 0;
+      const r = put('vouchers', { type: 'receipt', no: nextNo('receipt'), date: today(), status: 'active', partyId: p.id, party: partySnap(p), amount: v.adv, mode: d.mode, note: `Advance for ${v.item} (booking ${v.no})` });
+      v.rcptId = r.id;
+    }
+    const s = put('vouchers', v); closeModal(); render();
+    toast(id ? 'Booking saved' : `Booking ${s.no} saved · advance ${inr0(s.adv)}`, 'ok', !id && p.phone ? { label: 'Send receipt', fn: () => openWA(p.phone, `Namaste ${p.name} ji,\nWe received ${inr0(s.adv)} advance for ${s.item} (booking ${s.no}).${s.price ? '\nAgreed price: ' + inr0(s.price) : ''}${s.want ? '\nExpected by: ' + fmtDate(s.want) : ''}\n\n${firm().name}`) } : undefined);
+  };
+  fm.onsubmit = e => { e.preventDefault(); m.querySelector('[data-ok]').click(); };
+  const dl = m.querySelector('[data-del]'); if (dl) dl.onclick = async () => {
+    if (!(await ask('Cancel this booking?', `Booking ${esc(v.no)} will be cancelled. The advance ${inr0(v.adv)} stays on ${esc(v.party?.name || 'the customer')}'s account until you refund it (Payment out) or use it on a bill.`, 'Cancel booking', true))) return;
+    v.status = 'cancelled'; v._act = 'cancelled'; put('vouchers', v); closeModal(); render();
+  };
+};
+ACT['bk-bill'] = b => {
+  const k = get('vouchers', b.dataset.id); if (!k) return; const it = k.itemId ? get('items', k.itemId) : null;
+  const line = it ? Object.assign(lineFromItem(it, 1), k.price ? { rate: k.price } : {}) : { itemId: null, name: k.item, code: '', hsn: '', unit: 'pcs', qty: 1, rate: k.price || 0, disc: 0, gst: 18, mrp: 0, cost: 0, serial: '', warranty: 0, category: '', brand: '' };
+  openEditor('sale', null, { partyId: k.partyId, party: k.party, fromBooking: k.id, lines: [line] });
+  toast(`Advance ${inr0(k.adv)} is on ${k.party?.name || 'the customer'}'s account and comes off this bill.`, 'ok');
+};
+// When the bill from a booking or repair job is saved, link it back.
+const _saveTrade223 = saveTrade;
+saveTrade = function (doc) {
+  const s = _saveTrade223(doc);
+  for (const [k, done] of [['fromBooking', x => { x.billId = s.id; }], ['fromJob', x => { x.billId = s.id; if (x.js !== 'delivered') { x.js = 'delivered'; x.deliveredOn = today(); } }]]) {
+    if (s[k]) { const x = get('vouchers', s[k]); if (x && !x.billId) { done(x); put('vouchers', x); } }
+  }
+  return s;
+};
+
+/* ---------------- 42. shop's own kist ---------------- */
+const kistPaid = v => paidTotal(v) + col('vouchers').filter(r => r.type === 'receipt' && r.status !== 'cancelled' && r.kistOf === v.id).reduce((a, r) => a + (+r.amount || 0), 0);
+function kistSched(v) {
+  const k = v.kist; if (!k) return [];
+  const base = r2((+v.total || 0) - (+k.down || 0)); const out = [];
+  for (let i = 0; i < k.n; i++) out.push({ i: i + 1, date: addMonths(k.start, i), amt: i === k.n - 1 ? r2(base - k.amt * (k.n - 1)) : k.amt });
+  return out;
+}
+function kistState(v) {
+  const s = kistSched(v); const paid = r2(kistPaid(v) - (+(v.kist.paid0 ?? v.kist.down) || 0)); let left = paid;
+  const rows = s.map(x => { const got = Math.max(0, Math.min(x.amt, left)); left = r2(left - got); return { ...x, got, open: r2(x.amt - got), days: daysTo(x.date) }; });
+  const due = rows.filter(x => x.days <= 0).reduce((a, x) => a + x.open, 0);
+  const next = rows.find(x => x.open > 0.5);
+  return { rows, paid, due: r2(due), next, left: r2(rows.reduce((a, x) => a + x.open, 0)) };
+}
+const kistBills = () => col('vouchers').filter(v => v.type === 'sale' && v.kist && v.status !== 'cancelled');
+VIEWS.kist = () => {
+  const all = kistBills().map(v => ({ v, s: kistState(v) })).filter(x => x.s.left > 0.5).sort((a, b) => (a.s.next?.date || '9').localeCompare(b.s.next?.date || '9'));
+  const late = all.filter(x => x.s.due > 0.5);
+  view().innerHTML = `<div class="view-head"><h1>Kist (installments)</h1></div>
+    <div class="kpis">${kpiHTML([['Kist due now', inr0(late.reduce((a, x) => a + x.s.due, 0)), plural(late.length, 'customer'), late.length ? 'neg' : ''], ['Still to collect', inr0(all.reduce((a, x) => a + x.s.left, 0)), plural(all.length, 'bill')], ['This month', inr0(all.reduce((a, x) => a + x.s.rows.filter(r => r.date.slice(0, 7) === today().slice(0, 7)).reduce((b, r) => b + r.open, 0), 0)), 'kist falling due']])}</div>
+    ${all.length ? `<div class="card"><div class="tbl-wrap"><table class="tbl" id="kist-tbl"><thead><tr><th>Customer</th><th>Bill</th><th>Next kist</th><th class="num">Due now</th><th class="num">Left</th><th></th></tr></thead><tbody>
+      ${all.map(({ v, s }) => `<tr><td><b>${esc(vParty(v))}</b><div class="muted small">${esc(v.party?.phone || '')}</div></td><td data-l="Bill"><a href="#" data-act="kist-plan" data-id="${v.id}">${esc(v.no)}</a><div class="muted small">${s.rows.filter(r => r.open < 0.5).length}/${s.rows.length} paid · ${inr0(v.kist.amt)}/month</div></td>
+        <td data-l="Next kist" class="${s.next && s.next.days < 0 ? 'neg' : ''}">${s.next ? fmtDate(s.next.date) + `<div class="small">${s.next.days < 0 ? -s.next.days + ' days late' : s.next.days === 0 ? 'today' : 'in ' + s.next.days + ' days'}</div>` : ''}</td>
+        <td class="num" data-l="Due now"><b class="${s.due > 0.5 ? 'neg' : ''}">${s.due > 0.5 ? inr0(s.due) : '–'}</b></td><td class="num" data-l="Left">${inr0(s.left)}</td>
+        <td class="bk-acts">${canType('receipt') ? `<button class="btn sm primary" data-act="kist-collect" data-id="${v.id}">Collect</button>` : ''}${v.party?.phone ? `<button class="btn sm wa" data-act="kist-wa" data-id="${v.id}">Remind</button>` : ''}</td></tr>`).join('')}</tbody></table></div></div>`
+      : `<div class="card pad"><div class="empty"><b>No kist running</b>Open an udhaar sales bill and tap "Kist plan" to split it into monthly installments.</div></div>`}`;
+};
+function kistPlan(v) {
+  const s0 = v.kist ? kistState(v) : null;
+  const due0 = Math.max(0, Math.min(r2((+v.total || 0) - paidTotal(v)), balOf(v.partyId)));
+  const k = v.kist || { n: 6, start: addMonths(v.date, 1), down: 0 };
+  const m = openModal(`${mHead('Kist plan · ' + esc(v.no))}<form class="body stack">
+    <p style="margin:0">${esc(vParty(v))} · bill ${inr0(v.total)} · ${v.kist ? 'running plan' : `${inr0(due0)} unpaid`}</p>
+    <div class="grid3"><label class="f"><span>Number of kist</span><input type="number" min="1" max="60" name="n" value="${k.n}"></label><label class="f"><span>First kist date</span><input type="date" name="start" value="${esc(k.start)}"></label><label class="f"><span>Kist amount</span><input type="text" id="kp-amt" readonly></label></div>
+    <div id="kp-rows"></div></form>
+    <footer>${v.kist ? '<button class="btn danger" data-del style="margin-right:auto">Remove plan</button>' : ''}<button class="btn" data-close>Close</button><button class="btn primary" data-ok>${v.kist ? 'Save plan' : 'Start kist'}</button></footer>`, { wide: true });
+  const fm = m.querySelector('form');
+  const draw = () => {
+    const n = Math.max(1, Math.min(60, +fm.n.value || 1)); const owed = Math.max(0, Math.min(r2((+v.total || 0) - paidTotal(v)), balOf(v.partyId))); const down = v.kist ? +v.kist.down || 0 : r2((+v.total || 0) - owed); const base = r2((+v.total || 0) - down);
+    const amt = Math.ceil(base / n); m.querySelector('#kp-amt').value = inr0(amt);
+    const tmp = Object.assign({}, v, { kist: { n, start: fm.start.value || today(), amt, down, paid0: v.kist ? (v.kist.paid0 ?? v.kist.down) : paidTotal(v) } }); const st = kistState(tmp);
+    m.querySelector('#kp-rows').innerHTML = `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>#</th><th>Date</th><th class="num">Kist</th><th class="num">Paid</th></tr></thead><tbody>${st.rows.map(r => `<tr><td>${r.i}</td><td>${fmtDate(r.date)}</td><td class="num">${inr0(r.amt)}</td><td class="num ${r.open < 0.5 ? 'pos' : r.days < 0 ? 'neg' : 'muted'}">${r.got ? inr0(r.got) : '–'}</td></tr>`).join('')}</tbody></table></div>`;
+    return tmp.kist;
+  };
+  fm.addEventListener('input', draw); draw();
+  m.querySelector('[data-ok]').onclick = () => { if (!v.partyId) return toast('Kist needs a saved customer on the bill', 'bad'); const x = get('vouchers', v.id); x.kist = draw(); put('vouchers', x); closeModal(); toast('Kist plan saved', 'ok'); if (ROUTE.name === 'kist') render(); };
+  fm.onsubmit = e => { e.preventDefault(); m.querySelector('[data-ok]').click(); };
+  const dl = m.querySelector('[data-del]'); if (dl) dl.onclick = () => { const x = get('vouchers', v.id); delete x.kist; put('vouchers', x); closeModal(); render(); };
+}
+ACT['kist-plan'] = b => { const v = get('vouchers', b.dataset.id); if (v) kistPlan(v); };
+ACT['kist-collect'] = b => { const v = get('vouchers', b.dataset.id); if (!v) return; const s = kistState(v); openEditor('receipt', null, { partyId: v.partyId, party: v.party, amount: s.due > 0.5 ? s.due : (s.next?.open || v.kist.amt), mode: 'cash', kistOf: v.id, note: `Kist for ${v.no}` }); };
+ACT['kist-wa'] = b => { const v = get('vouchers', b.dataset.id); if (!v) return; const s = kistState(v); const f = firm();
+  openWA(v.party?.phone, `Namaste ${vParty(v)} ji,\n${s.due > 0.5 ? `Your kist of ${inr0(s.due)} for bill ${v.no} is due.` : `Your next kist of ${inr0(s.next?.open || v.kist.amt)} for bill ${v.no} is due on ${fmtDate(s.next?.date)}.`}\nBalance left: ${inr0(s.left)}.${f.upi ? '\nUPI: ' + f.upi : ''}\n\n${f.name}${f.phone ? '\n' + f.phone : ''}`); };
+
+/* ---- bill viewer: Kist plan button; repair / booking open their own forms ---- */
+const _showVoucher223 = showVoucher;
+showVoucher = function (v, o) {
+  if (v && (v.type === 'repair' || v.type === 'booking')) return ACT[v.type === 'repair' ? 'job-edit' : 'bk-edit']({ dataset: { id: v.id } });
+  _showVoucher223(v, o);
+  if (!v || v.type !== 'sale' || v.status === 'cancelled' || !v.partyId) return;
+  if (!v.kist && (+v.total || 0) - paidTotal(v) < 1) return;
+  const md = modalStack[modalStack.length - 1]?.el; const ref = md && md.querySelector('[data-y="pdf"]'); if (!ref) return;
+  const b = document.createElement('button'); b.className = 'btn'; b.textContent = v.kist ? 'Kist plan ✓' : 'Kist plan'; b.onclick = () => kistPlan(get('vouchers', v.id)); ref.before(b);
+};
+
+/* ---- badges, menu, words ---- */
+function v223Badges() {
+  if (!S.ready || !firm()) return;
+  const set = (id, n) => { const e = $(id); if (e) { e.hidden = !n; e.textContent = n; } };
+  set('#rail-job', routeOK('repairs') ? col('vouchers').filter(v => v.type === 'repair' && v.status !== 'cancelled' && v.js === 'ready').length : 0);
+  set('#rail-kist', routeOK('kist') ? kistBills().filter(v => kistState(v).due > 0.5).length : 0);
+}
+onChange(() => setTimeout(v223Badges, 0)); setTimeout(v223Badges, 2600);
+if (typeof RI !== 'undefined') Object.assign(RI, {
+  close: '<rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 9v.01M18 15v.01"/>',
+  tool: '<path d="M14.7 6.3a4 4 0 0 0 5 5L21 13l-8 8-3-3 8-8-1.3-1.3a4 4 0 0 1-5-5L14 2z"/>',
+  cal: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  bk: '<path d="M6 3h12v18l-6-4-6 4z"/>'
+});
+if (typeof RAIL_ICON !== 'undefined') Object.assign(RAIL_ICON, { 'go:dayclose': 'close', 'go:repairs': 'tool', 'go:kist': 'cal', 'go:bookings': 'bk', 'go:settings:brands': 'shield' });
+if (typeof railIcons === 'function') railIcons();
+if (typeof HI !== 'undefined') Object.assign(HI, { 'Day closing': 'दिन का हिसाब', 'Repair jobs': 'रिपेयर जॉब', 'Kist (installments)': 'किस्त', 'Advance bookings': 'एडवांस बुकिंग', 'Old item exchange': 'पुराना सामान बदले में', 'Kist plan': 'किस्त प्लान', 'Collect': 'वसूलें', 'Remind': 'याद दिलाएं', 'Make bill': 'बिल बनाएं', 'Balance to pay': 'बाकी देना' });
 
 </script>
 
