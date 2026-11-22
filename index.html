@@ -1092,6 +1092,41 @@ div.empty.ep { display: grid; justify-items: center; gap: 4px; }
 .svc-acts .btn + .btn, .chq-acts .btn + .btn { margin-left: 6px; }
 #e-chqbox { margin-top: 2px; }
 @media (max-width: 640px) { .svc-acts, .chq-acts { text-align: left; white-space: normal; } .svc-acts .btn, .chq-acts .btn { margin: 4px 6px 0 0 !important; } }
+/* ===== v2.22 ===== */
+.warn-t { color: #b26a00; }
+#age-tbl .age-b { min-width: 74px; }
+/* clean home */
+.dash2 .dk-grid { gap: 12px; }
+.dk { position: relative; display: grid; justify-items: start; align-content: start; gap: 1px; padding: 14px 16px; text-align: left; cursor: pointer; color: var(--ink); font: inherit; border: 1px solid var(--line); transition: transform .12s ease, box-shadow .12s ease; }
+.dk:hover { box-shadow: 0 6px 18px rgba(20, 20, 40, .08); } .dk:active { transform: scale(.98); }
+.dk small { font-size: 12px; letter-spacing: .02em; text-transform: none; font-weight: 600; color: var(--muted); }
+.dk strong { font-size: 22px; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.dk .dk-sub { font-size: 12px; color: var(--muted); }
+.dk-ico { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; margin-bottom: 8px; background: color-mix(in srgb, var(--kc) 12%, transparent); color: var(--kc); }
+.dk-go { position: absolute; top: 18px; right: 16px; width: 8px; height: 8px; border-right: 2px solid var(--muted); border-top: 2px solid var(--muted); transform: rotate(45deg); opacity: .55; }
+.k-blue { --kc: var(--maroon); } .k-green { --kc: #13804b; } .k-red { --kc: #c0392b; } .k-gold { --kc: #b07d12; }
+.tc-mini { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.tc-mini button { border: 1px solid rgba(255, 255, 255, .22); background: rgba(255, 255, 255, .1); color: inherit; border-radius: 99px; padding: 5px 12px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.hs-btn { position: relative; }
+.hs-n { position: absolute; top: 6px; right: 8px; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 99px; background: var(--maroon); color: var(--on-maroon); font: 700 11.5px/20px var(--f-sans, system-ui); font-style: normal; text-align: center; }
+.hs-n.warn { background: #c0392b; color: #fff; }
+.dash2 .today-card { grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); }
+@media (max-width: 640px) {
+  .dash2 .dash-head > .btn { display: none; }
+  .dash2 .dash-head h1 { font-size: 19px; }
+  .dash2 .home-shortcuts { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+  .dash2 .hs-btn { grid-template-columns: 1fr; justify-items: center; text-align: center; padding: 10px 4px 9px; gap: 4px; }
+  .dash2 .hs-btn svg { grid-row: auto; width: 24px; height: 24px; }
+  .dash2 .hs-btn b { font-size: 12px; font-weight: 600; line-height: 1.15; }
+  .dash2 .hs-n { top: 4px; right: 4px; }
+  .dash2 .today-card { grid-template-columns: 1fr; gap: 12px; }
+  .dash2 .tc-split > small { display: none; }
+  .dash2 .tc-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+  .dash2 .dk-grid { gap: 10px; }
+  .dk { padding: 12px 13px; } .dk strong { font-size: 19px; } .dk-ico { width: 30px; height: 30px; margin-bottom: 6px; }
+  .dash2 .dash-attn { display: none; }
+  .dash2 .dash-latest tr:nth-child(n+6) { display: none; }
+}
 
 </style>
 </head>
@@ -6937,7 +6972,7 @@ window.onAppCrash = text => {
    Updates: every copy of the app checks one fixed address for a newer build.
    Online (PC / iPhone): reload picks it up. Android app: downloads it in the background.
    ========================================================= */
-const APP_BUILD = +'18' || 0, APP_VERSION = '2.21';
+const APP_BUILD = +'19' || 0, APP_VERSION = '2.22';
 const SITE_URL = 'https://patidar-app.github.io/Patidar-app/';
 const HOSTED = (location.protocol === 'https:' || location.hostname === 'localhost') && !IN_FRAME;
 const UPDATE_BASE = HOSTED ? new URL('./', location.href).href : SITE_URL;
@@ -8392,7 +8427,7 @@ ACT['hs-low'] = () => { IF.stock = 'low'; IF.q = ''; IF.cat = ''; IF.brand = '';
    that a phone or PC has the latest update. Shown in the side menu, on the sign-in screen and in Settings,
    plus a one-time note the first time a new update opens on this device.
    ========================================================= */
-const APP_BUILT = '22 Nov 2026, 2:21 PM';
+const APP_BUILT = '22 Nov 2026, 2:39 PM';
 const verText = () => `Version ${APP_VERSION} · updated ${APP_BUILT}`;
 (function () {
   const rail = $('#rail');
@@ -9034,6 +9069,180 @@ if (typeof HI !== 'undefined') Object.assign(HI, {
   'Service due': 'सर्विस बाकी', 'Salesmen & commission': 'सेल्समैन और कमीशन', 'Cheques': 'चेक', 'Export to Tally': 'टैली में भेजें', 'Salesman': 'सेल्समैन',
   'Cleared': 'क्लियर', 'Bounced': 'बाउंस', 'Pending': 'बाकी', 'By cheque': 'चेक से', 'Cheque no.': 'चेक नंबर', 'Cheque date': 'चेक की तारीख', 'Done': 'हो गया', 'Skip': 'छोड़ें'
 });
+
+/* =========================================================
+   v2.22
+   51. Stock age: how long the pieces in stock have been sitting, worked out first-in-first-out
+       (the oldest pieces are counted as sold first, so what is left is the newest purchases).
+       Reports › Stock age.
+   46. Customer screen on PC: a second window for a screen facing the customer, showing the items,
+       the total, a UPI QR for UPI bills, and a thank-you after the bill is saved.
+   ========================================================= */
+
+/* ---------------- 51. stock age ---------------- */
+const AGE_BUCKETS = [[30, '0–30 days'], [60, '31–60 days'], [90, '61–90 days'], [180, '91–180 days'], [Infinity, 'Over 180 days']];
+const AGE = { min: 0 };
+// The pieces in stock, matched to the newest stock-in entries; anything left over is opening stock.
+function stockLots(it) {
+  let left = stockOf(it.id); if (!(left > 0)) return [];
+  const ins = [];
+  for (const v of col('vouchers')) {
+    if (v.status === 'cancelled' || v.legacy || !['purchase', 'saleReturn', 'adjust'].includes(v.type)) continue;
+    for (const l of v.lines || []) if (l.itemId === it.id && +l.qty > 0) ins.push({ date: v.date, qty: +l.qty });
+  }
+  ins.sort((a, b) => b.date.localeCompare(a.date));
+  const lots = [];
+  for (const x of ins) { if (left <= 0) break; const q = Math.min(left, x.qty); lots.push({ date: x.date, qty: q }); left -= q; }
+  if (left > 0) lots.push({ date: it.createdAt ? dayKey(it.createdAt) : today(), qty: left, opening: true });
+  return lots.map(l => ({ ...l, days: Math.max(0, -daysTo(l.date)) }));
+}
+function stockAge() {
+  return col('items').map(it => {
+    const lots = stockLots(it); if (!lots.length) return null;
+    const b = AGE_BUCKETS.map(() => 0); for (const l of lots) b[AGE_BUCKETS.findIndex(([d]) => l.days <= d)] += l.qty;
+    const qty = lots.reduce((a, l) => a + l.qty, 0), cost = +it.purchase || 0;
+    return { it, lots, b, qty, oldest: Math.max(...lots.map(l => l.days)), avg: Math.round(lots.reduce((a, l) => a + l.days * l.qty, 0) / qty), value: qty * cost, bv: b.map(q => q * cost) };
+  }).filter(Boolean).sort((a, b) => b.oldest - a.oldest || b.value - a.value);
+}
+REPORT_TABS.splice((REPORT_TABS.findIndex(([k]) => k === 'dead') + 1) || REPORT_TABS.length, 0, ['age', 'Stock age']);
+const _reportBody51 = reportBody;
+reportBody = function () {
+  if (RF.tab !== 'age') return _reportBody51();
+  const el = $('#rf-body'); const cost = can('cost'); const all = stockAge();
+  const list = all.filter(x => x.oldest > AGE.min);
+  const tq = i => all.reduce((a, x) => a + x.b[i], 0), tv = i => all.reduce((a, x) => a + x.bv[i], 0);
+  el.innerHTML = `<div class="row" style="margin-bottom:12px">${[[0, 'All stock'], [90, 'Older than 90 days'], [180, 'Older than 180 days']].map(([d, l]) => `<button class="btn ${AGE.min === d ? 'primary' : ''}" data-act="age-min" data-k="${d}">${l}</button>`).join(' ')}</div>
+    <div class="kpis age-kpis">${kpiHTML(AGE_BUCKETS.map(([, l], i) => [l, qtyFmt(tq(i)) + ' pcs', cost ? inr0(tv(i)) : '', i >= 3 && tq(i) ? 'neg' : '']))}</div>
+    <div class="card"><div class="tbl-wrap"><table class="tbl" id="age-tbl"><thead><tr><th>Item</th><th class="num">In stock</th><th class="num">Oldest piece</th><th class="num">Average age</th>${AGE_BUCKETS.map(([, l]) => `<th class="num">${l}</th>`).join('')}${cost ? '<th class="num">Value</th>' : ''}</tr></thead><tbody>
+    ${list.map(x => `<tr><td><b>${esc(x.it.name)}</b><div class="muted small">${esc([x.it.brand, x.it.category].filter(Boolean).join(' · '))}</div></td>
+      <td class="num" data-l="In stock">${qtyFmt(x.qty)}</td><td class="num ${x.oldest > 180 ? 'neg' : x.oldest > 90 ? 'warn-t' : ''}" data-l="Oldest piece"><b>${x.oldest} days</b><div class="muted small">since ${fmtDate(x.lots[x.lots.length - 1].date)}</div></td>
+      <td class="num" data-l="Average age">${x.avg} days</td>
+      ${x.b.map((q, i) => `<td class="num age-b" data-l="${AGE_BUCKETS[i][1]}">${q ? qtyFmt(q) : '<span class="muted">–</span>'}</td>`).join('')}
+      ${cost ? `<td class="num" data-l="Value">${inr0(x.value)}</td>` : ''}</tr>`).join('') || `<tr><td colspan="${5 + AGE_BUCKETS.length}" class="muted">${all.length ? 'No stock is that old.' : 'Nothing in stock.'}</td></tr>`}</tbody></table></div></div>
+    <p class="muted small">Counted first in, first out: the oldest pieces are taken as sold first, so what is left in stock is from the newest purchases. Opening stock is dated the day the item was added.${cost ? ' Value is at purchase price.' : ''}</p>`;
+  REPORT_CSV = ['stock-age', [['item', 'brand', 'category', 'in stock', 'oldest days', 'average days', ...AGE_BUCKETS.map(([, l]) => l), ...(cost ? ['value'] : [])], ...list.map(x => [x.it.name, x.it.brand || '', x.it.category || '', x.qty, x.oldest, x.avg, ...x.b, ...(cost ? [r2(x.value)] : [])])]];
+};
+ACT['age-min'] = b => { AGE.min = +b.dataset.k; reportBody(); };
+
+/* ---------------- 46. customer screen ---------------- */
+let CUST_WIN = null, CUST_THANKS = null;
+const custCanOpen = () => !IS_ANDROID && wideScreen();
+function custHTML() {
+  const f = firm(); const cs = getComputedStyle(document.documentElement);
+  const c1 = cs.getPropertyValue('--maroon').trim() || '#1d3f78', c2 = cs.getPropertyValue('--g-lo').trim() || c1;
+  const logo = typeof firmLogo === 'function' ? firmLogo(f) : '';
+  return `<!doctype html><html><head><meta charset="utf-8"><title>${esc(f.name)}</title><style>
+    *{box-sizing:border-box} html,body{margin:0;height:100%} body{font:18px/1.35 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:#f3f5fa;color:#16182b;display:flex;flex-direction:column}
+    header{display:flex;align-items:center;gap:16px;padding:18px 28px;background:linear-gradient(135deg,${c1},${c2});color:#fff}
+    header img{width:56px;height:56px;border-radius:50%;background:#fff;object-fit:contain} header b{font-size:28px;display:block} header span{opacity:.85;font-size:16px}
+    main{flex:1;display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:20px;padding:20px 28px;min-height:0}
+    .list{background:#fff;border-radius:16px;overflow:auto;box-shadow:0 2px 10px rgba(20,20,40,.06)} table{width:100%;border-collapse:collapse}
+    td{padding:14px 18px;border-bottom:1px solid #eceef4;vertical-align:top} td small{display:block;color:#6b7086;font-size:15px} td.r{text-align:right;white-space:nowrap;font-weight:700;font-variant-numeric:tabular-nums}
+    tr.new td{animation:hl 1.2s ease} @keyframes hl{from{background:#fff6d6}to{background:transparent}}
+    aside{display:flex;flex-direction:column;gap:16px} .card{background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 10px rgba(20,20,40,.06)}
+    .tot small{color:#6b7086;font-weight:600;letter-spacing:.06em;text-transform:uppercase;font-size:14px} .tot strong{display:block;font-size:56px;line-height:1.1;color:${c1};font-variant-numeric:tabular-nums}
+    .row{display:flex;justify-content:space-between;color:#45495e;margin-top:6px} .save{color:#13804b;font-weight:700;margin-top:10px}
+    .qr{text-align:center} .qr svg{width:220px;height:220px} .qr b{display:block;margin-top:8px}
+    .idle{grid-column:1/-1;display:grid;place-items:center;text-align:center;color:#45495e} .idle b{font-size:44px;color:${c1};display:block} .idle span{font-size:22px}
+    .hint{position:fixed;bottom:8px;right:12px;font-size:13px;color:#8a8fa5}
+  </style></head><body><header>${logo ? `<img src="${logo}" alt="">` : ''}<div><b>${esc(f.name)}</b><span>${esc(f.tagline || '')}</span></div></header><main id="cs"></main><div class="hint" id="hint">Move this window to the customer's screen and press F11 for full screen</div></body></html>`;
+}
+function custOpen() {
+  if (CUST_WIN && !CUST_WIN.closed) { CUST_WIN.focus(); custPush(); return; }
+  const w = window.open('', 'patidar-customer', 'width=1000,height=640');
+  if (!w) return toast('The browser blocked the customer window. Allow pop-ups for this page and try again.', 'bad');
+  CUST_WIN = w; w.document.open(); w.document.write(custHTML()); w.document.close();
+  setTimeout(() => { try { const h = w.document.getElementById('hint'); if (h) h.remove(); } catch (e) { } }, 12000);
+  custPush(); custBtn();
+}
+function custPush() {
+  const w = CUST_WIN; if (!w || w.closed) return;
+  let el; try { el = w.document.getElementById('cs'); } catch (e) { return; } if (!el) return;
+  const f = firm();
+  if (!BILL.lines.length) {
+    if (CUST_THANKS && Date.now() < CUST_THANKS.until) { el.innerHTML = `<div class="idle"><div><b>Thank you!</b><span>Bill ${esc(CUST_THANKS.no)} · ${inr(CUST_THANKS.total)}</span><br><span>Please visit again</span></div></div>`; return; }
+    el.innerHTML = `<div class="idle"><div><b>Welcome</b><span>${esc(f.name)}</span></div></div>`; return;
+  }
+  const c = calcVoucher(counterVoucher()); const n = el.querySelectorAll('tbody tr').length;
+  const qr = BILL.mode === 'upi' && f.upi && c.total > 0 ? `<div class="card qr">${qrSVG(upiLink(f.upi, f.name, c.total, 'Bill'))}<b>Scan to pay ${inr(c.total)}</b></div>` : '';
+  el.innerHTML = `<div class="list"><table><tbody>${c.lines.map((l, i) => `<tr class="${i >= n ? 'new' : ''}"><td><b>${esc(l.name)}</b><small>${qtyFmt(l.qty)} × ${inr(l.rate)}${l.discAmt ? ' · discount ' + inr(l.discAmt) : ''}</small></td><td class="r">${inr(l.amount)}</td></tr>`).join('')}</tbody></table></div>
+    <aside><div class="card tot"><small>To pay</small><strong>${inr(c.total)}</strong>
+      <div class="row"><span>Items</span><span>${qtyFmt(c.items)}</span></div>${c.lineDisc + c.billDisc ? `<div class="row"><span>Discount</span><span>−${inr(c.lineDisc + c.billDisc)}</span></div>` : ''}<div class="row"><span>GST included</span><span>${inr(c.tax)}</span></div>
+      ${c.saved > 0 ? `<div class="save">You save ${inr0(c.saved)} on MRP</div>` : ''}</div>${qr}</aside>`;
+  const list = el.querySelector('.list'); if (list) list.scrollTop = list.scrollHeight;
+}
+function custBtn() {
+  const acts = $('#view .bill .actions'); if (!acts) return;
+  let b = $('#cs-btn');
+  if (!custCanOpen()) { if (b) b.remove(); return; }
+  if (!b) { b = document.createElement('button'); b.id = 'cs-btn'; b.className = 'btn'; b.dataset.act = 'cust-screen'; acts.appendChild(b); }
+  b.textContent = CUST_WIN && !CUST_WIN.closed ? 'Customer screen is on' : 'Customer screen';
+}
+ACT['cust-screen'] = custOpen;
+const _counterTotals46 = counterTotals;
+counterTotals = function () { const r = _counterTotals46.apply(this, arguments); custPush(); return r; };
+const _vCounter46 = VIEWS.counter;
+VIEWS.counter = function () { const r = _vCounter46.apply(this, arguments); custBtn(); custPush(); return r; };
+const _successPop46 = successPop;
+successPop = function (title, sub) {
+  _successPop46(title, sub);
+  if (!CUST_WIN || CUST_WIN.closed || ROUTE.name !== 'counter') return;
+  const v = col('vouchers').filter(x => x.type === 'sale' && x.source === 'counter').sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))[0];
+  if (v) { CUST_THANKS = { no: v.no, total: v.total, until: Date.now() + 8000 }; custPush(); setTimeout(custPush, 8100); }
+};
+window.addEventListener('pagehide', () => { try { CUST_WIN && !CUST_WIN.closed && CUST_WIN.close(); } catch (e) { } });
+
+if (typeof HI !== 'undefined') Object.assign(HI, { 'Stock age': 'स्टॉक की उम्र', 'Customer screen': 'ग्राहक स्क्रीन', 'Oldest piece': 'सबसे पुराना पीस', 'Average age': 'औसत उम्र' });
+
+/* ---------------- cleaner home screen, and the four totals open their lists ----------------
+   This month → this month's sales bills, To receive → customers who owe, To pay → parties we owe,
+   Cash in hand → Cash & bank. Today card shows less; shortcuts are one row of icons; phones drop
+   the duplicate buttons and the "Needs attention" box (low stock and unpaid are already on screen). */
+const _home222 = VIEWS.home;
+VIEWS.home = function () {
+  _home222.apply(this, arguments);
+  const v = view(); if (!v.querySelector('.dash-head')) return;
+  v.classList.add('dash2');
+  const ico = p => `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+  const d = D(); const parties = col('parties');
+  const month = col('vouchers').filter(x => x.type === 'sale' && x.status !== 'cancelled' && !x.legacy && inRange(x.date, 'month'));
+  const rec = parties.reduce((a, p) => a + Math.max(0, d.bal[p.id] || 0), 0), pay = parties.reduce((a, p) => a + Math.max(0, -(d.bal[p.id] || 0)), 0);
+  const nRec = parties.filter(p => (d.bal[p.id] || 0) > 0.5).length, nPay = parties.filter(p => (d.bal[p.id] || 0) < -0.5).length;
+  const tiles = [
+    ['dk-month', EI.doc, 'This month', inr0(month.reduce((a, x) => a + (+x.total || 0), 0)), `${month.length} bill${month.length === 1 ? '' : 's'}`, 'k-blue'],
+    ['dk-rec', EI.in, 'To receive', inr0(rec), `${nRec} customer${nRec === 1 ? '' : 's'}`, 'k-green'],
+    ['dk-pay', EI.out, 'To pay', inr0(pay), `${nPay} part${nPay === 1 ? 'y' : 'ies'}`, 'k-red'],
+    ...(can('cash') ? [['dk-cash', RI.wallet, 'Cash in hand', inr0(d.money.cash), `Bank + UPI ${inr0(d.money.bank + d.money.upi + d.money.card)}`, 'k-gold']] : [])
+  ];
+  const k = v.querySelector(':scope > .kpis');
+  if (k) { k.classList.add('dk-grid'); k.innerHTML = tiles.map(([a, i, l, val, sub, c]) => `<button class="card dk ${c}" data-act="${a}"><span class="dk-ico">${ico(i)}</span><small>${l}</small><strong data-count>${val}</strong><span class="dk-sub">${sub}</span><i class="dk-go" aria-hidden="true"></i></button>`).join(''); }
+  // today card: one short line instead of the three boxes
+  const tc = v.querySelector('.today-card');
+  if (tc) {
+    const t = tc.querySelector('.tc-tiles'); const main = tc.querySelector('.tc-main');
+    if (t && main) {
+      const vals = [...t.querySelectorAll('.tc-tile b')].map(b => b.textContent);
+      main.insertAdjacentHTML('beforeend', `<span class="tc-mini"><button data-go="list" data-arg="receipt">Received ${vals[0] || '₹0'}</button><button data-go="parties" data-arg="rec">Udhaar ${vals[1] || '₹0'}</button></span>`);
+      t.remove();
+    }
+  }
+  // shortcuts: icon + short label + a count badge
+  const hs = v.querySelector('.home-shortcuts');
+  if (hs) hs.querySelectorAll('.hs-btn').forEach(b => {
+    const sm = b.querySelector('small'); const n = parseInt(sm?.textContent, 10);
+    const lab = { 'hs-udhaar': 'Udhaar', 'hs-payin': 'Payment in', 'hs-today': "Today's bills", 'hs-low': 'Low stock' }[b.dataset.act];
+    if (lab) b.querySelector('b').textContent = lab;
+    if (sm) sm.remove();
+    if (n > 0 && b.dataset.act !== 'hs-payin') b.insertAdjacentHTML('beforeend', `<em class="hs-n ${b.dataset.act === 'hs-low' ? 'warn' : ''}">${n}</em>`);
+  });
+  v.querySelectorAll(':scope > .cols > .card').forEach(c => { if (/Needs attention/.test(c.querySelector('h2')?.textContent || '')) c.classList.add('dash-attn'); });
+  const last = [...v.querySelectorAll(':scope > .card')].pop(); if (last && /Latest entries/.test(last.textContent)) last.classList.add('dash-latest');
+};
+ACT['dk-month'] = () => { LISTF.sale = Object.assign(LISTF.sale || { q: '', status: '' }, { range: 'month', q: '', status: '' }); go('list', 'sale'); };
+ACT['dk-rec'] = () => { PF.due = 'rec'; PF.kind = ''; PF.q = ''; go('parties'); };
+ACT['dk-pay'] = () => { PF.due = 'pay'; PF.kind = ''; PF.q = ''; go('parties'); };
+ACT['dk-cash'] = () => go('cashbook');
+if (typeof HI !== 'undefined') Object.assign(HI, { 'Udhaar': 'उधार', 'Low stock': 'कम स्टॉक' });
 
 </script>
 
