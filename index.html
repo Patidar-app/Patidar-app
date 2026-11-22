@@ -1083,6 +1083,16 @@ div.empty.ep { display: grid; justify-items: center; gap: 4px; }
 .view-in > .paybar, .view-in > .edbar { animation: none; }
 @media (max-width: 1100px) { html.has-edbar .toasts { bottom: calc(146px + env(safe-area-inset-bottom, 0px)); } }
 
+/* ===== v2.21 shop tools ===== */
+.sm-pick { margin-top: 10px; }
+.cl-note { margin-top: 2px; font-weight: 600; }
+.svc-rules { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.svc-rules input { width: 80px; }
+.svc-acts, .chq-acts { white-space: nowrap; text-align: right; }
+.svc-acts .btn + .btn, .chq-acts .btn + .btn { margin-left: 6px; }
+#e-chqbox { margin-top: 2px; }
+@media (max-width: 640px) { .svc-acts, .chq-acts { text-align: left; white-space: normal; } .svc-acts .btn, .chq-acts .btn { margin: 4px 6px 0 0 !important; } }
+
 </style>
 </head>
 <body>
@@ -1128,6 +1138,8 @@ div.empty.ep { display: grid; justify-items: center; gap: 4px; }
     <button data-go="warranty">Warranty &amp; serial</button>
     <button data-go="finance">Finance / EMI</button>
     <button data-go="delivery">Delivery &amp; fitting <b class="badge" id="rail-dlv" hidden>0</b></button>
+    <button data-go="service">Service due <b class="badge" id="rail-svc" hidden>0</b></button>
+    <button data-go="salesmen">Salesmen &amp; commission</button>
     <div class="grp">Purchase</div>
     <button data-go="list" data-arg="purchase">Purchase bills</button>
     <button data-go="list" data-arg="purchaseReturn">Purchase returns</button>
@@ -1137,6 +1149,8 @@ div.empty.ep { display: grid; justify-items: center; gap: 4px; }
     <button data-go="list" data-arg="journal">Journal</button>
     <button data-go="parties">Parties</button>
     <button data-go="cashbook">Cash &amp; bank</button>
+    <button data-go="cheques">Cheques <b class="badge" id="rail-chq" hidden>0</b></button>
+    <button data-act="tally">Export to Tally</button>
     <div class="grp">Stock</div>
     <button data-go="items">Items &amp; stock <kbd>F3</kbd></button>
     <button data-go="stockcount">Stock count (scan)</button>
@@ -4600,7 +4614,7 @@ function pickFile(accept) {
    Counter billing: the fast scan-and-bill screen. Saves ordinary sales invoices.
    ========================================================= */
 let BILL;
-function resetCounter() { BILL = { lines: [], disc: '', phone: '', name: '', mode: 'cash', tendered: '', split: { cash: '', upi: '', card: '', credit: '' }, fin: { co: '', down: '', downMode: 'cash', ref: '' }, ref: '', godown: LS.get('godown-' + S.firmId, 'main') }; }
+function resetCounter() { BILL = { lines: [], disc: '', phone: '', name: '', mode: 'cash', tendered: '', split: { cash: '', upi: '', card: '', credit: '' }, fin: { co: '', down: '', downMode: 'cash', ref: '' }, ref: '', sm: S.firmId ? LS.get('sm-' + S.firmId, '') : '', godown: LS.get('godown-' + S.firmId, 'main') }; }
 resetCounter();
 
 function parseBillDisc(str, base) { const s = String(str || '').trim(); if (!s) return 0; return s.endsWith('%') ? r2(base * (parseFloat(s) || 0) / 100) : r2(parseFloat(s) || 0); }
@@ -4638,6 +4652,7 @@ VIEWS.counter = () => {
           <label class="f"><span>Name</span><input type="text" id="c-name" placeholder="Walk-in customer" value="${esc(BILL.name)}"></label>
         </div>
         <div id="c-note" class="muted small" style="margin-top:6px"></div>
+        ${smSelect('c-sm', BILL.sm)}
       </div>
       <div class="card">
         <h2>Bill</h2>
@@ -4689,6 +4704,7 @@ VIEWS.counter = () => {
   attachPicker(cp, { search: q => searchParties(q, 'customer', 6), row: partyRow, onPick: p => { BILL.phone = p.phone || ''; BILL.name = p.name; BILL.partyId = p.id; cp.value = BILL.phone; $('#c-name').value = p.name; custNote(); } });
   cp.addEventListener('input', () => { BILL.phone = cp.value.trim(); BILL.partyId = null; custNote(); });
   $('#c-name').addEventListener('input', e => BILL.name = e.target.value);
+  const smEl = $('#c-sm'); if (smEl) smEl.addEventListener('change', () => { BILL.sm = smEl.value; LS.set('sm-' + S.firmId, smEl.value); });
   $('#bill-disc').addEventListener('input', e => { BILL.disc = e.target.value; counterTotals(); });
   $('#tendered').addEventListener('input', e => { BILL.tendered = e.target.value; counterChange(); });
   $$('[data-split]').forEach(i => i.addEventListener('input', () => { BILL.split[i.dataset.split] = i.value; counterChange(); }));
@@ -4791,10 +4807,12 @@ async function counterSave(btn) {
   const short = BILL.lines.filter(l => l.itemId && BILL.lines.filter(x => x.itemId === l.itemId).reduce((a, x) => a + x.qty, 0) > stockOf(l.itemId, BILL.godown));
   if (short.length && !(await ask('Stock is short', `Stock will go below zero for <b>${[...new Set(short.map(l => esc(l.name)))].join(', ')}</b>. Save the bill anyway?`, 'Save bill'))) return;
   if (!(await lossCheck(c))) return;
+  const known = BILL.partyId ? get('parties', BILL.partyId) : (BILL.phone ? col('parties').find(x => x.phone === BILL.phone) : null);
+  if (known && !(await creditOK(known, unpaid))) return;
   const p = counterParty();
   const doc = Object.assign(v, {
     no: nextNo('sale'), date: today(), time: new Date().toISOString(), partyId: p?.id || null, party: p ? { name: p.name, phone: p.phone, gstin: p.gstin || '', state: p.state || '', addr: p.addr || '' } : { name: BILL.name.trim(), phone: BILL.phone },
-    godown: BILL.godown, paid, ...(fin ? { fin } : {}), tendered: BILL.mode === 'cash' && +BILL.tendered ? +BILL.tendered : 0, ref: BILL.ref, source: 'counter', status: 'active'
+    godown: BILL.godown, paid, ...(fin ? { fin } : {}), tendered: BILL.mode === 'cash' && +BILL.tendered ? +BILL.tendered : 0, ref: BILL.ref, ...(BILL.sm ? { sm: BILL.sm } : {}), source: 'counter', status: 'active'
   });
   const saved = saveTrade(doc);
   resetCounter(); VIEWS.counter();
@@ -4967,6 +4985,7 @@ function renderTradeEditor(head) {
         ${v.type === 'purchase' || v.type === 'purchaseReturn' ? `<label class="f"><span>Supplier's bill no.</span><input type="text" id="e-billno" value="${esc(v.billNo || '')}"></label>` : ''}
         ${v.type === 'purchase' ? `<label class="f"><span>Pay by (due date)</span><input type="date" id="e-due" value="${esc(v.dueDate || addDays(v.date, 30))}"></label>` : ''}
         ${ret ? `<label class="f wide"><span>Against ${origType === 'sale' ? 'invoice' : 'bill'}</span><div class="row" style="flex-wrap:nowrap"><select id="e-against"><option value="">${v.partyId ? 'Select' : 'Pick the party first'}</option>${origs.map(o => `<option value="${o.id}" ${o.id === v.against ? 'selected' : ''}>${esc(o.no)} · ${fmtDate(o.date)} · ${inr0(o.total)}</option>`).join('')}</select><button class="btn" data-act="e-copylines" type="button">Copy items</button></div></label>` : ''}
+        ${v.type === 'sale' || v.type === 'saleReturn' ? smSelect('e-sm', v.sm, true) : ''}
         ${v.type === 'quotation' ? `<label class="f"><span>Valid till</span><input type="date" id="e-valid" value="${esc(v.validTill || '')}"></label>` : ''}
         <label class="f"><span>Place of supply</span><select id="e-pos">${stateOptions(v.pos || f.state)}</select></label>
         <label class="f"><span>Godown</span><select id="e-godown">${gdOptions(v.godown)}</select></label>
@@ -5006,6 +5025,7 @@ function renderTradeEditor(head) {
   on('#e-billno', 'input', e => v.billNo = e.value.trim());
   on('#e-due', 'input', e => v.dueDate = e.value);
   on('#e-valid', 'input', e => v.validTill = e.value);
+  on('#e-sm', 'change', e => { if (e.value) v.sm = e.value; else delete v.sm; });
   on('#e-against', 'change', e => v.against = e.value);
   on('#e-pos', 'change', e => { v.pos = e.value; v.interstate = isInterstate(e.value); tradeLinesRender(); });
   on('#e-godown', 'change', e => { v.godown = e.value; LS.set('godown-' + S.firmId, e.value); });
@@ -5076,12 +5096,14 @@ function renderPayEditor(head) {
     <div class="grid2"><label class="f"><span>Amount ₹</span><input type="number" id="e-amount" min="0" value="${v.amount || ''}" style="font-size:20px"></label>
       <label class="f"><span>${isPay ? 'Paid by' : 'Received by'}</span><select id="e-mode">${Object.entries(MODES).map(([m, l]) => `<option value="${m}" ${m === (v.mode || 'cash') ? 'selected' : ''}>${l}</option>`).join('')}</select></label></div>
     <label class="f"><span>Reference / note</span><input type="text" id="e-note" value="${esc(v.note || '')}" placeholder="Cheque no., UTR, bill numbers"></label>
+    ${chqFields(v)}
     <div class="row"><button class="btn primary" data-act="e-save" data-then="print">Save &amp; print</button><button class="btn wa" data-act="e-save" data-then="share">Save &amp; WhatsApp</button><button class="btn" data-act="e-save">Save</button></div>
   </div></div>`;
   bindPartyField(isPay ? 'supplier' : 'customer', () => { const b = balOf(v.partyId); if (!v.amount && b) { v.amount = Math.abs(b); $('#e-amount').value = Math.abs(b); } });
   const on = (sel, ev, fn) => { const e = $(sel); e && e.addEventListener(ev, () => { fn(e); dirty(); }); };
   on('#e-no', 'input', e => v.no = e.value.trim()); on('#e-date', 'input', e => v.date = e.value); on('#e-head', 'change', e => v.head = e.value);
-  on('#e-amount', 'input', e => v.amount = +e.value || 0); on('#e-mode', 'change', e => v.mode = e.value); on('#e-note', 'input', e => v.note = e.value);
+  on('#e-amount', 'input', e => v.amount = +e.value || 0); on('#e-mode', 'change', e => { v.mode = e.value; if (e.value !== 'bank' && v.chq) delete v.chq; const cb = $('#e-chqbox'); if (cb) cb.hidden = e.value !== 'bank'; });
+  bindChq(v); on('#e-note', 'input', e => v.note = e.value);
   if (!v.mode) v.mode = 'cash';
 }
 function accOptions(sel) {
@@ -5140,6 +5162,7 @@ async function editorSave(then) {
     if (v.lines.some(l => !String(l.name).trim())) return toast('Every line needs an item name', 'bad');
     const total = calcVoucher(v).total;
     if (v.type === 'sale' && !(await lossCheck(calcVoucher(v)))) return;
+    if (v.type === 'sale' && v.partyId && !(await creditOK(get('parties', v.partyId), r2(total - paidTotal(v)), isNew ? null : v.id))) return;
     if (t.party && r2(total - paidTotal(v)) > 0.5 && !v.partyId) return toast('Pick the party: part of this bill is unpaid', 'bad');
     if (v.partyId) v.party = partySnap(get('parties', v.partyId));
     v.interstate = isInterstate(v.pos || firm().state);
@@ -5147,6 +5170,7 @@ async function editorSave(then) {
   } else if (v.type === 'receipt' || v.type === 'payment') {
     if (!(+v.amount > 0)) return toast('Enter the amount', 'bad');
     if (!v.head && !v.partyId) return toast('Pick the party', 'bad');
+    if (v.chq && (!v.chq.no || !v.chq.date)) return toast('Enter the cheque number and cheque date', 'bad');
     if (v.partyId) v.party = partySnap(get('parties', v.partyId));
   } else if (v.type === 'journal') {
     v.jlines = v.jlines.filter(l => l.acc && (+l.dr || +l.cr));
@@ -5291,6 +5315,7 @@ function editParty(id, preset = {}, after) {
     <label class="f"><span>Address</span><input type="text" name="addr" value="${esc(p.addr)}"></label>
     <div class="grid2"><label class="f"><span>Email</span><input type="email" name="email" value="${esc(p.email || '')}"></label>
       <label class="f"><span>Opening balance ₹ (+ they owe you, − you owe them)</span><input type="number" name="opening" value="${p.opening || ''}"></label></div>
+    <label class="f"><span>Udhaar limit ₹ <span class="muted">empty = no limit</span></span><input type="number" name="creditLimit" min="0" value="${p.creditLimit || ''}" placeholder="No limit"></label>
     <div id="pt-err" class="neg"></div></form>
     <footer>${id ? '<button class="btn danger" data-del style="margin-right:auto">Delete</button>' : ''}<button class="btn" data-close>Cancel</button><button class="btn primary" data-ok>Save party</button></footer>`);
   const f = m.querySelector('form');
@@ -5301,7 +5326,7 @@ function editParty(id, preset = {}, after) {
     const g = v.gstin.trim().toUpperCase();
     if (g && !/^\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(g)) return err.textContent = 'GSTIN should look like 24ABCDE1234F1Z5.';
     if (v.phone.trim() && col('parties').some(x => x.phone === v.phone.trim() && x.id !== id)) return err.textContent = 'Another party has this mobile number.';
-    const doc = Object.assign(id ? p : {}, { name: v.name.trim(), phone: v.phone.trim(), kind: v.kind, gstin: g, state: v.state, addr: v.addr.trim(), email: v.email.trim(), opening: +v.opening || 0 });
+    const doc = Object.assign(id ? p : {}, { name: v.name.trim(), phone: v.phone.trim(), kind: v.kind, gstin: g, state: v.state, addr: v.addr.trim(), email: v.email.trim(), opening: +v.opening || 0, creditLimit: Math.max(0, +v.creditLimit || 0) });
     const saved = put('parties', doc); closeModal(); toast('Party saved', 'ok'); after ? after(saved) : render();
   };
   m.querySelector('[data-ok]').onclick = ok; f.onsubmit = e => { e.preventDefault(); ok(); };
@@ -5431,6 +5456,7 @@ function editItem(id, preset = {}) {
     <div class="grid4"><label class="f"><span>GST %</span><select name="gst">${GST_RATES.map(g => `<option ${+it.gst === g ? 'selected' : ''}>${g}</option>`).join('')}</select></label><label class="f"><span>HSN</span><input type="text" name="hsn" value="${esc(it.hsn)}"></label>
       <label class="f"><span>Unit</span><select name="unit">${UNITS.map(u => `<option ${it.unit === u ? 'selected' : ''}>${u}</option>`).join('')}</select></label><label class="f"><span>Warranty (months)</span><input type="number" name="warranty" value="${it.warranty || ''}"></label></div>
     <div class="grid${Math.min(4, gds.length + 1)}">${gds.map(g => `<label class="f"><span>Opening stock · ${esc(g.name)}</span><input type="number" data-open="${g.id}" value="${it.opening?.[g.id] || ''}"></label>`).join('')}<label class="f"><span>Low-stock alert at</span><input type="number" name="min" value="${it.min}"></label></div>
+    <label class="f"><span>Service reminder every (months) <span class="muted">e.g. 6 for AC, empty = use the category rule</span></span><input type="number" name="svc" min="0" value="${it.svc || ''}" placeholder="${svcRule(it.category) || 'No reminder'}"></label>
     ${id ? `<div class="note">Current stock: ${gds.map(g => `${esc(g.name)} <b>${qtyFmt(stockOf(id, g.id))}</b>`).join(' · ')}. Opening stock is the count before your first bill in this app; for later changes use a purchase bill or stock adjustment.</div>` : ''}
     <div id="it-err" class="neg"></div></form>
     <footer>${id ? '<button class="btn danger" data-del style="margin-right:auto">Delete</button>' : ''}<button class="btn" data-close>Cancel</button><button class="btn primary" data-ok>Save item</button></footer>`);
@@ -5445,7 +5471,7 @@ function editItem(id, preset = {}) {
     const code = v.code.trim() || newBarcode();
     const dup = col('items').find(x => x.code === code && x.id !== id); if (dup) return err.textContent = `Barcode already used by ${dup.name}.`;
     const opening = {}; $$('[data-open]', m).forEach(i => { if (+i.value) opening[i.dataset.open] = +i.value; });
-    const doc = Object.assign(id ? it : {}, { name: v.name.trim(), code, category: optValue(v, 'category') || 'Other', brand: optValue(v, 'brand'), hsn: v.hsn.trim(), unit: v.unit, mrp: +v.mrp || +v.sale, sale: +v.sale, purchase: +v.purchase || 0, gst: +v.gst, min: +v.min || 0, warranty: +v.warranty || 0, opening });
+    const doc = Object.assign(id ? it : {}, { name: v.name.trim(), code, category: optValue(v, 'category') || 'Other', brand: optValue(v, 'brand'), hsn: v.hsn.trim(), unit: v.unit, mrp: +v.mrp || +v.sale, sale: +v.sale, purchase: +v.purchase || 0, gst: +v.gst, min: +v.min || 0, warranty: +v.warranty || 0, svc: Math.max(0, +v.svc || 0), opening });
     delete doc.sample;
     put('items', doc); closeModal(); toast(id ? 'Item updated' : 'Item added', 'ok');
     if (!id && preset.code && ROUTE.name === 'counter') counterAdd(doc); else if (!id && preset.code && ROUTE.name === 'edit' && CURRENT_EDIT) { if (VT[CURRENT_EDIT.v.type].trade) addEditorItem(doc); else stockAdd(doc); } else render();
@@ -6346,6 +6372,9 @@ function routeOK(name, arg) {
   if (name === 'sdues') return canType('payment') || canType('purchase');
   if (name === 'warranty' || name === 'delivery') return can('sale') || can('counter');
   if (name === 'finance') return can('payin');
+  if (name === 'service') return can('sale') || can('counter');
+  if (name === 'salesmen') return can('reports');
+  if (name === 'cheques') return can('payin') || can('payout');
   if (name === 'settings') return isOwner();
   return true;
 }
@@ -6855,8 +6884,13 @@ ACT.menu = () => {
 };
 ACT['menu-close'] = () => { document.documentElement.classList.remove('rail-open'); menuSync(); };
 ACT['q-item'] = () => { go('items'); setTimeout(() => editItem(null), 0); };
-// On phones and tablets the drawer closes once something in it is tapped.
-document.addEventListener('click', e => { if (!wideScreen() && e.target.closest('#rail [data-go], #rail [data-act]')) ACT['menu-close'](); }, true);
+// The menu closes once something in it is tapped: the drawer on phones and tablets, and on PC the
+// docked menu folds away too (the three-line button brings it back).
+document.addEventListener('click', e => {
+  if (!e.target.closest('#rail [data-go], #rail [data-act]')) return;
+  if (!wideScreen()) return ACT['menu-close']();
+  setTimeout(() => { document.documentElement.classList.add('rail-closed'); LS.set('rail-closed', true); menuSync(); }, 0);
+}, true);
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.documentElement.classList.contains('rail-open') && !modalStack.length) ACT['menu-close'](); });
 $('#firm-pick2').addEventListener('change', e => { const v = e.target.value; ACT['menu-close'](); $('#firm-pick').value = v; $('#firm-pick').dispatchEvent(new Event('change')); });
 // Swipe from the left edge to slide the menu in, swipe left to slide it out (phones and tablets).
@@ -6903,7 +6937,7 @@ window.onAppCrash = text => {
    Updates: every copy of the app checks one fixed address for a newer build.
    Online (PC / iPhone): reload picks it up. Android app: downloads it in the background.
    ========================================================= */
-const APP_BUILD = +'17' || 0, APP_VERSION = '2.20';
+const APP_BUILD = +'18' || 0, APP_VERSION = '2.21';
 const SITE_URL = 'https://patidar-app.github.io/Patidar-app/';
 const HOSTED = (location.protocol === 'https:' || location.hostname === 'localhost') && !IN_FRAME;
 const UPDATE_BASE = HOSTED ? new URL('./', location.href).href : SITE_URL;
@@ -8358,7 +8392,7 @@ ACT['hs-low'] = () => { IF.stock = 'low'; IF.q = ''; IF.cat = ''; IF.brand = '';
    that a phone or PC has the latest update. Shown in the side menu, on the sign-in screen and in Settings,
    plus a one-time note the first time a new update opens on this device.
    ========================================================= */
-const APP_BUILT = '21 Nov 2026, 6:08 PM';
+const APP_BUILT = '22 Nov 2026, 2:21 PM';
 const verText = () => `Version ${APP_VERSION} · updated ${APP_BUILT}`;
 (function () {
   const rail = $('#rail');
@@ -8607,12 +8641,15 @@ const RI = {
   logout: '<path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H4"/>',
   download: '<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>',
   palette: '<path d="M12 3a9 9 0 1 0 0 18c1 0 1.5-.7 1.5-1.5 0-.4-.2-.8-.4-1.1-.3-.3-.4-.6-.4-1 0-.8.7-1.5 1.5-1.5H16a5 5 0 0 0 5-5c0-4.4-4-7.9-9-7.9z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10.5" cy="7.5" r="1"/><circle cx="15" cy="8" r="1"/>',
+  wrench: '<path d="M14.7 6.3a4 4 0 0 0 5 5L21 13l-8 8-3-3 8-8-1.3-1.3a4 4 0 0 1-5-5L14 2z"/>',
+  medal: '<circle cx="12" cy="15" r="6"/><path d="M8.5 10L6 3h4l2 4 2-4h4l-2.5 7M12 12.5v5"/>',
+  cheque: '<rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 14h6M15 14c1-2 2-2 3 0M6 10h4"/>',
   moon: '<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>'
 };
 const rIco = k => `<svg class="r-ico" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${RI[k]}</svg>`;
 const RAIL_ICON = {
   'go:home': 'home', 'go:counter': 'counter', 'go:list:sale': 'sale', 'go:list:quotation': 'quotation', 'go:list:saleReturn': 'ret', 'go:list:receipt': 'in',
-  'go:warranty': 'shield', 'go:finance': 'card', 'go:delivery': 'truck', 'go:list:purchase': 'cart', 'go:list:purchaseReturn': 'ret', 'go:list:payment': 'out',
+  'go:warranty': 'shield', 'go:finance': 'card', 'go:delivery': 'truck', 'go:service': 'wrench', 'go:salesmen': 'medal', 'go:cheques': 'cheque', 'act:tally': 'download', 'go:list:purchase': 'cart', 'go:list:purchaseReturn': 'ret', 'go:list:payment': 'out',
   'go:sdues': 'clock', 'go:list:journal': 'book', 'go:parties': 'users', 'go:cashbook': 'wallet', 'go:items': 'box', 'go:pricecheck': 'price', 'go:stockcount': 'count',
   'go:godowns': 'store', 'go:labels': 'barcode', 'act:sup-order': 'truck', 'go:reports': 'chart', 'go:settings': 'gear', 'go:settings:users': 'key', 'act:u-review': 'inbox',
   'go:settings:sync': 'sync', 'act:u-switch': 'user', 'act:u-logout': 'logout', 'act:bk-save': 'download', 'act:ui-prefs': 'palette', 'act:dt-theme': 'moon'
@@ -8700,6 +8737,303 @@ function polish() { POL_Q = false; railIcons(); dateChips(); editorBar(); trimPa
 new MutationObserver(() => { if (!POL_Q) { POL_Q = true; requestAnimationFrame(polish); } }).observe($('#view'), { childList: true, subtree: true });
 polish();
 if (typeof HI !== 'undefined') Object.assign(HI, { '7 days': '7 दिन', '30 days': '30 दिन', 'This year': 'इस साल', 'Last month': 'पिछला महीना', 'Total': 'कुल', 'Price check': 'रेट देखें' });
+
+/* =========================================================
+   Shop tools (v2.21)
+   35. Udhaar limit per customer: a warning before a bill takes them past it
+       (staff need the owner's PIN to go over).
+   36. Service due: items (or whole categories) with a service interval show up
+       when their service is due, with a WhatsApp button for the customer.
+   38. Salesmen: pick who made each sale; sales and commission per salesman.
+   39. Cheques: cheque no. / bank / date on payments in and out, a tracker with
+       what to deposit today, and Cleared / Bounced buttons.
+   40. Export to Tally: one XML file with entries and the ledgers they need.
+   ========================================================= */
+
+/* ---------------- 35. udhaar limit ---------------- */
+async function creditOK(p, add, exclId) {
+  const lim = +p?.creditLimit || 0; if (!lim || !(add > 0.5)) return true;
+  let bal = balOf(p.id);
+  if (exclId) { const old = get('vouchers', exclId); if (old && old.status !== 'cancelled' && VT[old.type]?.party) bal -= VT[old.type].party * ((+old.total || 0) - paidTotal(old)); }
+  const after = r2(bal + add); if (after <= lim + 0.5) return true;
+  const msg = `${p.name} will owe ${inr0(after)} after this bill. Their udhaar limit is ${inr0(lim)} (over by ${inr0(after - lim)}).`;
+  if (users().length && !isOwner()) return ownerPin(msg + ' The owner can approve with their PIN.');
+  return ask('Udhaar limit crossed', esc(msg) + ' Save the bill anyway?', 'Save anyway');
+}
+const _partyBox35 = partyBox;
+partyBox = function (p) {
+  const h = _partyBox35(p); if (!p || !(+p.creditLimit)) return h;
+  const left = r2(p.creditLimit - balOf(p.id));
+  return h + ` · Limit <b class="${left <= 0 ? 'neg' : ''}">${inr0(p.creditLimit)}</b>${left > 0 ? ` (${inr0(left)} left)` : ' (reached)'}`;
+};
+const _custNote35 = custNote;
+custNote = function () {
+  _custNote35.apply(this, arguments);
+  const el = $('#c-note'); const p = BILL.partyId ? get('parties', BILL.partyId) : null;
+  if (!el || !p || !(+p.creditLimit)) return;
+  const left = r2(p.creditLimit - balOf(p.id));
+  el.insertAdjacentHTML('beforeend', `<div class="cl-note ${left <= 0 ? 'neg' : ''}">Udhaar limit ${inr0(p.creditLimit)} · ${left > 0 ? inr0(left) + ' left' : 'limit reached'}</div>`);
+};
+
+/* ---------------- 36. service due ---------------- */
+const svcRule = cat => +((firm()?.svcRules || {})[String(cat || '').trim().toLowerCase()]) || 0;
+function svcMonthsOf(l) { const it = l.itemId ? get('items', l.itemId) : null; return +(it?.svc) || svcRule(l.category || it?.category); }
+// Every sold item whose next service falls between 90 days ago and 15 days from now.
+function serviceList() {
+  const out = []; const oldest = addMonths(today(), -60);
+  for (const v of col('vouchers')) {
+    if (v.type !== 'sale' || v.status === 'cancelled' || !v.partyId || v.date < oldest) continue;
+    const p = get('parties', v.partyId); if (!p) continue;
+    (v.lines || []).forEach((l, i) => {
+      const m = svcMonthsOf(l); if (!m) return;
+      const key = v.id + ':' + i; const mark = (p.svc || {})[key] || v.date;
+      let k = 1, due; do { due = addMonths(v.date, m * k++); } while (due <= mark && k < 300);
+      const d = daysTo(due); if (d > 15 || d < -90) return;
+      out.push({ v, p, l, key, due, days: d, m });
+    });
+  }
+  return out.sort((a, b) => a.due.localeCompare(b.due));
+}
+VIEWS.service = () => {
+  const list = serviceList(); const cats = categories(); const R = firm().svcRules || {};
+  const late = list.filter(x => x.days < 0), now = list.filter(x => x.days === 0), soon = list.filter(x => x.days > 0);
+  const sec = (title, l, cls) => !l.length ? '' : `<div class="card" style="margin-top:12px"><div class="pad"><h2>${title} <span class="muted small">${l.length}</span></h2></div><div class="tbl-wrap"><table class="tbl svc-tbl"><thead><tr><th>Customer</th><th>Item</th><th>Bought</th><th>Service due</th><th></th></tr></thead><tbody>
+    ${l.map(x => `<tr><td><b>${esc(x.p.name)}</b>${x.p.phone ? `<div class="muted small">${esc(x.p.phone)}</div>` : ''}</td>
+      <td data-l="Item">${esc(x.l.name)}${x.l.serial ? `<div class="muted small mono">${esc(x.l.serial)}</div>` : ''}<div class="muted small">every ${x.m} month${x.m > 1 ? 's' : ''}</div></td>
+      <td data-l="Bought"><a href="#" data-act="v-show" data-id="${x.v.id}">${fmtDate(x.v.date)}</a></td>
+      <td data-l="Service due" class="${cls}">${fmtDate(x.due)}<div class="small">${x.days < 0 ? -x.days + ' days late' : x.days === 0 ? 'today' : 'in ' + x.days + ' days'}</div></td>
+      <td class="svc-acts">${x.p.phone ? `<button class="btn sm wa" data-act="svc-wa" data-k="${x.key}">WhatsApp</button>` : ''}<button class="btn sm" data-act="svc-mark" data-k="${x.key}" data-pid="${x.p.id}" data-due="${x.due}" data-done="1">Done</button><button class="btn sm ghost" data-act="svc-mark" data-k="${x.key}" data-pid="${x.p.id}" data-due="${x.due}">Skip</button></td></tr>`).join('')}</tbody></table></div></div>`;
+  view().innerHTML = `<div class="view-head"><h1>Service due</h1></div>
+    <div class="kpis">${kpiHTML([['Late', late.length, 'up to 90 days', late.length ? 'neg' : ''], ['Due today', now.length], ['Next 15 days', soon.length]])}</div>
+    ${list.length ? sec('Late', late, 'neg') + sec('Due today', now, '') + sec('Next 15 days', soon, 'muted')
+      : `<div class="card pad" style="margin-top:12px"><div class="empty"><b>No service due</b>${Object.keys(R).length || col('items').some(i => +i.svc) ? 'Nothing is due in the next 15 days.' : 'Set how often items need service below (for example AC every 6 months), and customers show up here when it is time.'}</div></div>`}
+    <div class="card pad" style="margin-top:12px"><h2>Service rules</h2><p class="muted small" style="margin:0 0 10px">How often each category needs service. An item's own setting (Items › edit item) wins over its category. Empty means no reminder.</p>
+      <div class="svc-rules">${cats.map(c => `<label class="f"><span>${esc(c)}</span><div class="row" style="flex-wrap:nowrap;gap:6px"><input type="number" min="0" data-svc-cat="${esc(c)}" value="${R[c.toLowerCase()] || ''}" placeholder="Off" ${can('items') ? '' : 'disabled'}><span class="muted small">months</span></div></label>`).join('')}</div></div>
+    <p class="muted small">Done or Skip moves that item to its next service. Bills older than 5 years are not counted.</p>`;
+  $$('[data-svc-cat]').forEach(i => i.addEventListener('change', () => {
+    const f = firm(); const r = Object.assign({}, f.svcRules || {}); const k = i.dataset.svcCat.toLowerCase();
+    if (+i.value > 0) r[k] = +i.value; else delete r[k]; f.svcRules = r; put('firms', f); toast('Service rule saved', 'ok');
+  }));
+};
+ACT['svc-wa'] = b => {
+  const x = serviceList().find(y => y.key === b.dataset.k); if (!x) return; const f = firm();
+  openWA(x.p.phone, `Namaste ${x.p.name} ji,\nYour ${x.l.name} bought from us on ${fmtDate(x.v.date)} is due for service${x.days > 0 ? ' on ' + fmtDate(x.due) : ''}.\nReply here or call us to book a visit.\n\n${f.name}${f.phone ? '\n' + f.phone : ''}`);
+};
+ACT['svc-mark'] = b => {
+  const p = get('parties', b.dataset.pid); if (!p) return;
+  p.svc = Object.assign({}, p.svc, { [b.dataset.k]: b.dataset.due }); put('parties', p);
+  toast(b.dataset.done ? 'Service marked done' : 'Skipped to the next service', 'ok'); render();
+};
+
+/* ---------------- 38. salesmen ---------------- */
+const salesmen = all => (firm()?.salesmen || []).filter(s => all || !s.off);
+const smName = id => (firm()?.salesmen || []).find(s => s.id === id)?.name || '';
+function smSelect(id, sel, wide) {
+  const list = salesmen(); if (!list.length && !sel) return '';
+  return `<label class="f ${wide ? '' : 'sm-pick'}"><span>Salesman</span><select id="${id}"><option value="">Not set</option>${list.map(s => `<option value="${s.id}" ${s.id === sel ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}${sel && !list.some(s => s.id === sel) ? `<option value="${esc(sel)}" selected>${esc(smName(sel) || 'Removed')}</option>` : ''}</select></label>`;
+}
+const SMF = { range: 'month' };
+function smTotals(range) {
+  const rows = {};
+  for (const v of col('vouchers')) {
+    if ((v.type !== 'sale' && v.type !== 'saleReturn') || v.status === 'cancelled' || v.legacy || !inRange(v.date, range)) continue;
+    const sg = v.type === 'sale' ? 1 : -1; const r = rows[v.sm || ''] || (rows[v.sm || ''] = { bills: 0, ret: 0, sales: 0, total: 0 });
+    if (sg > 0) r.bills++; else r.ret++; r.sales += sg * (+v.taxable || 0); r.total += sg * (+v.total || 0);
+  }
+  return rows;
+}
+VIEWS.salesmen = () => {
+  const all = salesmen(true); const rows = smTotals(SMF.range); const z = { bills: 0, ret: 0, sales: 0, total: 0 };
+  const list = all.filter(s => !s.off || rows[s.id]).map(s => ({ s, r: rows[s.id] || z }));
+  if (rows['']) list.push({ s: null, r: rows[''] });
+  const com = x => x.s ? r2(x.r.sales * (+x.s.pct || 0) / 100) : 0;
+  const owner = isOwner();
+  view().innerHTML = `<div class="view-head"><h1>Salesmen &amp; commission</h1><select id="sm-range" style="width:auto" aria-label="Period">${rangeOptions(SMF.range)}</select>${owner ? '<button class="btn primary" data-act="sm-edit">+ Add salesman</button>' : ''}</div>
+    <div class="kpis">${kpiHTML([['Sales before GST', inr0(list.reduce((a, x) => a + x.r.sales, 0)), (n => n + (n === 1 ? ' bill' : ' bills'))(list.reduce((a, x) => a + x.r.bills, 0))], ['Commission', inr0(list.reduce((a, x) => a + com(x), 0))], ['Bills with no salesman', rows[''] ? rows[''].bills : 0, rows[''] ? inr0(rows[''].sales) : '']])}</div>
+    ${all.length ? `<div class="card" style="margin-top:12px"><div class="tbl-wrap"><table class="tbl" id="sm-tbl"><thead><tr><th>Salesman</th><th class="num">Bills</th><th class="num">Sales before GST</th><th class="num">Bill value</th><th class="num">Commission</th><th></th></tr></thead><tbody>
+      ${list.map(x => `<tr><td><b>${x.s ? esc(x.s.name) : '<span class="muted">Not set</span>'}</b>${x.s?.off ? ' <span class="pill">Removed</span>' : ''}${x.s?.phone ? `<div class="muted small">${esc(x.s.phone)}</div>` : ''}</td>
+        <td class="num" data-l="Bills">${x.r.bills}${x.r.ret ? `<div class="muted small">${x.r.ret} return${x.r.ret === 1 ? '' : 's'}</div>` : ''}</td><td class="num" data-l="Sales before GST">${inr0(x.r.sales)}</td><td class="num" data-l="Bill value">${inr0(x.r.total)}</td>
+        <td class="num" data-l="Commission"><b>${x.s ? inr0(com(x)) : '–'}</b>${x.s ? `<div class="muted small">${+x.s.pct || 0}%</div>` : ''}</td>
+        <td>${x.s && owner ? `<button class="btn sm" data-act="sm-edit" data-id="${x.s.id}">Edit</button>` : ''}</td></tr>`).join('')}</tbody></table></div></div>
+      <p class="muted small">Commission is worked out on the sale value before GST, less returns. Pick the salesman on the counter or in the sales invoice.</p>`
+      : `<div class="card pad" style="margin-top:12px"><div class="empty"><b>No salesmen yet</b>Add the people who sell in your shop with their commission %. Then pick the salesman on each bill.</div></div>`}`;
+  $('#sm-range').onchange = e => { SMF.range = e.target.value; VIEWS.salesmen(); };
+};
+ACT['sm-edit'] = b => {
+  if (!isOwner()) return denyToast('change salesmen');
+  const f = firm(); const list = (f.salesmen || []).slice(); const id = b.dataset.id;
+  const s = id ? Object.assign({}, list.find(x => x.id === id)) : { name: '', phone: '', pct: '' };
+  const m = openModal(`${mHead(id ? 'Edit salesman' : 'Add salesman')}<form class="body stack"><label class="f"><span>Name *</span><input type="text" name="sname" value="${esc(s.name)}" autofocus></label>
+    <div class="grid2"><label class="f"><span>Mobile</span><input type="tel" name="phone" value="${esc(s.phone || '')}"></label><label class="f"><span>Commission % <span class="muted">on sale before GST</span></span><input type="number" name="pct" step="0.1" min="0" value="${s.pct || ''}" placeholder="0"></label></div><div class="neg" data-err></div></form>
+    <footer>${id ? `<button class="btn ${s.off ? '' : 'danger'}" data-rm style="margin-right:auto">${s.off ? 'Bring back' : 'Remove'}</button>` : ''}<button class="btn" data-close>Cancel</button><button class="btn primary" data-ok>Save</button></footer>`);
+  const fm = m.querySelector('form');
+  const save = () => { const i = list.findIndex(x => x.id === s.id); if (i >= 0) list[i] = s; else list.push(s); f.salesmen = list; put('firms', f); closeModal(); render(); };
+  const ok = () => {
+    const v = Object.fromEntries(new FormData(fm).entries()); if (!v.sname.trim()) return m.querySelector('[data-err]').textContent = 'Enter a name.';
+    Object.assign(s, { name: v.sname.trim(), phone: v.phone.trim(), pct: Math.max(0, +v.pct || 0) }); if (!s.id) s.id = uid();
+    save(); toast('Salesman saved', 'ok');
+  };
+  m.querySelector('[data-ok]').onclick = ok; fm.onsubmit = e => { e.preventDefault(); ok(); };
+  const rm = m.querySelector('[data-rm]'); if (rm) rm.onclick = () => { s.off = !s.off; save(); toast(s.off ? 'Removed. Old bills keep the name.' : 'Brought back', 'ok'); };
+};
+
+/* ---------------- 39. cheques ---------------- */
+function chqFields(v) {
+  const c = v.chq || {};
+  return `<div id="e-chqbox" ${v.mode === 'bank' ? '' : 'hidden'}><label class="chip"><input type="checkbox" id="e-chq" ${v.chq ? 'checked' : ''}> By cheque</label>
+    <div class="grid3" id="e-chqf" style="margin-top:8px" ${v.chq ? '' : 'hidden'}><label class="f"><span>Cheque no.</span><input type="text" inputmode="numeric" data-chq="no" value="${esc(c.no || '')}"></label>
+      <label class="f"><span>Bank</span><input type="text" data-chq="bank" value="${esc(c.bank || '')}" placeholder="e.g. SBI"></label>
+      <label class="f"><span>Cheque date</span><input type="date" data-chq="date" value="${esc(c.date || v.date || today())}"></label></div></div>`;
+}
+function bindChq(v) {
+  const cb = $('#e-chq'); if (!cb) return;
+  const read = () => { const o = { status: v.chq?.status || 'pending' }; $$('[data-chq]').forEach(i => o[i.dataset.chq] = i.value.trim()); return o; };
+  cb.addEventListener('change', () => { if (cb.checked) v.chq = read(); else delete v.chq; $('#e-chqf').hidden = !cb.checked; dirty(); });
+  $$('[data-chq]').forEach(i => i.addEventListener('input', () => { if (v.chq) { v.chq[i.dataset.chq] = i.value.trim(); dirty(); } }));
+}
+const CHQF = { tab: 'pending' };
+const chqList = () => col('vouchers').filter(v => v.chq && (v.type === 'receipt' || v.type === 'payment')).map(v => ({ v, st: v.chq.status || 'pending', isIn: v.type === 'receipt', days: daysTo(v.chq.date || v.date) }));
+VIEWS.cheques = () => {
+  const all = chqList(); const pend = all.filter(x => x.st === 'pending');
+  const pin = pend.filter(x => x.isIn), pout = pend.filter(x => !x.isIn), due = pend.filter(x => x.days <= 0);
+  const sum = l => l.reduce((a, x) => a + (+x.v.amount || 0), 0);
+  const list = all.filter(x => x.st === CHQF.tab).sort((a, b) => CHQF.tab === 'pending' ? a.days - b.days : b.v.chq.date.localeCompare(a.v.chq.date));
+  const tabs = [['pending', 'Pending'], ['cleared', 'Cleared'], ['bounced', 'Bounced']];
+  view().innerHTML = `<div class="view-head"><h1>Cheques</h1>${canType('receipt') ? '<button class="btn primary" data-act="chq-new">+ Cheque received</button>' : ''}${canType('payment') ? '<button class="btn" data-act="chq-new" data-out="1">+ Cheque given</button>' : ''}</div>
+    <div class="kpis">${kpiHTML([['To deposit', inr0(sum(pin)), pin.length + (pin.length === 1 ? ' cheque' : ' cheques')], ['Due today or late', due.length, inr0(sum(due)), due.length ? 'neg' : ''], ['Our cheques to clear', inr0(sum(pout)), pout.length + (pout.length === 1 ? ' cheque' : ' cheques')]])}</div>
+    <div class="tabs" role="tablist">${tabs.map(([k, l]) => `<button role="tab" aria-selected="${CHQF.tab === k}" data-act="chq-tab" data-k="${k}">${l} <span class="muted small">${all.filter(x => x.st === k).length}</span></button>`).join('')}</div>
+    ${list.length ? `<div class="card"><div class="tbl-wrap"><table class="tbl" id="chq-tbl"><thead><tr><th>Cheque date</th><th>Party</th><th>Cheque</th><th class="num">Amount</th><th></th></tr></thead><tbody>
+      ${list.map(x => { const c = x.v.chq; return `<tr><td class="${x.st === 'pending' && x.days <= 0 ? 'neg' : ''}"><b>${fmtDate(c.date || x.v.date)}</b><div class="small">${x.st === 'pending' ? (x.days < 0 ? -x.days + ' days ago' : x.days === 0 ? 'today' : 'in ' + x.days + ' days') : (x.st === 'cleared' ? 'Cleared ' : 'Bounced ') + (c.on ? fmtDate(c.on) : '')}</div></td>
+        <td data-l="Party"><b>${esc(vParty(x.v) || '–')}</b><div class="muted small">${x.isIn ? 'Received from them' : 'Given by us'}</div></td>
+        <td data-l="Cheque"><span class="mono">${esc(c.no || '')}</span>${c.bank ? `<div class="muted small">${esc(c.bank)}</div>` : ''}<div class="small"><a href="#" data-act="v-show" data-id="${x.v.id}">${esc(x.v.no)}</a></div></td>
+        <td class="num" data-l="Amount"><b class="${x.isIn ? 'pos' : ''}">${inr0(x.v.amount)}</b></td>
+        <td class="chq-acts">${x.st === 'pending' && canType(x.v.type) ? `<button class="btn sm" data-act="chq-ok" data-id="${x.v.id}">Cleared</button><button class="btn sm danger" data-act="chq-bounce" data-id="${x.v.id}">Bounced</button>` : ''}</td></tr>`; }).join('')}</tbody></table></div></div>`
+      : `<div class="card pad"><div class="empty"><b>${CHQF.tab === 'pending' ? 'No cheques waiting' : 'Nothing here'}</b>${CHQF.tab === 'pending' ? 'When a payment is by cheque, choose Bank in Payment in or Payment out and tick "By cheque".' : ''}</div></div>`}
+    <p class="muted small">A cheque counts in your bank balance from the day you enter it. If it bounces, the payment is cancelled so the party's balance goes back.</p>`;
+};
+ACT['chq-tab'] = b => { CHQF.tab = b.dataset.k; VIEWS.cheques(); };
+ACT['chq-new'] = b => openEditor(b.dataset.out ? 'payment' : 'receipt', null, { mode: 'bank', chq: { no: '', bank: '', date: today(), status: 'pending' } });
+ACT['chq-ok'] = b => { const v = get('vouchers', b.dataset.id); if (!v?.chq) return; v.chq = Object.assign({}, v.chq, { status: 'cleared', on: today() }); put('vouchers', v); toast('Cheque marked cleared', 'ok'); render(); };
+ACT['chq-bounce'] = async b => {
+  const v = get('vouchers', b.dataset.id); if (!v?.chq) return;
+  if (!can('cancel')) return denyToast('cancel entries');
+  const who = vParty(v) || 'the party', isIn = v.type === 'receipt';
+  if (!(await ask('Cheque bounced?', `Cheque <b>${esc(v.chq.no)}</b> for <b>${inr0(v.amount)}</b>: ${esc(v.no)} will be cancelled, so ${isIn ? esc(who) + ' owes you this amount again' : 'you owe ' + esc(who) + ' this amount again'}.`, 'Mark bounced', true))) return;
+  v.chq = Object.assign({}, v.chq, { status: 'bounced', on: today() }); v.status = 'cancelled'; v._act = 'cancelled'; put('vouchers', v); render();
+  const ph = v.party?.phone || get('parties', v.partyId)?.phone;
+  if (isIn && ph) toast('Cheque marked bounced', 'ok', { label: 'Tell on WhatsApp', fn: () => openWA(ph, `Namaste ${who} ji,\nYour cheque no. ${v.chq.no}${v.chq.bank ? ' (' + v.chq.bank + ')' : ''} for ${inr0(v.amount)} has bounced. Please pay this amount at the earliest.\n\n${firm().name}`) });
+  else toast('Cheque marked bounced', 'ok');
+};
+
+/* ---------------- 40. export to Tally ---------------- */
+const xe = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const TL = { bank: 'Bank Account', upi: 'UPI Collections', card: 'Card Collections', sales: 'Sales', purchase: 'Purchase', round: 'Round Off' };
+const TT = { sale: 'Sales', saleReturn: 'Credit Note', purchase: 'Purchase', purchaseReturn: 'Debit Note' };
+function tallyXML(range) {
+  const led = new Map(), pname = new Map(), taken = new Set(['cash']);
+  const use = (n, parent, extra) => { if (!led.has(n)) { led.set(n, Object.assign({ parent }, extra || {})); taken.add(n.toLowerCase()); } return n; };
+  const partyLed = (id, snap) => {
+    if (pname.has(id)) return pname.get(id);
+    const p = get('parties', id); let n = (p?.name || snap?.name || 'Party').trim();
+    if (taken.has(n.toLowerCase())) n += ' ' + (p?.phone || String(id).slice(-4));
+    pname.set(id, n); use(n, p?.kind === 'supplier' ? 'Sundry Creditors' : 'Sundry Debtors', { gstin: p?.gstin || '', state: p?.state || '', phone: p?.phone || '' });
+    return n;
+  };
+  const modeLed = m => m === 'cash' || !TL[m] ? 'Cash' : use(TL[m], 'Bank Accounts');
+  const taxLed = (side, h) => use(`${side === 'o' ? 'Output' : 'Input'} ${h}`, 'Duties & Taxes', { duty: { CGST: 'Central Tax', SGST: 'State Tax', IGST: 'Integrated Tax' }[h] });
+  const vchs = [];
+  // entries: [ledger, amount]; amount > 0 is a debit. Any paisa difference goes to Round Off so Tally sees it balanced.
+  const V = (type, date, no, narr, entries, party) => {
+    const es = entries.filter(e => Math.abs(e[1]) >= 0.005).map(e => [e[0], r2(e[1])]); if (!es.length) return;
+    const diff = r2(es.reduce((a, e) => a + e[1], 0)); if (Math.abs(diff) >= 0.005) es.push([use(TL.round, 'Indirect Expenses'), -diff]);
+    vchs.push(`<TALLYMESSAGE xmlns:UDF="TallyUDF"><VOUCHER VCHTYPE="${type}" ACTION="Create" OBJVIEW="Accounting Voucher View"><DATE>${String(date).replace(/-/g, '')}</DATE><VOUCHERTYPENAME>${type}</VOUCHERTYPENAME><VOUCHERNUMBER>${xe(no)}</VOUCHERNUMBER>${party ? `<PARTYLEDGERNAME>${xe(party)}</PARTYLEDGERNAME>` : ''}<NARRATION>${xe(narr)}</NARRATION><PERSISTEDVIEW>Accounting Voucher View</PERSISTEDVIEW>${es.map(([l, a]) => `<ALLLEDGERENTRIES.LIST><LEDGERNAME>${xe(l)}</LEDGERNAME><ISDEEMEDPOSITIVE>${a > 0 ? 'Yes' : 'No'}</ISDEEMEDPOSITIVE><AMOUNT>${(-a).toFixed(2)}</AMOUNT></ALLLEDGERENTRIES.LIST>`).join('')}</VOUCHER></TALLYMESSAGE>`);
+  };
+  const vs = col('vouchers').filter(v => v.status !== 'cancelled' && !v.legacy && (TT[v.type] || ['receipt', 'payment', 'journal'].includes(v.type)) && inRange(v.date, range))
+    .sort((a, b) => a.date.localeCompare(b.date) || (a.createdAt || 0) - (b.createdAt || 0));
+  let n = 0;
+  for (const v of vs) {
+    n++;
+    if (TT[v.type]) {
+      const c = v.total != null && v.taxable != null ? v : calcVoucher(v);
+      const sale = v.type === 'sale' || v.type === 'saleReturn', sg = v.type === 'sale' || v.type === 'purchaseReturn' ? 1 : -1, side = sale ? 'o' : 'i';
+      const pl = v.partyId ? partyLed(v.partyId, v.party) : null; const e = [];
+      if (pl) e.push([pl, sg * (+c.total || 0)]);
+      else for (const [m, x] of Object.entries(v.paid || {})) if (+x) e.push([modeLed(m), sg * +x]);
+      e.push([sale ? use(TL.sales, 'Sales Accounts') : use(TL.purchase, 'Purchase Accounts'), -sg * (+c.taxable || 0)]);
+      for (const h of ['CGST', 'SGST', 'IGST']) { const x = +c[h.toLowerCase()] || 0; if (x) e.push([taxLed(side, h), -sg * x]); }
+      if (+c.roundOff) e.push([use(TL.round, 'Indirect Expenses'), -sg * c.roundOff]);
+      const no = (v.type === 'purchase' || v.type === 'purchaseReturn') && v.billNo ? v.billNo : v.no;
+      V(TT[v.type], v.date, no, `${VT[v.type].label} ${v.no}${v.party?.name && !pl ? ' · ' + v.party.name : ''}`, e, pl || (e[0] && e[0][0]));
+      if (pl) {
+        const pays = Object.entries(v.paid || {}).filter(([, x]) => +x);
+        if (pays.length) V(sg > 0 ? 'Receipt' : 'Payment', v.date, v.no + '/P', `Paid on ${v.no}`, [...pays.map(([m, x]) => [modeLed(m), sg * +x]), [pl, -sg * pays.reduce((a, [, x]) => a + +x, 0)]], pl);
+        const fa = finAmt(v);
+        if (fa) {
+          const fl = use(String(v.fin.co || 'Finance').trim() + ' (finance)', 'Sundry Debtors');
+          V('Journal', v.date, v.no + '/F', `Finance by ${v.fin.co} on ${v.no}${v.fin.ref ? ' · ' + v.fin.ref : ''}`, [[fl, fa], [pl, -fa]]);
+          if (v.fin.gotOn && +v.fin.got) V('Receipt', v.fin.gotOn, v.no + '/FR', `Received from ${v.fin.co} for ${v.no}`, [[modeLed(v.fin.gotMode || 'bank'), +v.fin.got], [fl, -v.fin.got]], fl);
+        }
+      }
+    } else if (v.type === 'receipt' || v.type === 'payment') {
+      const a = +v.amount || 0, other = v.head ? use(v.head, 'Indirect Expenses') : (v.partyId ? partyLed(v.partyId, v.party) : 'Suspense');
+      const narr = [v.note, v.chq ? `Cheque ${v.chq.no}${v.chq.bank ? ' ' + v.chq.bank : ''} dated ${fmtDate(v.chq.date)}` : ''].filter(Boolean).join(' · ') || VT[v.type].label + ' ' + v.no;
+      if (v.type === 'receipt') V('Receipt', v.date, v.no, narr, [[modeLed(v.mode), a], [other, -a]], other);
+      else V('Payment', v.date, v.no, narr, [[other, a], [modeLed(v.mode), -a]], other);
+    } else if (v.type === 'journal') {
+      const acc = x => x.startsWith('party:') ? partyLed(x.slice(6)) : x.startsWith('exp:') ? use(x.slice(4), 'Indirect Expenses') : x.startsWith('inc:') ? use(x.slice(4), 'Indirect Incomes')
+        : x === 'capital' ? use('Capital Account', 'Capital Account') : x === 'drawings' ? use('Drawings', 'Capital Account') : modeLed(x);
+      V('Journal', v.date, v.no, v.note || 'Journal ' + v.no, (v.jlines || []).filter(l => l.acc).map(l => [acc(l.acc), (+l.dr || 0) - (+l.cr || 0)]));
+    }
+  }
+  const masters = [...led.entries()].map(([nm, o]) => `<TALLYMESSAGE xmlns:UDF="TallyUDF"><LEDGER NAME="${xe(nm)}" ACTION="Create"><NAME.LIST><NAME>${xe(nm)}</NAME></NAME.LIST><PARENT>${xe(o.parent)}</PARENT>`
+    + (o.gstin ? `<PARTYGSTIN>${xe(o.gstin)}</PARTYGSTIN><GSTREGISTRATIONTYPE>Regular</GSTREGISTRATIONTYPE>` : '') + (o.state ? `<LEDSTATENAME>${xe(stateName(o.state))}</LEDSTATENAME><COUNTRYOFRESIDENCE>India</COUNTRYOFRESIDENCE>` : '')
+    + (o.phone ? `<LEDGERMOBILE>${xe(o.phone)}</LEDGERMOBILE>` : '') + (o.duty ? `<TAXTYPE>GST</TAXTYPE><GSTDUTYHEAD>${o.duty}</GSTDUTYHEAD>` : '') + `<ISBILLWISEON>No</ISBILLWISEON></LEDGER></TALLYMESSAGE>`);
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<ENVELOPE><HEADER><TALLYREQUEST>Import Data</TALLYREQUEST></HEADER><BODY><IMPORTDATA><REQUESTDESC><REPORTNAME>Vouchers</REPORTNAME></REQUESTDESC><REQUESTDATA>\n${masters.join('\n')}\n${vchs.join('\n')}\n</REQUESTDATA></IMPORTDATA></BODY></ENVELOPE>\n`;
+  return { xml, n, ledgers: led.size, vouchers: vchs.length };
+}
+function tallyDialog() {
+  if (!can('export')) return denyToast('export data');
+  const m = openModal(`${mHead('Export to Tally')}<div class="body stack"><p style="margin:0">Makes a Tally file with your sales, purchases, returns, payments, expenses and journal entries, and the party, GST and bank ledgers they need.</p>
+    <label class="f"><span>Period</span><select id="tl-rg">${rangeOptions('lastmonth')}</select></label><div class="muted small" id="tl-n"></div>
+    <p class="muted small" style="margin:0">In Tally: open the company, then Gateway of Tally › Import › Vouchers (or Import of Data › Vouchers) and pick this file. Try it in a copy of the company the first time.</p></div>
+    <footer><button class="btn" data-close>Cancel</button><button class="btn primary" data-dl>Download file</button></footer>`);
+  const rg = m.querySelector('#tl-rg'); const cnt = () => { const r = tallyXML(rg.value); m.querySelector('#tl-n').textContent = r.n ? `${r.n} entries, ${r.ledgers} ledgers` : 'No entries in this period'; };
+  rg.onchange = cnt; cnt();
+  m.querySelector('[data-dl]').onclick = () => {
+    const r = tallyXML(rg.value); if (!r.n) return toast('No entries in this period', 'bad');
+    const label = (RANGES.find(x => x[0] === rg.value) || [, rg.value])[1].replace(/\s+/g, '-');
+    download(`Tally-${label}-${(firm().name || 'shop').replace(/[^\w-]+/g, '-')}.xml`, r.xml, 'application/xml'); closeModal(); toast(`${r.n} entries ready for Tally`, 'ok');
+  };
+}
+ACT.tally = tallyDialog;
+const _reportBody40 = reportBody;
+reportBody = function () {
+  _reportBody40();
+  if (RF.tab === 'gst' && can('export')) { const ca = $('#rf-body [data-act="gst-ca"]'); if (ca) ca.insertAdjacentHTML('afterend', ' <button class="btn" data-act="tally">Export to Tally</button>'); }
+};
+
+/* ---------------- badges and a once-a-day reminder ---------------- */
+function shop2Badges() {
+  if (!S.ready || !firm()) return;
+  const set = (id, n) => { const e = $(id); if (e) { e.hidden = !n; e.textContent = n; } };
+  set('#rail-chq', routeOK('cheques') ? chqList().filter(x => x.st === 'pending' && x.days <= 0).length : 0);
+  set('#rail-svc', routeOK('service') ? serviceList().filter(x => x.days <= 0).length : 0);
+}
+function dailyRemind() {
+  if (!S.ready || !firm() || document.documentElement.classList.contains('locked')) return;
+  const k = 'remind-' + S.firmId; if (LS.get(k, '') === today()) return;
+  const c = routeOK('cheques') ? chqList().filter(x => x.st === 'pending' && x.days <= 0).length : 0;
+  const s = routeOK('service') ? serviceList().filter(x => x.days <= 0).length : 0;
+  if (!c && !s) return; LS.set(k, today());
+  const parts = []; if (c) parts.push(`${c} cheque${c > 1 ? 's' : ''} to deposit`); if (s) parts.push(`${s} service${s > 1 ? 's' : ''} due`);
+  toast('Today: ' + parts.join(' · '), 'ok', { label: 'Open', fn: () => go(c ? 'cheques' : 'service') });
+}
+onChange(() => setTimeout(() => { shop2Badges(); dailyRemind(); }, 0)); setTimeout(() => { shop2Badges(); dailyRemind(); }, 2500);
+
+if (typeof HI !== 'undefined') Object.assign(HI, {
+  'Service due': 'सर्विस बाकी', 'Salesmen & commission': 'सेल्समैन और कमीशन', 'Cheques': 'चेक', 'Export to Tally': 'टैली में भेजें', 'Salesman': 'सेल्समैन',
+  'Cleared': 'क्लियर', 'Bounced': 'बाउंस', 'Pending': 'बाकी', 'By cheque': 'चेक से', 'Cheque no.': 'चेक नंबर', 'Cheque date': 'चेक की तारीख', 'Done': 'हो गया', 'Skip': 'छोड़ें'
+});
 
 </script>
 
